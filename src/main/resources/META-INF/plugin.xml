@@ -1,0 +1,103 @@
+<idea-plugin>
+  <actions>
+    <action class="com.tanner.module.action.ConvertModuleAction" description="转为ncc模块"
+      icon="AllIcons.Actions.ModuleDirectory"
+      id="dev.module.conver" text="转为ncc模块">
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+    </action>
+    <action class="com.tanner.module.action.CreateNewNCModuleAction" description="新建ncc模块"
+      icon="AllIcons.Actions.ModuleDirectory"
+      id="dev.module.newmodule" text="新建ncc模块">
+      <add-to-group anchor="before" group-id="NewGroup" relative-to-action="NewModule"/>
+    </action>
+    <action class="com.tanner.module.action.CreateNCComponentAction" description="新建ncc组件"
+      icon="AllIcons.Actions.ModuleDirectory"
+      id="dev.module.newcomponent" text="新建ncc组件">
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+      <add-to-group anchor="before" group-id="NewGroup" relative-to-action="NewModule"/>
+    </action>
+    <action class="com.tanner.extend.action.CopyExtendAction" description="复制鉴权文件到nchome"
+      id="dev.extend.copy"
+      text="复制鉴权文件到nchome">
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+    </action>
+    <action class="com.tanner.upm.action.CopyUpmAction" description="复制upm文件到nchome"
+      id="copy.upm.copy"
+      text="复制upm文件到nchome">
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+    </action>
+    <action class="com.tanner.library.action.LibrariesSetAction" description="设置nc类路径"
+      id="dev.set.libraries"
+      popup="true" text="设置nc类路径">
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+    </action>
+    <action class="com.tanner.devconfig.action.DevConfigAction" description="集成配置"
+      id="dev.config"
+      popup="true"
+      text="集成配置">
+    </action>
+    <action class="com.tanner.devconfig.action.OpenUapHomeAction" description="打开UAP目录"
+      id="dev.openuaphome"
+      popup="true"
+      text="打开UAP目录">
+    </action>
+    <action class="com.tanner.devconfig.action.ClearClientCacheAction"
+      description="清除客户端缓存"
+      id="dev.clearclientcache"
+      popup="true"
+      text="清除客户端缓存">
+    </action>
+    <action class="com.tanner.patcher.action.ExportPatcherAction" description="导出NMC格式补丁"
+      id="dev.patcher.export"
+      text="导出补丁NCC补丁">
+      <add-to-group anchor="last" group-id="ChangesViewPopupMenu"/>
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+      <add-to-group anchor="last" group-id="Vcs.Log.ChangesBrowser.Popup"/>
+    </action>
+    <action class="com.tanner.debug.action.NewServerApplicationAction"
+      description="server application"
+      id="dev.application.server.create" text="server application"/>
+    <action class="com.tanner.debug.action.NewClientApplicationAction"
+      description="client application"
+      id="dev.application.client.create" text="client application"/>
+    <group class="com.tanner.debug.action.AppGroupAction" description="调试..." id="dev.debug"
+      popup="true"
+      text="调试...">
+      <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+      <reference id="dev.application.client.create"/>
+      <reference id="dev.application.server.create"/>
+    </group>
+    <group description="集成配置" icon="/img/logo.svg" id="dev.group" popup="true" text="集成配置">
+      <add-to-group anchor="first" group-id="ToolbarRunGroup"/>
+      <add-to-group anchor="last" group-id="ToolsMenu"/>
+      <!--添加到bar显示-->
+      <reference id="dev.config"/>
+      <reference id="dev.openuaphome"/>
+      <reference id="dev.clearclientcache"/>
+    </group>
+  </actions>
+  <change-notes><![CDATA[
+      <h3>1.0.0</h3>
+      <ul>
+          <li>支持nc5x,nc6x,ncc的开发</li>
+      </ul>
+    ]]>
+  </change-notes>
+  <description><![CDATA[
+      一款uap开发插件.<br>
+      帮助开发者快速构建uap项目<br>
+      <p>
+        支持nc5x,nc6x,ncc的开发
+      </p>
+    ]]></description>
+  <extensions defaultExtensionNs="com.intellij">
+    <moduleType id="NCCMODULE" implementationClass="com.tanner.module.UapModuleType"/>
+    <projectService serviceImplementation="com.tanner.base.UapProjectEnvironment"
+      serviceInterface="com.tanner.base.UapProjectEnvironment"/>
+  </extensions>
+  <id>uap-dev-2022</id>
+  <idea-version since-build="173.0"/>
+  <name>uap-dev</name>
+  <vendor email="bianhuakai1994@gmail.com" url="https://tanner-sh.github.io/home/">tanner</vendor>
+  <version>1.0.0</version>
+</idea-plugin>
