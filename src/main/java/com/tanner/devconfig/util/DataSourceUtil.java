@@ -2,9 +2,9 @@ package com.tanner.devconfig.util;
 
 import com.intellij.openapi.ui.Messages;
 import com.tanner.base.UapProjectEnvironment;
-import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.dbdriver.entity.DatabaseDriverInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
+import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.prop.xml.PropXml;

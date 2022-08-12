@@ -2,9 +2,9 @@ package com.tanner.devconfig.action.item;
 
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractItemListener;
+import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
-import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.ToolUtils;
 import java.awt.event.ItemEvent;
 import javax.swing.JComboBox;

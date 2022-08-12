@@ -2,6 +2,8 @@ package com.tanner.devconfig;
 
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.dbdriver.entity.DatabaseDriverInfo;
+import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.action.button.ApplyAction;
 import com.tanner.devconfig.action.button.CancelAction;
 import com.tanner.devconfig.action.button.OKAction;
@@ -21,8 +23,6 @@ import com.tanner.devconfig.action.item.DriverBoxListener;
 import com.tanner.devconfig.action.listenner.ConfigTabbedChangeListener;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.devconfig.util.TableModelUtil;
-import com.tanner.dbdriver.entity.DatabaseDriverInfo;
-import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.DataSourceMeta;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;

@@ -10,14 +10,15 @@ import com.intellij.execution.configurations.RunConfiguration;
 import com.intellij.execution.impl.RunManagerImpl;
 import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.module.LanguageLevelUtil;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
+import com.intellij.pom.java.LanguageLevel;
 import com.tanner.base.BaseUtil;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ModuleFileUtil;
-import com.tanner.base.UapProjectEnvironment;
 import com.tanner.base.ProjectManager;
+import com.tanner.base.UapProjectEnvironment;
 import com.tanner.prop.entity.ClusterInfo;
 import com.tanner.prop.entity.DomainInfo;
 import com.tanner.prop.entity.IpAndPort;
@@ -26,6 +27,7 @@ import com.tanner.prop.xml.PropXml;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -51,27 +53,23 @@ public class CreatApplicationConfigurationUtil {
     //当前选择module
     Module selectModule = BaseUtil.getModule(event);
     configName = selectModule.getName() + configName;
-    //循环判断当前配置中有没有当前模块的启动配置
-    boolean hasFlag = false;
-    if (!configurationsList.isEmpty()) {
+    //先删除已经存在的配置
+    if (CollectionUtils.isNotEmpty(configurationsList)) {
       for (RunConfiguration configuration : configurationsList) {
         if (configuration.getName().equals(configName)) {
-          hasFlag = true;
-          ApplicationConfiguration conf = (ApplicationConfiguration) configuration;
-          setConfiguration(selectModule, conf, serverFlag);
-          break;
+          runManager.removeConfiguration(
+              new RunnerAndConfigurationSettingsImpl(runManager, configuration));
         }
       }
     }
     //新增config
-    if (!hasFlag) {
-      ApplicationConfiguration conf = new ApplicationConfiguration(configName, project,
-          ApplicationConfigurationType.getInstance());
-      setConfiguration(selectModule, conf, serverFlag);
-      RunnerAndConfigurationSettings runnerAndConfigurationSettings = new RunnerAndConfigurationSettingsImpl(
-          runManager, conf);
-      runManager.addConfiguration(runnerAndConfigurationSettings);
-    }
+    ApplicationConfiguration conf = new ApplicationConfiguration(configName, project,
+        ApplicationConfigurationType.getInstance());
+    setConfiguration(selectModule, conf, serverFlag);
+    RunnerAndConfigurationSettings runnerAndConfigurationSettings = new RunnerAndConfigurationSettingsImpl(
+        runManager, conf);
+    runManager.addConfiguration(runnerAndConfigurationSettings);
+    runManager.setSelectedConfiguration(runnerAndConfigurationSettings);
   }
 
   private static void setConfiguration(Module selectModule, ApplicationConfiguration conf,
@@ -79,16 +77,20 @@ public class CreatApplicationConfigurationUtil {
     //检查并设置nc home
     String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
     if (StringUtils.isBlank(homePath)) {
-      Messages.showMessageDialog("请先设置NC Home", "Error", Messages.getErrorIcon());
-      return;
+      throw new BusinessException("请先设置NC Home");
     }
+    String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
     PropXml propXml = new PropXml();
     String filename = new File(homePath).getPath() + "/ierp/bin/prop.xml";
     File file = new File(filename);
     if (!file.exists()) {
-      Messages.showMessageDialog("file :prop.xml not exists!", "Error", Messages.getErrorIcon());
-      return;
+      throw new BusinessException("file :prop.xml not exists!");
     }
+    LanguageLevel languageLevel = LanguageLevelUtil.getEffectiveLanguageLevel(selectModule);
+    if (languageLevel == null) {
+      throw new BusinessException("languageLevel not set!");
+    }
+    int feature = languageLevel.toJavaVersion().feature;
     Map<String, String> envs = conf.getEnvs();
     if (serverFlag) {
       conf.setMainClassName(serverClass);
@@ -126,18 +128,7 @@ public class CreatApplicationConfigurationUtil {
         timeZone = "GMT+8";
       }
       envs.put("FIELD_TIMEZONE", timeZone);
-      conf.setVMParameters("-Dnc.exclude.modules=$FIELD_EX_MODULES$\n" + "-Dnc.runMode=develop\n"
-          + "-Dnc.server.location=$FIELD_NC_HOME$\n" + "-DEJBConfigDir=$FIELD_NC_HOME$/ejbXMLs\n"
-          + "-DExtServiceConfigDir=$FIELD_NC_HOME$/ejbXMLs\n" + "-Duap.hotwebs=$FIELD_HOTWEBS$\n"
-          + "-Duap.disable.codescan=false\n" +
-          // 这个参数在最新的home中会影响启动，需要手动添加一个jar包才不会报错
-          // "-Djavax.xml.parsers.DocumentBuilderFactory=org.apache.xerces.jaxp.DocumentBuilderFactoryImpl\n" +
-          "-Xmx1024m\n" + "-XX:MetaspaceSize=128m\n" + "-XX:MaxMetaspaceSize=512m\n"
-          + "-Dorg.owasp.esapi.resources=$FIELD_NC_HOME$/ierp/bin/esapi\n"
-          + "-Dfile.encoding=$FIELD_ENCODING$\n" +
-          // 默认添加时区
-          "-Duser.timezone=$FIELD_TIMEZONE$\n");
-
+      conf.setVMParameters(getDefalutsServerVMParameters(feature));
     } else {
       // ip和端口号读取home中的，没有就取默认值127.0.0.1:80
       IpAndPort ipAndPort = new IpAndPort();
@@ -173,9 +164,7 @@ public class CreatApplicationConfigurationUtil {
       envs.put("FIELD_CLINET_PORT",
           String.valueOf(ipAndPort.getPort() == null ? DEFALUT_PORT : ipAndPort.getPort()));
       conf.setMainClassName(clientClass);
-      conf.setVMParameters("-Dnc.runMode=develop\n" + " -Dnc.jstart.server=$FIELD_CLINET_IP$\n"
-          + " -Dnc.jstart.port=$FIELD_CLINET_PORT$\n" + " -Xmx768m -XX:MaxPermSize=256m\n"
-          + " -Dnc.fi.autogenfile=N");
+      conf.setVMParameters(getDefalutsClientVMParameters(feature));
     }
     envs.put("FIELD_NC_HOME", homePath);
     conf.setModule(selectModule);
@@ -208,6 +197,40 @@ public class CreatApplicationConfigurationUtil {
         }
       }
     }
+  }
+
+  private static String getDefalutsServerVMParameters(int feature) {
+    StringBuilder parameters = new StringBuilder();
+    parameters.append("-Dnc.exclude.modules=$FIELD_EX_MODULES$\n");
+    parameters.append("-Dnc.runMode=develop\n");
+    parameters.append("-Dnc.server.location=$FIELD_NC_HOME$\n");
+    parameters.append("-DEJBConfigDir=$FIELD_NC_HOME$/ejbXMLs\n");
+    parameters.append("-DExtServiceConfigDir=$FIELD_NC_HOME$/ejbXMLs\n");
+    parameters.append("-Duap.hotwebs=$FIELD_HOTWEBS$\n");
+    parameters.append("-Duap.disable.codescan=false\n");
+    parameters.append("-Dorg.owasp.esapi.resources=$FIELD_NC_HOME$/ierp/bin/esapi\n");
+    parameters.append("-Dfile.encoding=$FIELD_ENCODING$\n");
+    parameters.append("-Duser.timezone=$FIELD_TIMEZONE$\n");//默认添加时区
+    if (feature >= 8) {//jdk8以上
+      parameters.append("-Xmx1024m\n");
+      parameters.append("-XX:MetaspaceSize=128m\n");
+      parameters.append("-XX:MaxMetaspaceSize=512m\n");
+    } else {
+      parameters.append("-Xms512m\n");
+      parameters.append("-Xmx1024m\n");
+      parameters.append("-XX:MaxPermSize=128m\n");
+    }
+    return parameters.toString();
+  }
+
+  private static String getDefalutsClientVMParameters(int feature) {
+    StringBuilder parameters = new StringBuilder();
+    parameters.append("-Dnc.runMode=develop\n");
+    parameters.append("-Dnc.jstart.server=$FIELD_CLINET_IP$\n");
+    parameters.append("-Dnc.jstart.port=$FIELD_CLINET_PORT$\n");
+    parameters.append("-Xmx768m -XX:MaxPermSize=256m\n");
+    parameters.append("-Dnc.fi.autogenfile=N\n");
+    return parameters.toString();
   }
 
 }

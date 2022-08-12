@@ -2,7 +2,11 @@ package com.tanner.patcher.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.fileChooser.FileChooser;
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
@@ -17,7 +21,6 @@ import java.io.File;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JTextField;
@@ -58,16 +61,18 @@ public class PatcherDialog extends AbstractDialog {
         KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
         JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     UapProjectEnvironment envSettingService = UapProjectEnvironment.getInstance(event.getProject());
-    String text = envSettingService == null ? null : envSettingService.getLastPatcherPath();
-    savePath.setText(text);
+    String lastPatcherPath = envSettingService.getLastPatcherPath();
+    if (StringUtils.isEmpty(lastPatcherPath) || !new File(lastPatcherPath).exists()) {
+      lastPatcherPath = System.getProperty("user.home");
+    }
+    savePath.setText(lastPatcherPath);
     // 保存路径按钮事件
     fileChooseBtn.addActionListener(e -> {
-      String userDir = System.getProperty("user.home");
-      JFileChooser fileChooser = new JFileChooser(userDir/** + "/Desktop"**/);
-      fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-      int flag = fileChooser.showOpenDialog(null);
-      if (flag == JFileChooser.APPROVE_OPTION) {
-        savePath.setText(fileChooser.getSelectedFile().getAbsolutePath());
+      FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
+      VirtualFile virtualFile = FileChooser.chooseFile(descriptor, event.getProject(),
+          LocalFileSystem.getInstance().findFileByIoFile(new File(savePath.getText())));
+      if (virtualFile != null) {
+        savePath.setText(virtualFile.getPath());
       }
     });
   }

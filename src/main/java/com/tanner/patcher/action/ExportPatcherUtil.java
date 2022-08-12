@@ -12,6 +12,7 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
+import com.tanner.base.UapProjectEnvironment;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -97,9 +98,10 @@ public class ExportPatcherUtil {
   public ExportPatcherUtil(String patchName, String webServerName, String exportPath,
       boolean srcFlag, boolean cloudFlag, AnActionEvent event) {
     this.event = event;
-    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+    String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
     String dateStr = simpleDateFormat.format(new Date());
-    this.exportPath = exportPath + File.separator + "patch_" + dateStr;
+    this.exportPath = exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr;
     this.patchName = patchName;
     this.srcFlag = srcFlag;
     this.cloudFlag = cloudFlag;

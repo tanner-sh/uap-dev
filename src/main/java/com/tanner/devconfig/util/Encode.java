@@ -47,7 +47,7 @@ public class Encode {
     for (i = 0; i < newLength / 8; ++i) {
       byte[] theBytes = new byte[8];
 
-      System.arraycopy(newBytes, 8 * i + 0, theBytes, 0, 8);
+      System.arraycopy(newBytes, 8 * i, theBytes, 0, 8);
       long x = des.bytes2long(theBytes);
       byte[] result = new byte[8];
       des.long2bytes(des.encrypt(x), result);
