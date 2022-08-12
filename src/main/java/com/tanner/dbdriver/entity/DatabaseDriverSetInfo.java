@@ -1,4 +1,4 @@
-package com.tanner.script.studio.ui.preference.dbdriver;
+package com.tanner.dbdriver.entity;
 
 public class DatabaseDriverSetInfo {
 

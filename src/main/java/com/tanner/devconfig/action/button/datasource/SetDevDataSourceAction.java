@@ -4,7 +4,7 @@ import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
-import com.tanner.script.studio.ui.preference.prop.DataSourceMeta;
+import com.tanner.prop.entity.DataSourceMeta;
 import java.awt.event.ActionEvent;
 import java.util.Map;
 import javax.swing.JComboBox;

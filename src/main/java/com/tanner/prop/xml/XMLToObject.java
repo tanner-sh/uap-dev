@@ -1,4 +1,4 @@
-package com.tanner.script.studio.ui.preference.xml;
+package com.tanner.prop.xml;
 
 import java.io.File;
 import java.lang.reflect.Array;

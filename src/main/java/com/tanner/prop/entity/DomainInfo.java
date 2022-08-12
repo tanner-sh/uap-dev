@@ -1,4 +1,4 @@
-package com.tanner.script.studio.ui.preference.prop;
+package com.tanner.prop.entity;
 
 public class DomainInfo {
 

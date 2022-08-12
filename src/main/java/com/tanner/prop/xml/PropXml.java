@@ -1,8 +1,8 @@
-package com.tanner.script.studio.ui.preference.xml;
+package com.tanner.prop.xml;
 
-import com.tanner.script.studio.ui.preference.dbdriver.DatabaseDriverSetInfo;
-import com.tanner.script.studio.ui.preference.prop.DataSourceMeta;
-import com.tanner.script.studio.ui.preference.prop.PropInfo;
+import com.tanner.dbdriver.entity.DatabaseDriverSetInfo;
+import com.tanner.prop.entity.DataSourceMeta;
+import com.tanner.prop.entity.PropInfo;
 import java.io.File;
 
 public class PropXml {
@@ -40,7 +40,6 @@ public class PropXml {
       metaswithdesign[0] = metas[0];
       metaswithdesign[0].setDataSourceName("design");
     }
-
     return metaswithdesign;
   }
 
