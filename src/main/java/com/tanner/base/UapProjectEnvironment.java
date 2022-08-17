@@ -24,14 +24,14 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
   private final String ATTR_NCCLOUDJAR = "nccloudJar";
   private final String ATTR_NCCHRJAR = "ncchrJar";
   private final String ATTR_LASTPATCHERPATH = "lastPatcherPath";
-  private String uapHomePath;
-  private String uapVersion;
-  private String ex_modules;
-  private String must_modules;
-  private String connected_data_source;
+  private String uapHomePath;//uapHome地址
+  private String uapVersion;//uap版本
+  private String ex_modules;//忽略的模块
+  private String must_modules;//必选模块
+  private String connected_data_source;//当前连接的数据源
   private String nccloudJar;
   private String ncchrJAR;
-  private String lastPatcherPath;
+  private String lastPatcherPath;//上一次的补丁地址
 
 
   public UapProjectEnvironment() {

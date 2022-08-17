@@ -42,7 +42,3 @@ tasks {
     }
 }
 
-dependencies {
-    implementation(fileTree("lib"))
-}
-

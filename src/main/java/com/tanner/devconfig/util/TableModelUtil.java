@@ -54,7 +54,7 @@ public class TableModelUtil {
       public boolean isCellEditable(int row, int column) {
         boolean flag = false;
         Object obj = dialog.getComponent(JTable.class, "mustTable").getValueAt(row, 2);
-        if (column == 1 && !ModuleFileUtil.getModuleSet().contains(obj)) {
+        if (column == 1 && !ModuleFileUtil.getMustMoudleSet().contains(obj)) {
           flag = true;
         }
         return flag;
@@ -116,7 +116,7 @@ public class TableModelUtil {
     Set<String> mustModuleSet = new HashSet();
     Set<String> exModuleSet = new HashSet();
     if (StringUtils.isBlank(mustModuleStr)) {
-      mustModuleSet = ModuleFileUtil.getModuleSet();
+      mustModuleSet = ModuleFileUtil.getMustMoudleSet();
     } else {
       String[] strings = mustModuleStr.split(",");
       mustModuleSet.addAll(Arrays.asList(strings));
@@ -187,34 +187,34 @@ public class TableModelUtil {
   public static void saveModuleConfig(AbstractDialog dialog) throws BusinessException {
     String oldMust = UapProjectEnvironment.getInstance().getMust_modules();
     String oldEx = UapProjectEnvironment.getInstance().getEx_modules();
-    JTable table = dialog.getComponent(JTable.class, "selTable");
+    JTable selTable = dialog.getComponent(JTable.class, "selTable");
     JTable mustTable = dialog.getComponent(JTable.class, "mustTable");
-    int rowCount = table.getRowCount();
+    int rowCount = selTable.getRowCount();
     StringBuilder mustModuleStr = new StringBuilder();
-    StringBuilder selModuleStr = new StringBuilder();
+    StringBuilder exModuleStr = new StringBuilder();
     for (int i = 0; i < rowCount; i++) {
       boolean mustFlag = (boolean) mustTable.getValueAt(i, 1);
-      boolean selFlag = (boolean) table.getValueAt(i, 1);
+      boolean selFlag = (boolean) selTable.getValueAt(i, 1);
       if (mustFlag) {
         String name = mustTable.getValueAt(i, 2).toString();
         mustModuleStr.append(",").append(name);
       }
-      if (!selFlag) {//这里应该取反，将没有选择的放在ex_module上
-        String name = table.getValueAt(i, 2).toString();
-        selModuleStr.append(",").append(name);
+      if (!selFlag && !mustFlag) {//把没有选择启动的模块以及非必选的模块放在这里
+        String name = selTable.getValueAt(i, 2).toString();
+        exModuleStr.append(",").append(name);
       }
     }
     if (mustModuleStr.length() > 1) {
       mustModuleStr = new StringBuilder(mustModuleStr.substring(1));
     }
-    if (selModuleStr.length() > 1) {
-      selModuleStr = new StringBuilder(selModuleStr.substring(1));
+    if (exModuleStr.length() > 1) {
+      exModuleStr = new StringBuilder(exModuleStr.substring(1));
     }
-    if (!oldMust.equals(mustModuleStr)) {
+    if (!oldMust.contentEquals(mustModuleStr)) {
       UapProjectEnvironment.getInstance().setMust_modules(mustModuleStr.toString());
     }
-    if (!oldEx.equals(selModuleStr.toString())) {
-      UapProjectEnvironment.getInstance().setEx_modules(selModuleStr.toString());
+    if (!oldEx.contentEquals(exModuleStr)) {
+      UapProjectEnvironment.getInstance().setEx_modules(exModuleStr.toString());
       CreatApplicationConfigurationUtil.update();
     }
   }

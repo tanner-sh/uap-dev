@@ -55,7 +55,7 @@ public class ModuleFileUtil {
    *
    * @return
    */
-  public static Set<String> getModuleSet() {
+  public static Set<String> getMustMoudleSet() {
     Set<String> moduleSet = new HashSet();
     //公共
     moduleSet.add("baseapp");

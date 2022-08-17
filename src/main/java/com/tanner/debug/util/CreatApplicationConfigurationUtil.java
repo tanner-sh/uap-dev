@@ -95,26 +95,6 @@ public class CreatApplicationConfigurationUtil {
     if (serverFlag) {
       conf.setMainClassName(serverClass);
       String exModulesStr = UapProjectEnvironment.getInstance().getEx_modules();
-      if (StringUtils.isBlank(exModulesStr)) {
-        exModulesStr = "";
-        File homeFile = new File(homePath + File.separator + "modules");
-        if (homeFile.exists()) {
-          File[] modules = homeFile.listFiles();
-          if (modules != null) {
-            for (File module : modules) {
-              String moduleName = module.getName();
-              if (ModuleFileUtil.getModuleSet().contains(moduleName)) {
-                continue;
-              }
-              exModulesStr += "," + moduleName;
-            }
-            if (exModulesStr.length() > 0) {
-              exModulesStr = exModulesStr.substring(1);
-              UapProjectEnvironment.getInstance().setEx_modules(exModulesStr);
-            }
-          }
-        }
-      }
       envs.put("FIELD_EX_MODULES", exModulesStr);
       String hotwebs = envs.get("FIELD_HOTWEBS");
       if (StringUtils.isBlank(hotwebs)) {

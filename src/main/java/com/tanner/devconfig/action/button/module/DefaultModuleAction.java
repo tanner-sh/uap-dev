@@ -24,7 +24,7 @@ public class DefaultModuleAction extends AbstractButtonAction {
   public void doAction(ActionEvent event) {
     if (type == TableModelUtil.MODULE_TYPE_MUST) {
       JTable table = getDialog().getComponent(JTable.class, "mustTable");
-      Set<String> set = ModuleFileUtil.getModuleSet();
+      Set<String> set = ModuleFileUtil.getMustMoudleSet();
       int count = getDialog().getComponent(JTable.class, "mustTable").getRowCount();
       for (int i = 0; i < count; i++) {
         Object obj = table.getModel().getValueAt(i, 2);
