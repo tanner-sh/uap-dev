@@ -65,7 +65,7 @@ public class LibrariesUtil {
     List<String> frameworkList = scanJarAndClasses(frameworkPath, false, false);
     //设置middleware
     String middlewarePath = homePath + File.separator + "middleware";
-    List<String> middlewareList = scanJarAndClasses(middlewarePath, false, false);
+    List<String> middlewareList = scanJarAndClasses(middlewarePath, false, true);
     //扫描lang目录
     String langPath = homePath + File.separator + "langlib";
     List<String> langList = scanJarAndClasses(langPath, false, false);
