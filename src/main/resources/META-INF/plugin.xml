@@ -47,6 +47,12 @@
       popup="true"
       text="清除客户端缓存">
     </action>
+    <action class="com.tanner.devconfig.action.SciptExportAction"
+      description="导出uap相关脚本"
+      id="dev.sciptexport"
+      popup="true"
+      text="脚本导出">
+    </action>
     <action class="com.tanner.patcher.action.ExportPatcherAction" description="导出NMC格式补丁"
       id="dev.patcher.export"
       text="导出补丁NCC补丁">
@@ -74,12 +80,13 @@
       <reference id="dev.config"/>
       <reference id="dev.openuaphome"/>
       <reference id="dev.clearclientcache"/>
+      <reference id="dev.sciptexport"/>
     </group>
   </actions>
   <change-notes><![CDATA[
       <h3>1.0.0</h3>
       <ul>
-          <li>支持nc5x,nc6x,ncc的开发</li>
+          <li>支持nc6x,ncc的开发</li>
       </ul>
     ]]>
   </change-notes>

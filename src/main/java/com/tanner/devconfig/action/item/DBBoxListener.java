@@ -1,5 +1,6 @@
 package com.tanner.devconfig.action.item;
 
+import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractItemListener;
 import com.tanner.devconfig.DevConfigDialog;
@@ -21,7 +22,7 @@ public class DBBoxListener extends AbstractItemListener {
   public void afterSelect(ItemEvent e) {
     String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
     if (StringUtils.isNotBlank(dsname)) {
-      DevConfigDialog dialog = (DevConfigDialog) getDialog();
+      AbstractDataSourceDialog dialog = (AbstractDataSourceDialog) getDialog();
       dialog.setCurrMeta(dialog.getDataSourceMetaMap().get(dsname));
       DataSourceUtil.fillDataSourceMeta(dialog);
     }

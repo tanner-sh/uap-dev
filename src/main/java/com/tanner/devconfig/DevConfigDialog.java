@@ -1,9 +1,7 @@
 package com.tanner.devconfig;
 
-import com.tanner.abs.AbstractDialog;
+import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.base.UapProjectEnvironment;
-import com.tanner.dbdriver.entity.DatabaseDriverInfo;
-import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.action.button.ApplyAction;
 import com.tanner.devconfig.action.button.CancelAction;
 import com.tanner.devconfig.action.button.OKAction;
@@ -23,16 +21,12 @@ import com.tanner.devconfig.action.item.DriverBoxListener;
 import com.tanner.devconfig.action.listenner.ConfigTabbedChangeListener;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.devconfig.util.TableModelUtil;
-import com.tanner.prop.entity.DataSourceMeta;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -47,7 +41,7 @@ import javax.swing.KeyStroke;
 /**
  * 开发配置主界面
  */
-public class DevConfigDialog extends AbstractDialog {
+public class DevConfigDialog extends AbstractDataSourceDialog {
 
   private JPanel contentPane;
   private JButton okBtn;
@@ -88,13 +82,6 @@ public class DevConfigDialog extends AbstractDialog {
   private JTable mustTable;
   private JTable selTable;
   private JButton setLibBtn;
-
-  //数据源相关缓存
-  private Map<String, DatabaseDriverInfo> databaseDriverInfoMap = new HashMap<>();
-  private Map<String, DataSourceMeta> dataSourceMetaMap = new LinkedHashMap();
-  private Map<String, DriverInfo> driverInfoMap = new HashMap();
-  //当前数据源
-  private DataSourceMeta currMeta;
 
 
   //是否点击过设置类路径
@@ -224,26 +211,6 @@ public class DevConfigDialog extends AbstractDialog {
   private void onCancel() {
     // add your code here if necessary
     dispose();
-  }
-
-  public Map<String, DatabaseDriverInfo> getDatabaseDriverInfoMap() {
-    return databaseDriverInfoMap;
-  }
-
-  public LinkedHashMap<String, DataSourceMeta> getDataSourceMetaMap() {
-    return (LinkedHashMap<String, DataSourceMeta>) dataSourceMetaMap;
-  }
-
-  public Map<String, DriverInfo> getDriverInfoMap() {
-    return driverInfoMap;
-  }
-
-  public DataSourceMeta getCurrMeta() {
-    return currMeta;
-  }
-
-  public void setCurrMeta(DataSourceMeta currMeta) {
-    this.currMeta = currMeta;
   }
 
   public int getTabIndex() {

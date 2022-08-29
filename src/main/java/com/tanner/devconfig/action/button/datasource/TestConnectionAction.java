@@ -2,24 +2,18 @@ package com.tanner.devconfig.action.button.datasource;
 
 import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractButtonAction;
+import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
+import com.tanner.base.ClassLoaderUtil;
+import com.tanner.base.DbUtil;
+import com.tanner.base.UapProjectEnvironment;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.prop.entity.ToolUtils;
 import java.awt.event.ActionEvent;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.SQLException;
-import java.util.Collection;
-import java.util.Properties;
 import javax.swing.JComboBox;
 import javax.swing.JTextField;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.io.FileUtils;
 
 /**
  * 测试数据源连接
@@ -32,7 +26,20 @@ public class TestConnectionAction extends AbstractButtonAction {
 
   @Override
   public void doAction(ActionEvent event) {
-    DevConfigDialog dlg = (DevConfigDialog) getDialog();
+    AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+    String homePath = null;
+    if (dlg instanceof DevConfigDialog) {
+      homePath = dlg.getComponent(JTextField.class, "homeText").getText();
+    } else {
+      homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+    }
+    ClassLoader classLoader = null;
+    try {
+      classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+    } catch (Exception e) {
+      Messages.showMessageDialog("驱动加载失败", "错误", Messages.getErrorIcon());
+      return;
+    }
     String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
     DriverInfo info = dlg.getDriverInfoMap().get(driverName);
     String exampleUrl = info.getDriverUrl();
@@ -41,55 +48,18 @@ public class TestConnectionAction extends AbstractButtonAction {
     String userName = dlg.getComponent(JTextField.class, "userText").getText();
     String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
     String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
-    ClassLoader loader = getJDBCClassloader();
-    if (loader == null) {
-      Messages.showMessageDialog("驱动加载失败", "错误", Messages.getErrorIcon());
-      return;
-    }
-    Connection conn = null;
+    Connection connection = null;
     try {
-      Class driverclass = loader.loadClass(info.getDriverClass());
-      Driver deiver = (Driver) driverclass.getConstructor().newInstance();
-      Properties properties = new Properties();
-      properties.put("user", userName);
-      properties.put("password", pwd);
-      conn = deiver.connect(ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port), properties);
+      connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
+          ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port), userName, pwd);
     } catch (Exception e) {
-      Messages.showMessageDialog(e.getMessage(), "测试未能通过请检查", Messages.getErrorIcon());
+      Messages.showMessageDialog("获取数据库连接失败\n" + e.getMessage(), "错误",
+          Messages.getErrorIcon());
       return;
     } finally {
-      if (conn != null) {
-        try {
-          conn.close();
-        } catch (SQLException e) {
-          e.printStackTrace();
-        }
-      }
+      DbUtil.closeResource(connection, null, null);
     }
-    if (conn != null) {
-      Messages.showMessageDialog("测试通过", "提示", Messages.getInformationIcon());
-    }
-  }
-
-  private ClassLoader getJDBCClassloader() {
-    //加载home/drivers下所有jar包
-    String homePath = getDialog().getComponent(JTextField.class, "homeText").getText();
-    URLClassLoader loader = null;
-    File driverLibDir = new File(homePath, "driver");
-    if (!driverLibDir.exists()) {
-      return null;
-    }
-    Collection<File> files = FileUtils.listFiles(driverLibDir, null, true);
-    if (CollectionUtils.isEmpty(files)) {
-      return null;
-    }
-    URL[] urls = null;
-    try {
-      urls = FileUtils.toURLs(files.toArray(new File[0]));
-    } catch (IOException e) {
-      return null;
-    }
-    return new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
+    Messages.showMessageDialog("测试通过", "提示", Messages.getInformationIcon());
   }
 
 }

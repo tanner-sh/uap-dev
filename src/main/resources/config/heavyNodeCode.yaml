@@ -1,0 +1,102 @@
+#重量端的节点相关表
+#模块表
+- tableName: dap_dapsystem
+  sql: select * from dap_dapsystem WHERE moduleid = ?
+#单据号规则
+- tableName: pub_bcr_candiattr
+  sql: select * from pub_bcr_candiattr where pk_nbcr in (select pk_nbcr from pub_bcr_nbcr where code in (select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_bcr_nbcr
+  sql: select * from pub_bcr_nbcr where code in (select pk_billtypecode from bd_billtype where  nodecode in (?))
+- tableName: pub_bcr_elem
+  sql: select * from pub_bcr_elem where pk_billcodebase in (select pk_billcodebase from pub_bcr_rulebase where nbcrcode in (select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_bcr_orgrela
+  sql: select * from pub_bcr_orgrela where pk_billcodebase in (select pk_billcodebase from pub_bcr_rulebase where nbcrcode in (select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_bcr_rulebase
+  sql: select * from pub_bcr_rulebase where nbcrcode in (select pk_billtypecode from bd_billtype where  nodecode in (?))
+#事件
+- tableName: pub_eventlistener
+  sql: select * from pub_eventlistener where pk_eventtype in (select pk_eventtype from pub_eventtype where sourceid in (select distinct mdid from sm_funcregister where funcode in (?)))
+#事件类型
+- tableName: pub_eventtype
+  sql: select * from pub_eventtype where sourceid in (select distinct mdid from sm_funcregister where funcode in (?))
+#单据vo交换，作为来源单据
+- tableName: pub_vochange_b
+  sql: select * from pub_vochange_b where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange_b_upgrade
+  sql: select * from pub_vochange_b_upgrade where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange_s
+  sql: select * from pub_vochange_s where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange_s_upgrade
+  sql: select * from pub_vochange_s_upgrade where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange
+  sql: select * from pub_vochange where dest_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?))
+#单据vo交换，作为目的单据
+- tableName: pub_vochange_b
+  sql: select * from pub_vochange_b where pk_vochange in ( select pk_vochange from pub_vochange where dest_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange_b_upgrade
+  sql: select * from pub_vochange_b_upgrade where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange_s
+  sql: select * from pub_vochange_s where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange_s_upgrade
+  sql: select * from pub_vochange_s_upgrade where pk_vochange in ( select pk_vochange from pub_vochange where src_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?)))
+- tableName: pub_vochange
+  sql: select * from pub_vochange where dest_billtype in ( select pk_billtypecode from bd_billtype where  nodecode in (?))
+#系统模版分配基准表
+- tableName: pub_systemplate_base
+  sql: select * from pub_systemplate_base where funnode in (?)
+#系统分配模板
+- tableName: pub_systemplate
+  sql: select * from pub_systemplate where funnode in (?)
+#单据模板
+- tableName: pub_billtemplet_b
+  sql: select * from pub_billtemplet_b where pk_billtemplet in (SELECT DISTINCT pk_billtemplet FROM (SELECT templateid pk_billtemplet FROM pub_systemplate  WHERE funnode IN (?) AND (dr = 0 OR dr IS NULL) AND tempstyle = 0) UNION ALL (SELECT pk_billtemplet FROM   pub_billtemplet where (nodecode = ? OR pk_billtypecode = ?) and (dr=0 or dr is null)))
+- tableName: pub_billtemplet_t
+  sql: select * from pub_billtemplet_t where pk_billtemplet in (SELECT DISTINCT pk_billtemplet FROM (SELECT templateid pk_billtemplet FROM pub_systemplate  WHERE funnode IN (?) AND (dr = 0 OR dr IS NULL) AND tempstyle = 0) UNION ALL (SELECT pk_billtemplet FROM   pub_billtemplet where (nodecode = ? OR pk_billtypecode = ?) and (dr=0 or dr is null)))
+- tableName: pub_billtemplet
+  sql: select * from pub_billtemplet where pk_billtemplet in  (SELECT DISTINCT pk_billtemplet FROM (SELECT templateid pk_billtemplet FROM pub_systemplate  WHERE funnode IN (?) AND (dr = 0 OR dr IS NULL) AND tempstyle = 0) UNION ALL (SELECT pk_billtemplet FROM   pub_billtemplet where (nodecode = ? OR pk_billtypecode = ?) and (dr=0 or dr is null)))
+#查询条件
+- tableName: pub_query_condition
+  sql: select * from pub_query_condition where pk_templet in (SELECT DISTINCT ID FROM ((SELECT templateid id FROM pub_systemplate  WHERE funnode IN (?) AND (dr = 0 OR dr IS NULL) AND tempstyle = 1)  UNION ALL (select id from pub_query_templet where node_code in (?) AND (dr = 0 OR dr IS NULL))))
+#查询模版
+- tableName: pub_query_templet
+  sql: select * from pub_query_templet where id in (SELECT DISTINCT ID FROM ((SELECT templateid id FROM pub_systemplate  WHERE funnode IN (?) AND (dr = 0 OR dr IS NULL) AND tempstyle = 1)  UNION ALL (select id from pub_query_templet where node_code in (?) AND (dr = 0 OR dr IS NULL))))
+#打印模板
+- tableName: pub_print_cell
+  sql: select * from pub_print_cell where ctemplateid in (select ctemplateid from pub_print_template where vnodecode in (?))
+- tableName: pub_print_line
+  sql: select * from pub_print_line where ctemplateid in (select ctemplateid from pub_print_template where vnodecode in (?))
+- tableName: pub_print_variable
+  sql: select * from pub_print_variable where ctemplateid in (select ctemplateid from pub_print_template where vnodecode in (?))
+- tableName: pub_print_datasource
+  sql: select * from pub_print_datasource where ctemplateid in (select ctemplateid from pub_print_template where vnodecode in (?))
+- tableName: pub_print_template
+  sql: select * from pub_print_template where vnodecode in (?)
+#单据上下游配置
+- tableName: bd_fwdbilltype
+  sql: select * from bd_fwdbilltype where  pk_billtypeid in ( select pk_billtypeid from bd_billtype where  nodecode in (?))
+#单据函数
+- tableName: pub_function
+  sql: select * from pub_function where   pk_billtypeid in ( select pk_billtypeid from bd_billtype where  nodecode in (?))
+#单据动作
+- tableName: pub_billAction
+  sql: select * from pub_billAction where pk_billtype in (select pk_billtypecode from bd_billtype where  nodecode in (?))
+#动作脚本
+- tableName: pub_busiclass
+  sql: select * from pub_busiclass where pk_billtype in (select pk_billtypecode from bd_billtype where  nodecode in (?))
+#功能参数
+- tableName: sm_paramregister
+  sql: select * from sm_paramregister where parentid in ( select cfunid from sm_funcregister where funcode in (?) )
+#功能按钮注册
+- tableName: sm_butnRegister
+  sql: select * from sm_butnRegister	where parent_id in (select CFUNID from sm_funcregister where funcode in (?))
+#菜单注册
+- tableName: sm_menuitemreg
+  sql: select * from sm_menuitemreg where funcode in (?)
+#单据类型
+- tableName: bd_billtype2
+  sql: select * from bd_billtype2 where  pk_billtypeid in ( select pk_billtypeid from bd_billtype where  nodecode in (?))
+- tableName: bd_billtype
+  sql: select * from bd_billtype where  nodecode in (?)
+#功能注册
+- tableName: sm_funcregister
+  sql: select * from sm_funcregister where funcode in (?)

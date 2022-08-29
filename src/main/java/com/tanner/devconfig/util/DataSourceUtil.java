@@ -1,6 +1,7 @@
 package com.tanner.devconfig.util;
 
 import com.intellij.openapi.ui.Messages;
+import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.dbdriver.entity.DatabaseDriverInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
@@ -21,8 +22,13 @@ import org.apache.commons.lang.StringUtils;
  */
 public class DataSourceUtil {
 
-  public static void initDataSource(DevConfigDialog dialog) {
-    String homePath = dialog.getComponent(JTextField.class, "homeText").getText();
+  public static void initDataSource(AbstractDataSourceDialog dialog) {
+    String homePath = null;
+    if (dialog instanceof DevConfigDialog) {
+      homePath = dialog.getComponent(JTextField.class, "homeText").getText();
+    } else {
+      homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+    }
     if (StringUtils.isBlank(homePath)) {
       return;
     }
@@ -47,7 +53,7 @@ public class DataSourceUtil {
     }
   }
 
-  public static void fillCombo(JComboBox combo, Object[] objects, DevConfigDialog dlg) {
+  public static void fillCombo(JComboBox combo, Object[] objects, AbstractDataSourceDialog dlg) {
     String[] items = new String[objects.length];
     for (int i = 0; i < objects.length; i++) {
       Object obj = objects[i];
@@ -107,7 +113,7 @@ public class DataSourceUtil {
    *
    * @param dlg
    */
-  public static void fillDataSourceMeta(DevConfigDialog dlg) {
+  public static void fillDataSourceMeta(AbstractDataSourceDialog dlg) {
     DataSourceMeta meta = dlg.getCurrMeta();
     if (meta != null) {
       String dbtye = meta.getDatabaseType();
@@ -144,7 +150,7 @@ public class DataSourceUtil {
    * @param dlg
    * @param url
    */
-  private static void fillDBConnUrl(DevConfigDialog dlg, String url) {
+  private static void fillDBConnUrl(AbstractDataSourceDialog dlg, String url) {
     if (ToolUtils.isJDBCUrl(url)) {
       String[] jdbc = ToolUtils.getJDBCInfo(url);
       dlg.getComponent(JTextField.class, "hostText").setText(jdbc[0]);
@@ -158,7 +164,7 @@ public class DataSourceUtil {
 
   }
 
-  public static void fillDBConnByInfo(DevConfigDialog dialog, String driverUrl) {
+  public static void fillDBConnByInfo(AbstractDataSourceDialog dialog, String driverUrl) {
     if (ToolUtils.isJDBCUrl(driverUrl)) {
       String[] jdbc = ToolUtils.getJDBCInfo(driverUrl);
       dialog.getComponent(JTextField.class, "portText").setText(jdbc[1]);

@@ -1,5 +1,6 @@
 package com.tanner.devconfig.action.item;
 
+import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractItemListener;
 import com.tanner.dbdriver.entity.DriverInfo;
@@ -22,7 +23,7 @@ public class DriverBoxListener extends AbstractItemListener {
 
   @Override
   public void afterSelect(ItemEvent e) {
-    DevConfigDialog dialog = (DevConfigDialog) getDialog();
+    AbstractDataSourceDialog dialog = (AbstractDataSourceDialog) getDialog();
     String selected = (String) dialog.getComponent(JComboBox.class, "driverBox").getSelectedItem();
     if (StringUtils.isNotBlank(selected)) {
       DriverInfo info = dialog.getDriverInfoMap().get(selected);

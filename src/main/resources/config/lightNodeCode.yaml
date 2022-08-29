@@ -1,0 +1,31 @@
+#轻量端节点相关表
+#应用参数表
+- tableName: sm_appparam
+  sql: select * from sm_appparam where PARENTID in (select PK_APPREGISTER from sm_appregister where CODE = ?)
+#菜单注册
+- tableName: sm_appmenuitem
+  sql: select * from sm_appmenuitem where APPID in (select PK_APPREGISTER from sm_appregister where CODE = ?)
+#页面表
+- tableName: sm_apppage
+  sql: select * from sm_apppage where PARENT_ID in (select PK_APPREGISTER from sm_appregister where CODE = ?)
+#按钮表
+- tableName: sm_appbutnregister
+  sql: select * from sm_appbutnregister where APPID in (select PK_APPREGISTER from sm_appregister where CODE = ?)
+#查询方案
+- tableName: pub_ncc_queryscheme
+  sql: select * from pub_ncc_queryscheme where AREAID in (select PK_AREA from pub_area where TEMPLETID in (select PK_PAGE_TEMPLET from pub_page_templet where APPCODE = ?))
+#表格/表单属性
+- tableName: pub_form_property
+  sql: select * from pub_form_property where AREAID in (select PK_AREA from pub_area where TEMPLETID in (select PK_PAGE_TEMPLET from pub_page_templet where APPCODE = ?))
+#查询模板
+- tableName: pub_query_property
+  sql: select * from pub_query_property where AREAID in (select PK_AREA from pub_area where TEMPLETID in (select PK_PAGE_TEMPLET from pub_page_templet where APPCODE = ?))
+#区域
+- tableName: pub_area
+  sql: select * from pub_area where TEMPLETID in (select PK_PAGE_TEMPLET from pub_page_templet where APPCODE = ?)
+#模板
+- tableName: pub_page_templet
+  sql: select * from pub_page_templet where APPCODE = ?4
+#应用表
+- tableName: sm_appregister
+  sql: select * from sm_appregister where CODE = ?

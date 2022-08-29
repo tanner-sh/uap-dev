@@ -1,0 +1,34 @@
+#根据名称导出元数据
+#元数据连接线信息
+- tableName: md_association
+  sql: select * from md_association where COMPONENTID in (select id from MD_COMPONENT where NAME = ?)
+#聚合类ID和聚合类全类名信息
+- tableName: md_accessorpara
+  sql: select * from md_accessorpara where id in (select id from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?))
+#实体和业务接口属性映射关系
+- tableName: md_bizitfmap
+  sql: select * from md_bizitfmap where CLASSID in (select id from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?))
+#实体属性和数据库表字段对应关系
+- tableName: md_ormap
+  sql: select * from md_ormap where CLASSID in (select id from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?))
+#元数据表列信息
+- tableName: md_column
+  sql: select * from md_column where tableid in (select id from md_table where id in (select DEFAULTTABLENAME from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?)))
+#元数据创建表信息
+- tableName: md_table
+  sql: select * from md_table where id in (select DEFAULTTABLENAME from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?))
+#枚举项信息
+- tableName: md_enumValue
+  sql: select * from md_enumValue where id in (select id from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?))
+#实体对应的数据表的关系信息
+- tableName: md_db_relation
+  sql: select * from md_db_relation where startattrid in (select id from MD_PROPERTY where CLASSID in (select id from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?)))
+#元数据实体属性信息
+- tableName: MD_PROPERTY
+  sql: select * from MD_PROPERTY where CLASSID in (select id from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?))
+#元数据实体信息
+- tableName: md_class
+  sql: select * from md_class where COMPONENTID in (select id from MD_COMPONENT where NAME = ?)
+#元数据信息
+- tableName: MD_COMPONENT
+  sql: select * from MD_COMPONENT where NAME = ?

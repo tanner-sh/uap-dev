@@ -5,7 +5,7 @@ import java.util.Map;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 
-public class AbstractDialog extends JDialog {
+public abstract class AbstractDialog extends JDialog {
 
   private Map<String, JComponent> componentMap = new HashMap();
 
