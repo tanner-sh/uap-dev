@@ -10,9 +10,9 @@ import java.io.File;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 新建nc组件
+ * 新建uap组件
  */
-public class CreateNCComponentAction extends AbstractAnAction {
+public class CreateUapComponentAction extends AbstractAnAction {
 
   @Override
   public void doAction(AnActionEvent event) {

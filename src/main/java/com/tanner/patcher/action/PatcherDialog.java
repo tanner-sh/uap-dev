@@ -23,6 +23,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListModel;
@@ -44,11 +45,17 @@ public class PatcherDialog extends AbstractDialog {
   private JProgressBar progressBar;
   private JPanel logPanel;
   private JCheckBox cloudFlagCheckBox;
+  private JTextField projectName;
+  private JCheckBox needDeploy;
+  private JCheckBox needClearSwingCache;
+  private JCheckBox needClearBrowserCache;
+  private JTextArea functionDescription;
+  private JTextArea configDescription;
   private JBList<VirtualFile> fieldList;
 
   public PatcherDialog(final AnActionEvent event) {
     this.event = event;
-    setTitle("export ncc patcher...");
+    setTitle("export uap patcher...");
     logPanel.setVisible(false);
     patcherName.setEditable(true);
     setContentPane(contentPane);
@@ -99,6 +106,9 @@ public class PatcherDialog extends AbstractDialog {
     }
     boolean srcFlag = srcFlagCheckBox.isSelected();
     boolean cloudFlag = cloudFlagCheckBox.isSelected();
+    boolean needDeployFlag = needDeploy.isSelected();
+    boolean needClearSwingCacheFlag = needClearSwingCache.isSelected();
+    boolean needClearBrowserCacheFlag = needClearBrowserCache.isSelected();
     // 设置当前进度值
     logPanel.setVisible(true);
     progressBar.setValue(0);
@@ -110,8 +120,10 @@ public class PatcherDialog extends AbstractDialog {
       progressBar.paintImmediately(rect);
     });
     SwingUtilities.invokeLater(() -> {
-      ExportPatcherUtil util = new ExportPatcherUtil(patcherName.getText(), serverName.getText(),
-          exportPath, srcFlag, cloudFlag, event);
+      ExportPatcherUtil util = new ExportPatcherUtil(event, exportPath, patcherName.getText(),
+          srcFlag, serverName.getText(), cloudFlag, projectName.getText(), needDeployFlag,
+          needClearSwingCacheFlag, needClearBrowserCacheFlag, functionDescription.getText(),
+          configDescription.getText());
       try {
         util.exportPatcher(progressBar);
         String zipName = util.getZipName();

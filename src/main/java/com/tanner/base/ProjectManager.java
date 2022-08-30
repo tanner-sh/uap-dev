@@ -89,7 +89,7 @@ public class ProjectManager {
     for (String libName : list) {
       Library library = libraryTable.getLibraryByName(libName);
       if (library == null) {
-        throw new BusinessException(300, "ncc libraries缺失！请先到集成配置设置nc类路径\n");
+        throw new BusinessException(300, "uap libraries缺失！请先到集成配置设置nc类路径\n");
       }
       libraries.add(library);
     }
@@ -118,7 +118,7 @@ public class ProjectManager {
   public void setModuleLibrary(Project project, Module module) throws BusinessException {
     Library[] libraries = getProjectLibraries(project);
     if (libraries == null || libraries.length == 0) {
-      throw new BusinessException("this project is not set ncc libraries!");
+      throw new BusinessException("this project is not set uap libraries!");
     }
     for (Library library : libraries) {
       if (ModuleRootManager.getInstance(module).getModifiableModel().findLibraryOrderEntry(library)

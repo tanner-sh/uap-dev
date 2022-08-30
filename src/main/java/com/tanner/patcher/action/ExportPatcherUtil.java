@@ -2,6 +2,7 @@ package com.tanner.patcher.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.module.LanguageLevelUtil;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.module.ModuleUtil;
@@ -10,6 +11,7 @@ import com.intellij.openapi.roots.CompilerModuleExtension;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.pom.java.LanguageLevel;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
 import com.tanner.base.UapProjectEnvironment;
@@ -20,6 +22,7 @@ import java.io.InputStream;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 import javax.swing.JProgressBar;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -78,38 +82,53 @@ public class ExportPatcherUtil {
   /**
    * 导出变量
    **/
-  private String patchName;
-  private String exportPath;
   private AnActionEvent event;
-  private String webServerName = File.separator + "nccloud";
-  private String zipName = "";
+  private String exportPath;
+  private String patchName;
   private boolean srcFlag = false;
+  private String webServerName = File.separator + "nccloud";
   private boolean cloudFlag = false;
+  private String projectName;
+  private boolean needDeploy = false;
+  private boolean needClearSwingCache = false;
+  private boolean needClearBrowserCache = false;
+  private String functionDescription;
+  private String configDescription;
+  private String zipName = "";
 
-  /**
-   * 补丁工具类构造方法
-   *
-   * @param patchName
-   * @param webServerName
-   * @param exportPath
-   * @param srcFlag
-   * @param event
-   */
-  public ExportPatcherUtil(String patchName, String webServerName, String exportPath,
-      boolean srcFlag, boolean cloudFlag, AnActionEvent event) {
+  public ExportPatcherUtil(AnActionEvent event, String exportPath, String patchName,
+      boolean srcFlag, String webServerName, boolean cloudFlag, String projectName,
+      boolean needDeploy, boolean needClearSwingCache, boolean needClearBrowserCache,
+      String functionDescription, String configDescription) {
     this.event = event;
     String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
     String dateStr = simpleDateFormat.format(new Date());
-    this.exportPath = exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr;
+    String userName = System.getenv().getOrDefault("USER", "unknown");
+    this.exportPath =
+        exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr + "_" + userName;
     this.patchName = patchName;
     this.srcFlag = srcFlag;
-    this.cloudFlag = cloudFlag;
     if (StringUtils.isNotBlank(webServerName)) {
       if (!webServerName.startsWith(File.separator)) {
         webServerName = File.separator + webServerName;
       }
       this.webServerName = webServerName;
+    }
+    this.cloudFlag = cloudFlag;
+    this.projectName = projectName;
+    this.needDeploy = needDeploy;
+    this.needClearSwingCache = needClearSwingCache;
+    this.needClearBrowserCache = needClearBrowserCache;
+    this.functionDescription = "";
+    if (StringUtils.isNotBlank(functionDescription)) {
+      this.functionDescription = Arrays.stream(functionDescription.split("\n"))
+          .map(lineStr -> lineStr = "- " + lineStr).collect(Collectors.joining("\n"));
+    }
+    this.configDescription = "";
+    if (StringUtils.isNotBlank(configDescription)) {
+      this.configDescription = Arrays.stream(configDescription.split("\n"))
+          .map(lineStr -> lineStr = "- " + lineStr).collect(Collectors.joining("\n"));
     }
   }
 
@@ -129,8 +148,14 @@ public class ExportPatcherUtil {
     for (Module module : modules) {
       moduleMap.put(module.getName(), module);
     }
+    //获取编译版本
+    LanguageLevel languageLevel = LanguageLevelUtil.getEffectiveLanguageLevel(modules[0]);
+    if (languageLevel == null) {
+      throw new BusinessException("languageLevel not set!");
+    }
+    String javaVersion = languageLevel.toJavaVersion().toString();
     //选取文件路径和模块之间的关系
-    Map<String, Set<String>> modulePathMap = new HashMap();
+    Map<String, Set<String>> modulePathMap = new HashMap<String, Set<String>>();
     //处理所有选中文件路径
     for (VirtualFile file : selectFile) {
       String path = new File(file.getPath()).getPath();
@@ -138,11 +163,7 @@ public class ExportPatcherUtil {
       String moduleName = ModuleUtil.findModuleForFile(file, project).getName();
       //判断如是选择了模块或者组件，则获取所有可导出的目录
       List<String> fileList = getAllFileList(path, moduleMap.get(moduleName));
-      Set<String> fileUrlSet = modulePathMap.get(moduleName);
-      if (fileUrlSet == null) {
-        fileUrlSet = new HashSet<>();
-        modulePathMap.put(moduleName, fileUrlSet);
-      }
+      Set<String> fileUrlSet = modulePathMap.computeIfAbsent(moduleName, k -> new HashSet<>());
       for (String str : fileList) {
         getFileUrl(str, fileUrlSet);
       }
@@ -232,6 +253,8 @@ public class ExportPatcherUtil {
       moduleSet.add(webServerName.substring(1));
       createNMCLog(moduleSet, classNameSet);
     }
+    //导出readme
+    createReadMe(moduleSet, classNameSet, javaVersion);
     //创建zip压缩包
     zipName = ZipUtil.toZip(exportPath, patchName);
     //删除导出的目录
@@ -253,7 +276,21 @@ public class ExportPatcherUtil {
     } else {
       file.delete();
     }
+  }
 
+  private void createReadMe(Set<String> moduleSet, Set<String> classNameSet, String javaVersion)
+      throws BusinessException {
+    //输出readme
+    ConfigureFileUtil configureFileUtil = new ConfigureFileUtil();
+    File readmeFile = new File(exportPath + File.separator + "README.md");
+    String template = configureFileUtil.readTemplate("README.md");
+    String moduleName = StringUtils.join(moduleSet, ",");
+    String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+    String userName = System.getenv().getOrDefault("USER", "unknown");
+    String content = MessageFormat.format(template, this.patchName, javaVersion, this.projectName,
+        moduleName, this.needDeploy, this.needClearSwingCache, this.needClearBrowserCache,
+        this.functionDescription, this.configDescription, dateStr, userName);
+    configureFileUtil.outFile(readmeFile, content, "UTF-8", true);
   }
 
   /**
@@ -269,12 +306,7 @@ public class ExportPatcherUtil {
     SimpleDateFormat sd = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     String dateStr = sd.format(date);
     String id = UUID.randomUUID().toString();
-    //输出readme
     ConfigureFileUtil util = new ConfigureFileUtil();
-    File readmeFile = new File(exportPath + File.separator + "readme.txt");
-    String template = util.readTemplate("readme.txt");
-    String content = MessageFormat.format(template, patchName, id, dateStr);
-    util.outFile(readmeFile, content, "UTF-8", true);
     //输出install
     File installFile = new File(exportPath + File.separator + "installpatch.xml");
     String s = "";
@@ -284,8 +316,8 @@ public class ExportPatcherUtil {
           + "        <from>/replacement/hotwebs/</from>\n" + "        <to>/hotwebs/</to>\n"
           + "    </copy>";
     }
-    template = util.readTemplate("installpatch.xml");
-    content = MessageFormat.format(template, s);
+    String template = util.readTemplate("installpatch.xml");
+    String content = MessageFormat.format(template, s);
     util.outFile(installFile, content, "UTF-8", false);
     //输出metadata
     String modifyClasses = "";
@@ -358,7 +390,7 @@ public class ExportPatcherUtil {
       String patchPath = fromFile.getPath();
       String toPath = null;
       String className = null;
-      if ("actions".equals(root.getTagName()) || "authorizes".equals(root.getTagName())) {//ncc鉴权文件
+      if ("actions".equals(root.getTagName()) || "authorizes".equals(root.getTagName())) {//鉴权文件
         toPath = exportPath + PATH_REPLACEMENT + PATH_HOTWEBS + webServerName + PATH_WEB_INF
             + PATH_EXTEND;
         className = patchPath.split(Matcher.quoteReplacement(PATH_SRC))[1].replace(PATH_CLIENT, "");
@@ -497,7 +529,7 @@ public class ExportPatcherUtil {
         // 经验证，只有client补丁的时候，没有copy标签。所以这里判断只要进来public和private，就认为不是云原声
       }
     } else if (webServerName.contains("ncchr")) {
-      //ncchr补丁，支持云管家
+      //hr补丁，支持云管家
       String basePath = File.separator + "main" + File.separator + "java";
       className = className.replace(basePath, "");
       javaName = javaName.replace(basePath, "");

@@ -3,7 +3,6 @@ package com.tanner.devconfig.action.item;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractItemListener;
-import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import java.awt.event.ItemEvent;
 import javax.swing.JComboBox;

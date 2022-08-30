@@ -4,7 +4,6 @@ import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractItemListener;
 import com.tanner.dbdriver.entity.DriverInfo;
-import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.ToolUtils;
 import java.awt.event.ItemEvent;

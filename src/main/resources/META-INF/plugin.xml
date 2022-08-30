@@ -1,18 +1,18 @@
 <idea-plugin>
   <actions>
-    <action class="com.tanner.module.action.ConvertModuleAction" description="转为ncc模块"
+    <action class="com.tanner.module.action.ConvertToUapModuleAction" description="转为uap模块"
       icon="AllIcons.Actions.ModuleDirectory"
-      id="dev.module.conver" text="转为ncc模块">
+      id="dev.module.conver" text="转为uap模块">
       <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
     </action>
-    <action class="com.tanner.module.action.CreateNewNCModuleAction" description="新建ncc模块"
+    <action class="com.tanner.module.action.CreateNewUapModuleAction" description="新建uap模块"
       icon="AllIcons.Actions.ModuleDirectory"
-      id="dev.module.newmodule" text="新建ncc模块">
+      id="dev.module.newmodule" text="新建uap模块">
       <add-to-group anchor="before" group-id="NewGroup" relative-to-action="NewModule"/>
     </action>
-    <action class="com.tanner.module.action.CreateNCComponentAction" description="新建ncc组件"
+    <action class="com.tanner.module.action.CreateUapComponentAction" description="新建uap组件"
       icon="AllIcons.Actions.ModuleDirectory"
-      id="dev.module.newcomponent" text="新建ncc组件">
+      id="dev.module.newcomponent" text="新建uap组件">
       <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
       <add-to-group anchor="before" group-id="NewGroup" relative-to-action="NewModule"/>
     </action>
@@ -26,9 +26,9 @@
       text="复制upm文件到nchome">
       <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
     </action>
-    <action class="com.tanner.library.action.LibrariesSetAction" description="设置nc类路径"
+    <action class="com.tanner.library.action.LibrariesSetAction" description="设置uap类路径"
       id="dev.set.libraries"
-      popup="true" text="设置nc类路径">
+      popup="true" text="设置uap类路径">
       <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
     </action>
     <action class="com.tanner.devconfig.action.DevConfigAction" description="集成配置"
@@ -36,7 +36,7 @@
       popup="true"
       text="集成配置">
     </action>
-    <action class="com.tanner.devconfig.action.OpenUapHomeAction" description="打开UAP目录"
+    <action class="com.tanner.devconfig.action.OpenUapHomeAction" description="打开uap目录"
       id="dev.openuaphome"
       popup="true"
       text="打开UAP目录">
@@ -53,9 +53,9 @@
       popup="true"
       text="脚本导出">
     </action>
-    <action class="com.tanner.patcher.action.ExportPatcherAction" description="导出NMC格式补丁"
+    <action class="com.tanner.patcher.action.ExportPatcherAction" description="导出uap补丁"
       id="dev.patcher.export"
-      text="导出补丁NCC补丁">
+      text="导出uap补丁">
       <add-to-group anchor="last" group-id="ChangesViewPopupMenu"/>
       <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
       <add-to-group anchor="last" group-id="Vcs.Log.ChangesBrowser.Popup"/>
@@ -94,7 +94,7 @@
       一款uap开发插件.<br>
       帮助开发者快速构建uap项目<br>
       <p>
-        支持nc5x,nc6x,ncc的开发
+        支持nc6x,ncc的开发
       </p>
     ]]></description>
   <extensions defaultExtensionNs="com.intellij">

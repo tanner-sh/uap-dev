@@ -12,9 +12,9 @@ import java.io.File;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * 转化为module
+ * 转化为uap模块
  */
-public class ConvertModuleAction extends AbstractAnAction {
+public class ConvertToUapModuleAction extends AbstractAnAction {
 
   @Override
   public void doAction(AnActionEvent event) {

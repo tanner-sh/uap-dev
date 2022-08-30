@@ -5,9 +5,9 @@ import com.tanner.abs.AbstractAnAction;
 import com.tanner.module.NewModuleDialog;
 
 /**
- * 新建nc模块
+ * 新建uap模块
  */
-public class CreateNewNCModuleAction extends AbstractAnAction {
+public class CreateNewUapModuleAction extends AbstractAnAction {
 
   @Override
   public void doAction(AnActionEvent event) {
