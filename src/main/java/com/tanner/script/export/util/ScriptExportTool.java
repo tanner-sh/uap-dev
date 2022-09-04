@@ -80,9 +80,10 @@ public class ScriptExportTool {
     return nodeCodes;
   }
 
-  private List<Map<String, String>> readExportConfig(String yamlPath) {
+  private List<Map<String, String>> readExportConfig(String yamlName) {
     Yaml yaml = new Yaml();
-    InputStream resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(yamlPath);
+    String yamlPath = "../../../../../config/" + yamlName;
+    InputStream resourceAsStream = this.getClass().getResourceAsStream(yamlPath);
     List<Map<String, String>> list = yaml.load(resourceAsStream);
     return list;
   }
@@ -95,8 +96,7 @@ public class ScriptExportTool {
     if (!scriptDirectory.exists()) {
       scriptDirectory.mkdirs();
     }
-    String yamlPath = "config" + File.separator + "heavyNodeCode.yaml";
-    List<Map<String, String>> configList = readExportConfig(yamlPath);
+    List<Map<String, String>> configList = readExportConfig("heavyNodeCode.yaml");
     List<Object> allHeavyNodeCodeByParent = getAllHeavyNodeCodeByParent(heavyNodeCode);
     for (Object nodeCode : allHeavyNodeCodeByParent) {
       File scriptFile = new File(scriptDirectory, nodeCode + ".sql");
@@ -125,8 +125,7 @@ public class ScriptExportTool {
     if (!scriptDirectory.exists()) {
       scriptDirectory.mkdirs();
     }
-    String yamlPath = "config" + File.separator + "lightNodeCode.yaml";
-    List<Map<String, String>> configList = readExportConfig(yamlPath);
+    List<Map<String, String>> configList = readExportConfig("lightNodeCode.yaml");
     List<Object> allLightNodeCodeByParent = getAllLightNodeCodeByParent(lightNodeCode);
     for (Object nodeCode : allLightNodeCodeByParent) {
       File scriptFile = new File(scriptDirectory, nodeCode + ".sql");
@@ -144,8 +143,7 @@ public class ScriptExportTool {
     if (!scriptDirectory.exists()) {
       scriptDirectory.mkdirs();
     }
-    String yamlPath = "config" + File.separator + "mdName.yaml";
-    List<Map<String, String>> configList = readExportConfig(yamlPath);
+    List<Map<String, String>> configList = readExportConfig("mdName.yaml");
     File scriptFile = new File(scriptDirectory, mdName + ".sql");
     scriptFile.deleteOnExit();
     scriptFile.createNewFile();
@@ -160,8 +158,7 @@ public class ScriptExportTool {
     if (!scriptDirectory.exists()) {
       scriptDirectory.mkdirs();
     }
-    String yamlPath = "config" + File.separator + "mdModule.yaml";
-    List<Map<String, String>> configList = readExportConfig(yamlPath);
+    List<Map<String, String>> configList = readExportConfig("mdModule.yaml");
     File scriptFile = new File(scriptDirectory, mdModule + ".sql");
     scriptFile.deleteOnExit();
     scriptFile.createNewFile();
