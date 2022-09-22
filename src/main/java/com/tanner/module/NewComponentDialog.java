@@ -2,11 +2,14 @@ package com.tanner.module;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.application.Application;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ContentEntry;
 import com.intellij.openapi.roots.ModifiableRootModel;
 import com.intellij.openapi.roots.ModuleRootManager;
+import com.intellij.openapi.roots.ModuleRootModificationUtil;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -136,7 +139,8 @@ public class NewComponentDialog extends JDialog {
           contentEntry.addSourceFolder(sourceRoot, false);
         }
       }
-      modifiableModel.commit();
+      Application applicationManager = ApplicationManager.getApplication();
+      applicationManager.runWriteAction(() -> modifiableModel.commit());
     } catch (BusinessException e) {
     }
     dispose();
