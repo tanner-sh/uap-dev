@@ -15,27 +15,27 @@ import org.jetbrains.annotations.NotNull;
  */
 public class LibrariesSetAction extends AbstractAnAction {
 
-  @Override
-  public void doAction(AnActionEvent event) {
-    String message = "success";
-    try {
-      boolean flag = isUapMoudle(event);
-      if (flag) {
-        ProjectManager.getInstance()
-            .setModuleLibrary(event.getProject(), event.getData(LangDataKeys.MODULE));
-        Messages.showInfoMessage(message, "Tips");
-      }
-    } catch (BusinessException e) {
-      message = e.getMessage();
-      Messages.showInfoMessage(message, "Error");
+    @Override
+    public void doAction(AnActionEvent event) {
+        String message = "success";
+        try {
+            boolean flag = isUapMoudle(event);
+            if (flag) {
+                ProjectManager.getInstance()
+                        .setModuleLibrary(event.getProject(), event.getData(LangDataKeys.MODULE));
+                Messages.showInfoMessage(message, "Tips");
+            }
+        } catch (BusinessException e) {
+            message = e.getMessage();
+            Messages.showInfoMessage(message, "Error");
+        }
     }
-  }
 
-  @Override
-  public void update(@NotNull AnActionEvent e) {
-    VirtualFile file = getSelectFile(e);
-    Module module = getSelectModule(e);
-    boolean flag = isModuleChild(file, e);
-    e.getPresentation().setEnabledAndVisible(flag);
-  }
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+        VirtualFile file = getSelectFile(e);
+        Module module = getSelectModule(e);
+        boolean flag = isModuleChild(file, e);
+        e.getPresentation().setEnabledAndVisible(flag);
+    }
 }

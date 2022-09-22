@@ -9,30 +9,30 @@ import org.jetbrains.annotations.NotNull;
 
 public class ExportPatcherAction extends AbstractAnAction {
 
-  @Override
-  public void doAction(AnActionEvent event) {
-    PatcherDialog dialog = new PatcherDialog(event);
-    dialog.setSize(900, 600);
-    dialog.setLocationRelativeTo(null);
-    dialog.setVisible(true);
-    dialog.requestFocus();
-  }
-
-  @Override
-  public void update(@NotNull AnActionEvent e) {
-    VirtualFile[] selectFileArr = getSelectFileArr(e);
-    boolean flag = true;
-    if (selectFileArr == null || selectFileArr.length == 0) {
-      flag = false;
-    } else {
-      for (VirtualFile virtualFile : selectFileArr) {
-        if (virtualFile instanceof FsRoot) {
-          flag = false;
-          break;
-        }
-        flag = isModuleChild(virtualFile, e) || isMavenModuleChild(virtualFile, e);
-      }
+    @Override
+    public void doAction(AnActionEvent event) {
+        PatcherDialog dialog = new PatcherDialog(event);
+        dialog.setSize(900, 600);
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+        dialog.requestFocus();
     }
-    e.getPresentation().setEnabledAndVisible(flag);
-  }
+
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+        VirtualFile[] selectFileArr = getSelectFileArr(e);
+        boolean flag = true;
+        if (selectFileArr == null || selectFileArr.length == 0) {
+            flag = false;
+        } else {
+            for (VirtualFile virtualFile : selectFileArr) {
+                if (virtualFile instanceof FsRoot) {
+                    flag = false;
+                    break;
+                }
+                flag = isModuleChild(virtualFile, e) || isMavenModuleChild(virtualFile, e);
+            }
+        }
+        e.getPresentation().setEnabledAndVisible(flag);
+    }
 }

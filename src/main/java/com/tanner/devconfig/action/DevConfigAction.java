@@ -9,9 +9,9 @@ import com.tanner.devconfig.DevConfigDialog;
  */
 public class DevConfigAction extends AbstractAnAction {
 
-  @Override
-  public void doAction(AnActionEvent event) {
-    DevConfigDialog dialog = new DevConfigDialog();
-    dialog.setVisible(true);
-  }
+    @Override
+    public void doAction(AnActionEvent event) {
+        DevConfigDialog dialog = new DevConfigDialog();
+        dialog.setVisible(true);
+    }
 }

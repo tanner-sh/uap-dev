@@ -5,30 +5,30 @@ import java.awt.event.KeyListener;
 
 public abstract class AbstractKeyListener implements KeyListener {
 
-  private AbstractDialog dialog;
+    private AbstractDialog dialog;
 
-  public AbstractKeyListener(AbstractDialog dialog) {
-    this.dialog = dialog;
-  }
+    public AbstractKeyListener(AbstractDialog dialog) {
+        this.dialog = dialog;
+    }
 
-  @Override
-  public void keyTyped(KeyEvent e) {
+    @Override
+    public void keyTyped(KeyEvent e) {
 
-  }
+    }
 
-  @Override
-  public void keyPressed(KeyEvent e) {
-    pressed(e);
-  }
+    @Override
+    public void keyPressed(KeyEvent e) {
+        pressed(e);
+    }
 
-  public abstract void pressed(KeyEvent e);
+    public abstract void pressed(KeyEvent e);
 
-  @Override
-  public void keyReleased(KeyEvent e) {
+    @Override
+    public void keyReleased(KeyEvent e) {
 
-  }
+    }
 
-  public AbstractDialog getDialog() {
-    return dialog;
-  }
+    public AbstractDialog getDialog() {
+        return dialog;
+    }
 }

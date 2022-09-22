@@ -9,31 +9,31 @@ import org.jetbrains.annotations.NotNull;
 
 public class BaseUtil {
 
-  private BaseUtil() {
+    private BaseUtil() {
 
-  }
-
-  @NotNull
-  public static Project getProject(@NotNull AnActionEvent event) {
-    {
-      Project project = event.getProject();
-      if (project == null) {
-        Messages.showMessageDialog("无法获取当前项目", "Error", Messages.getErrorIcon());
-        throw new RuntimeException("无法获取当前项目");
-      }
-      return project;
     }
-  }
 
-  @NotNull
-  public static Module getModule(@NotNull AnActionEvent event) {
-    {
-      Module module = event.getData(LangDataKeys.MODULE);
-      if (module == null) {
-        Messages.showMessageDialog("无法获取当前模块", "Error", Messages.getErrorIcon());
-        throw new RuntimeException("无法获取当前模块");
-      }
-      return module;
+    @NotNull
+    public static Project getProject(@NotNull AnActionEvent event) {
+        {
+            Project project = event.getProject();
+            if (project == null) {
+                Messages.showMessageDialog("无法获取当前项目", "Error", Messages.getErrorIcon());
+                throw new RuntimeException("无法获取当前项目");
+            }
+            return project;
+        }
     }
-  }
+
+    @NotNull
+    public static Module getModule(@NotNull AnActionEvent event) {
+        {
+            Module module = event.getData(LangDataKeys.MODULE);
+            if (module == null) {
+                Messages.showMessageDialog("无法获取当前模块", "Error", Messages.getErrorIcon());
+                throw new RuntimeException("无法获取当前模块");
+            }
+            return module;
+        }
+    }
 }

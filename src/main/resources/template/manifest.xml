@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Manifest>
-  <BusinessComponet dispname="{1}" name="{0}">
-    <client/>
-    <funnodes/>
-    <private/>
-    <public/>
-    <resource/>
-    <test/>
-  </BusinessComponet>
+    <BusinessComponet dispname="{1}" name="{0}">
+        <client/>
+        <funnodes/>
+        <private/>
+        <public/>
+        <resource/>
+        <test/>
+    </BusinessComponet>
 </Manifest>

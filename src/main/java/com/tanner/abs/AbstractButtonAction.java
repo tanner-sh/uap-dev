@@ -2,6 +2,7 @@ package com.tanner.abs;
 
 import com.intellij.openapi.ui.Messages;
 import com.tanner.base.BusinessException;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -10,28 +11,28 @@ import java.awt.event.ActionListener;
  */
 public abstract class AbstractButtonAction implements ActionListener {
 
-  private AbstractDialog dialog;
+    private AbstractDialog dialog;
 
-  public AbstractButtonAction(AbstractDialog dialog) {
-    this.dialog = dialog;
-  }
-
-  @Override
-  public void actionPerformed(ActionEvent event) {
-    try {
-      doAction(event);
-    } catch (BusinessException e) {
-      Messages.showErrorDialog(e.getMessage(), "出错了");
+    public AbstractButtonAction(AbstractDialog dialog) {
+        this.dialog = dialog;
     }
-  }
 
-  public abstract void doAction(ActionEvent event) throws BusinessException;
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        try {
+            doAction(event);
+        } catch (BusinessException e) {
+            Messages.showErrorDialog(e.getMessage(), "出错了");
+        }
+    }
 
-  public AbstractDialog getDialog() {
-    return dialog;
-  }
+    public abstract void doAction(ActionEvent event) throws BusinessException;
 
-  public void setDialog(AbstractDialog dialog) {
-    this.dialog = dialog;
-  }
+    public AbstractDialog getDialog() {
+        return dialog;
+    }
+
+    public void setDialog(AbstractDialog dialog) {
+        this.dialog = dialog;
+    }
 }

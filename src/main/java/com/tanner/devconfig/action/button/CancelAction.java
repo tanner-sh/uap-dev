@@ -2,6 +2,7 @@ package com.tanner.devconfig.action.button;
 
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
+
 import java.awt.event.ActionEvent;
 
 /**
@@ -9,12 +10,12 @@ import java.awt.event.ActionEvent;
  */
 public class CancelAction extends AbstractButtonAction {
 
-  public CancelAction(AbstractDialog dialog) {
-    super(dialog);
-  }
+    public CancelAction(AbstractDialog dialog) {
+        super(dialog);
+    }
 
-  @Override
-  public void doAction(ActionEvent event) {
-    getDialog().dispose();
-  }
+    @Override
+    public void doAction(ActionEvent event) {
+        getDialog().dispose();
+    }
 }

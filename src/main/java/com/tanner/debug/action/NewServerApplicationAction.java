@@ -13,22 +13,22 @@ import org.jetbrains.annotations.NotNull;
  */
 public class NewServerApplicationAction extends AbstractAnAction {
 
-  @Override
-  public void doAction(@NotNull AnActionEvent event) {
-    String message = "success";
-    try {
-      CreatApplicationConfigurationUtil.createApplicationConfiguration(event, true);
-      Messages.showInfoMessage(message, "Tips");
-    } catch (Exception e) {
-      message = e.getMessage();
-      Messages.showInfoMessage(message, "Error");
+    @Override
+    public void doAction(@NotNull AnActionEvent event) {
+        String message = "success";
+        try {
+            CreatApplicationConfigurationUtil.createApplicationConfiguration(event, true);
+            Messages.showInfoMessage(message, "Tips");
+        } catch (Exception e) {
+            message = e.getMessage();
+            Messages.showInfoMessage(message, "Error");
+        }
     }
-  }
 
-  @Override
-  public void update(@NotNull AnActionEvent e) {
-    VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
-    boolean flag = isModuleChild(file, e);
-    e.getPresentation().setEnabledAndVisible(flag);
-  }
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+        VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
+        boolean flag = isModuleChild(file, e);
+        e.getPresentation().setEnabledAndVisible(flag);
+    }
 }

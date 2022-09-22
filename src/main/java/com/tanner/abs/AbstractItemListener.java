@@ -8,20 +8,20 @@ import java.awt.event.ItemListener;
  */
 public abstract class AbstractItemListener implements ItemListener {
 
-  private AbstractDialog dialog;
+    private AbstractDialog dialog;
 
-  public AbstractItemListener(AbstractDialog dialog) {
-    this.dialog = dialog;
-  }
+    public AbstractItemListener(AbstractDialog dialog) {
+        this.dialog = dialog;
+    }
 
-  @Override
-  public void itemStateChanged(ItemEvent e) {
-    afterSelect(e);
-  }
+    @Override
+    public void itemStateChanged(ItemEvent e) {
+        afterSelect(e);
+    }
 
-  public abstract void afterSelect(ItemEvent e);
+    public abstract void afterSelect(ItemEvent e);
 
-  public AbstractDialog getDialog() {
-    return dialog;
-  }
+    public AbstractDialog getDialog() {
+        return dialog;
+    }
 }

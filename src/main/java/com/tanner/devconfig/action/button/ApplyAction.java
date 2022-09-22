@@ -6,6 +6,7 @@ import com.tanner.base.BusinessException;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.devconfig.util.TableModelUtil;
+
 import java.awt.event.ActionEvent;
 
 /**
@@ -13,22 +14,22 @@ import java.awt.event.ActionEvent;
  */
 public class ApplyAction extends AbstractButtonAction {
 
-  public ApplyAction(AbstractDialog dialog) {
-    super(dialog);
-  }
-
-  @Override
-  public void doAction(ActionEvent event) throws BusinessException {
-    DevConfigDialog dialog = (DevConfigDialog) getDialog();
-
-    //数据源保存
-    if (dialog.getTabIndex() == 0) {
-      DataSourceUtil.syncCurrDataSourceValue(dialog);
+    public ApplyAction(AbstractDialog dialog) {
+        super(dialog);
     }
 
-    //模块选择保存
-    if (dialog.getTabIndex() == 1) {
-      TableModelUtil.saveModuleConfig(getDialog());
+    @Override
+    public void doAction(ActionEvent event) throws BusinessException {
+        DevConfigDialog dialog = (DevConfigDialog) getDialog();
+
+        //数据源保存
+        if (dialog.getTabIndex() == 0) {
+            DataSourceUtil.syncCurrDataSourceValue(dialog);
+        }
+
+        //模块选择保存
+        if (dialog.getTabIndex() == 1) {
+            TableModelUtil.saveModuleConfig(getDialog());
+        }
     }
-  }
 }

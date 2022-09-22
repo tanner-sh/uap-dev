@@ -2,27 +2,27 @@ package com.tanner.dbdriver.entity;
 
 public class DatabaseDriverInfo {
 
-  private String databaseType;
+    private String databaseType;
 
-  private DriverInfo[] driver;
+    private DriverInfo[] driver;
 
-  public DriverInfo[] getDatabase() {
-    return this.driver;
-  }
+    public DriverInfo[] getDatabase() {
+        return this.driver;
+    }
 
-  public void setDatabase(DriverInfo[] driver) {
-    this.driver = driver;
-  }
+    public void setDatabase(DriverInfo[] driver) {
+        this.driver = driver;
+    }
 
-  public String getDatabaseType() {
-    return this.databaseType;
-  }
+    public String getDatabaseType() {
+        return this.databaseType;
+    }
 
-  public void setDatabaseType(String databaseType) {
-    this.databaseType = databaseType;
-  }
+    public void setDatabaseType(String databaseType) {
+        this.databaseType = databaseType;
+    }
 
-  public String toString() {
-    return getDatabaseType();
-  }
+    public String toString() {
+        return getDatabaseType();
+    }
 }
