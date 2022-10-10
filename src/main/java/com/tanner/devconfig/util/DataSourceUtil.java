@@ -41,7 +41,7 @@ public class DataSourceUtil {
             String filename = homePath + "/ierp/bin/prop.xml";
             File file = new File(filename);
             if (file.exists()) {
-                DataSourceMeta[] sourceMetas = propXml.getDSMetaWithDesign(filename);
+                DataSourceMeta[] sourceMetas = propXml.getDSMetaWithDesign(filename, homePath);
                 fillCombo(dialog.getComponent(JComboBox.class, "dbBox"), sourceMetas, dialog);
             }
             //做一次值切换，触发监听显示数据源详情
@@ -193,7 +193,7 @@ public class DataSourceUtil {
                     metas[i].setMaxCon(50);
                     metas[i].setMinCon(1);
                 }
-                new PropXml().saveMeta(filename, metas);
+                new PropXml().saveMeta(filename, metas, nchome);
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());

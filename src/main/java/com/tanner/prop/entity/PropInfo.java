@@ -1,6 +1,6 @@
 package com.tanner.prop.entity;
 
-import com.tanner.devconfig.util.Encode;
+import com.tanner.base.UapUtil;
 
 public class PropInfo {
 
@@ -54,13 +54,13 @@ public class PropInfo {
         this.isEncode = isEncode;
     }
 
-    public DataSourceMeta[] getDataSource() {
+    public DataSourceMeta[] getDataSource(String uapHomePath) {
         DataSourceMeta[] metas = new DataSourceMeta[this.dataSource.length];
         for (int i = 0; i < metas.length; i++) {
             try {
                 metas[i] = (DataSourceMeta) this.dataSource[i].clone();
                 if (isEncode()) {
-                    metas[i].setPassword(new Encode().decode(metas[i].getPassword()));
+                    metas[i].setPassword(UapUtil.decodeDbPwd(metas[i].getPassword(), uapHomePath));
                 }
             } catch (CloneNotSupportedException e) {
             }
@@ -68,13 +68,13 @@ public class PropInfo {
         return metas;
     }
 
-    public void setDataSource(DataSourceMeta[] dataSource) {
+    public void setDataSource(DataSourceMeta[] dataSource, String uapHomePath) {
         DataSourceMeta[] metas = new DataSourceMeta[dataSource.length];
         for (int i = 0; i < metas.length; i++) {
             try {
                 metas[i] = (DataSourceMeta) dataSource[i].clone();
                 if (isEncode()) {
-                    metas[i].setPassword(new Encode().encode(metas[i].getPassword()));
+                    metas[i].setPassword(UapUtil.encodeDbPwd(metas[i].getPassword(), uapHomePath));
                 }
             } catch (CloneNotSupportedException e) {
             }

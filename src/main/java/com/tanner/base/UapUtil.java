@@ -1,5 +1,7 @@
 package com.tanner.base;
 
+import com.tanner.devconfig.util.AESEncode;
+import com.tanner.devconfig.util.Encode;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -8,9 +10,17 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-public class UapUtil {
+public final class UapUtil {
 
-    public static final String getUapVersion(String ncHomePath) {
+    private static Encode encode = new Encode();
+
+    /**
+     * 根据home获取home版本
+     *
+     * @param ncHomePath
+     * @return
+     */
+    public static String getUapVersion(String ncHomePath) {
         String ncscriptPath = ncHomePath + File.separator + "ncscript";
         File versionFile = new File(ncscriptPath, "uapServer" + File.separator + "setup.ini");
         if (!versionFile.exists()) {
@@ -42,11 +52,43 @@ public class UapUtil {
             return "nc" + version.substring(0, 2);
         } else if (version.startsWith("nccloud")) {
             if (version.length() >= 13) {
-                version = version.substring(0, 13);
+                version = version.substring(0, 7) + version.substring(9, 13);
             }
-            return version;
+            return version.replace("nccloud", "ncc");
         }
         return version;
+    }
+
+    /**
+     * 解密数据源密码
+     *
+     * @param homePath
+     * @param text
+     * @return
+     */
+    public static String decodeDbPwd(String text, String homePath) {
+        File propFile = new File(homePath, "/ierp/bin/key.properties");
+        if (propFile.exists()) {
+            return AESEncode.decrypt(text, homePath);
+        } else {
+            return encode.decode(text);
+        }
+    }
+
+    /**
+     * 加密数据源密码
+     *
+     * @param homePath
+     * @param text
+     * @return
+     */
+    public static String encodeDbPwd(String text, String homePath) {
+        File propFile = new File(homePath, "/ierp/bin/key.properties");
+        if (propFile.exists()) {
+            return AESEncode.encrypt(text, homePath);
+        } else {
+            return encode.encode(text);
+        }
     }
 
 }

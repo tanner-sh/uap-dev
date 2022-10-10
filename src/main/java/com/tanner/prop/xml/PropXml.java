@@ -20,8 +20,8 @@ public class PropXml {
         return (PropInfo) XMLToObject.getJavaObjectFromFile(propfile, PropInfo.class, true);
     }
 
-    public DataSourceMeta[] getDSMetaWithDesign(String propfile) throws Exception {
-        DataSourceMeta[] metas = loadPropInfo(propfile).getDataSource();
+    public DataSourceMeta[] getDSMetaWithDesign(String propfile, String uapHomePath) throws Exception {
+        DataSourceMeta[] metas = loadPropInfo(propfile).getDataSource(uapHomePath);
         for (int i = 0; i < metas.length; i++) {
             DataSourceMeta meta = metas[i];
             if ("design".equals(meta.getDataSourceName())) {
@@ -44,9 +44,9 @@ public class PropXml {
         return metaswithdesign;
     }
 
-    public void saveMeta(String nchome, DataSourceMeta[] metas) throws Exception {
+    public void saveMeta(String nchome, DataSourceMeta[] metas, String uapHomePath) throws Exception {
         PropInfo propinfo = loadPropInfo(nchome);
-        propinfo.setDataSource(metas);
+        propinfo.setDataSource(metas, uapHomePath);
         storePorpInfo(nchome, propinfo);
     }
 
