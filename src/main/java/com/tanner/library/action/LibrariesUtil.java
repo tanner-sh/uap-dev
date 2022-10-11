@@ -225,7 +225,21 @@ public class LibrariesUtil {
                     //复制后删除
                     file.delete();
                 } catch (IOException e) {
+                    e.printStackTrace();
                 }
+            }
+            //复制classes文件夹到external目录下
+            try {
+                File fromPath = new File(hotwebsPath + File.separator + server + File.separator + "WEB-INF" + File.separator + "classes");
+                if (fromPath.exists()) {
+                    File toPath = new File(externalPath + File.separator + "classes");
+                    FileUtil.copyFileOrDir(fromPath, toPath);
+                    for (File file : fromPath.listFiles()) {
+                        FileUtil.delete(file);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
             String str = jarBuffer.toString();
             if (str.startsWith(",")) {
