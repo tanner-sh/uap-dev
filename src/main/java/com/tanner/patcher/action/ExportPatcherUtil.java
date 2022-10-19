@@ -96,7 +96,7 @@ public class ExportPatcherUtil {
         String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String dateStr = simpleDateFormat.format(new Date());
-        String userName = System.getenv().getOrDefault("USER", "unknown");
+        String userName = System.getProperties().getProperty("user.name","unknown");
         this.exportPath =
                 exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr + "_" + userName;
         this.patchName = patchName;
