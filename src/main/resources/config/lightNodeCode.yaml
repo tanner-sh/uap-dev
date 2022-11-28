@@ -25,7 +25,7 @@
   sql: select * from pub_area where TEMPLETID in (select PK_PAGE_TEMPLET from pub_page_templet where APPCODE = ?)
 #模板
 - tableName: pub_page_templet
-  sql: select * from pub_page_templet where APPCODE = ?4
+  sql: select * from pub_page_templet where APPCODE = ?
 #应用表
 - tableName: sm_appregister
   sql: select * from sm_appregister where CODE = ?

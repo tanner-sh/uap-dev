@@ -101,7 +101,7 @@ public class CreatApplicationConfigurationUtil {
                 hotwebs = "nccloud,fs";
             }
             envs.put("FIELD_HOTWEBS", hotwebs);
-            envs.put("FIELD_ENCODING", "UTF-8");
+            envs.put("FIELD_ENCODING", "GB2312");
 
             String timeZone = envs.get("FIELD_TIMEZONE");
             if (StringUtils.isBlank(timeZone)) {
