@@ -34,6 +34,8 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
     private JButton exportBtn;
     private JTextField mdNameText;
     private JTextField mdModuleText;
+    private JCheckBox exportDeleteCheckBox;
+    private JCheckBox spiltGoCheckBox;
 
     public ScriptExportDlg() {
         initUI();
@@ -47,7 +49,7 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         //获取显示屏尺寸，使界面居中
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        this.setBounds((width - 800) / 2, (height - 600) / 2, 580, 460);
+        this.setBounds((width - 800) / 2, (height - 600) / 2, 580, 560);
         //JComponent 集合
         addComponent("dbBox", dbBox);
         addComponent("dbTypeBox", dbTypeBox);
@@ -66,6 +68,8 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         addComponent("lightNodeCodeText", lightNodeCodeText);
         addComponent("mdNameText", mdNameText);
         addComponent("mdModuleText", mdModuleText);
+        addComponent("exportDeleteCheckBox", exportDeleteCheckBox);
+        addComponent("spiltGoCheckBox", spiltGoCheckBox);
     }
 
     private void initListener() {

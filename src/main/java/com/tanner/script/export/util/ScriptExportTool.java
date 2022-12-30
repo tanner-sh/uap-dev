@@ -20,17 +20,21 @@ public class ScriptExportTool {
     private String jdbcUrl;
     private String userName;
     private String pwd;
+    private boolean exportDelete;
+    private boolean spiltGo;
     private Connection connection;
 
     public ScriptExportTool() {
 
     }
 
-    public ScriptExportTool(String driverClass, String jdbcUrl, String userName, String pwd) {
+    public ScriptExportTool(String driverClass, String jdbcUrl, String userName, String pwd, boolean exportDelete, boolean spiltGo) {
         this.driverClass = driverClass;
         this.jdbcUrl = jdbcUrl;
         this.userName = userName;
         this.pwd = pwd;
+        this.exportDelete = exportDelete;
+        this.spiltGo = spiltGo;
     }
 
     public void export(String exportPath, String heavyNodeCode, String lightNodeCode, String mdName,
@@ -48,12 +52,14 @@ public class ScriptExportTool {
     private List<String> getExportSqls(List<Map<String, String>> configList, String parma)
             throws Exception {
         List<String> exportSqls = new ArrayList<String>();
-        for (Map<String, String> stringStringMap : configList) {
-            String deleteSql = stringStringMap.get("sql");
-            deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
-            deleteSql = deleteSql.replaceFirst("select \\*", "delete");
-            deleteSql += ";";
-            exportSqls.add(deleteSql);
+        if (exportDelete) {
+            for (Map<String, String> stringStringMap : configList) {
+                String deleteSql = stringStringMap.get("sql");
+                deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
+                deleteSql = deleteSql.replaceFirst("select \\*", "delete");
+                deleteSql += ";";
+                exportSqls.add(deleteSql);
+            }
         }
         for (Map<String, String> stringStringMap : configList) {
             String tableName = stringStringMap.get("tableName");
@@ -61,7 +67,7 @@ public class ScriptExportTool {
             long count = querySql.codePoints().filter(ch -> ch == '?').count();
             List<Object> paramList = Arrays.stream(new Object[(int) count]).map(p -> p = parma)
                     .collect(Collectors.toList());
-            exportSqls.addAll(DbUtil.getInsertScripts(connection, tableName, querySql, paramList));
+            exportSqls.addAll(DbUtil.getInsertScripts(connection, tableName, querySql, paramList, spiltGo));
         }
         return exportSqls;
     }

@@ -37,7 +37,7 @@ public class DbUtil {
     }
 
     public static List<String> getInsertScripts(Connection connection, String tableName,
-                                                String querySql, List<Object> paramList) throws BusinessException {
+                                                String querySql, List<Object> paramList, boolean spiltGo) throws BusinessException {
         List<String> exportSqls = new ArrayList<String>();
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
@@ -66,6 +66,9 @@ public class DbUtil {
                 columnNames.deleteCharAt(columnNames.length() - 1).append(")");
                 columnValues.deleteCharAt(columnValues.length() - 1).append(")");
                 exportSql.append(columnNames).append(" values ").append(columnValues).append(";");
+                if (spiltGo) {
+                    exportSql.append("\n").append("go").append("\n");
+                }
                 exportSqls.add(exportSql.toString());
             }
             return exportSqls;
