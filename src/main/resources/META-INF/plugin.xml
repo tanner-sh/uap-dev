@@ -53,6 +53,12 @@
                 popup="true"
                 text="脚本导出">
         </action>
+        <action class="com.tanner.devconfig.action.ActionSearchAction"
+                description="搜索Action"
+                id="dev.actionsearch"
+                popup="true"
+                text="搜索Action">
+        </action>
         <action class="com.tanner.patcher.action.ExportPatcherAction" description="导出uap补丁"
                 id="dev.patcher.export"
                 text="导出uap补丁">
@@ -81,6 +87,7 @@
             <reference id="dev.openuaphome"/>
             <reference id="dev.clearclientcache"/>
             <reference id="dev.sciptexport"/>
+            <reference id="dev.actionsearch"/>
         </group>
     </actions>
     <change-notes><![CDATA[
@@ -103,7 +110,7 @@
                         serviceInterface="com.tanner.base.UapProjectEnvironment"/>
     </extensions>
     <id>uap-dev-2022</id>
-    <idea-version since-build="173.0"/>
+    <idea-version since-build="220.0"/>
     <name>uap-dev</name>
     <vendor email="bianhuakai1994@gmail.com" url="https://tanner-sh.github.io/home/">tanner</vendor>
     <version>1.0.0</version>

@@ -58,6 +58,9 @@ public class ScriptExportTool {
                 deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
                 deleteSql = deleteSql.replaceFirst("select \\*", "delete");
                 deleteSql += ";";
+                if (spiltGo) {
+                    deleteSql += "\ngo\n";
+                }
                 exportSqls.add(deleteSql);
             }
         }
