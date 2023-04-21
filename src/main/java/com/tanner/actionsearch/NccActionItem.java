@@ -48,7 +48,7 @@ public class NccActionItem implements NavigationItem {
         return new ItemPresentation() {
             @Override
             public @NlsSafe @Nullable String getPresentableText() {
-                return getClazz();
+                return getLabel() + ":" + getClazz();
             }
 
             @Override

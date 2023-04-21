@@ -40,7 +40,7 @@ public class MyFilteringGotoByModel extends FilteringGotoByModel<NccActionItem> 
 
     @Override
     public @NotNull @NlsContexts.Label String getNotInMessage() {
-        return "not in";
+        return "";
     }
 
     @Override
