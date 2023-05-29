@@ -5,9 +5,9 @@ import com.tanner.abs.AbstractAnAction;
 import com.tanner.script.export.dlg.ScriptExportDlg;
 
 /**
- * 打开uap目录
+ * 导出脚本
  */
-public class SciptExportAction extends AbstractAnAction {
+public class ScriptExportAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {

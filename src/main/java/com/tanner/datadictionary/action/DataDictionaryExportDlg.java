@@ -1,4 +1,4 @@
-package com.tanner.script.export.dlg;
+package com.tanner.datadictionary.action;
 
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.devconfig.action.button.datasource.TestConnectionAction;
@@ -6,18 +6,14 @@ import com.tanner.devconfig.action.item.DBBoxListener;
 import com.tanner.devconfig.action.item.DBTypeBoxListener;
 import com.tanner.devconfig.action.item.DriverBoxListener;
 import com.tanner.devconfig.util.DataSourceUtil;
-import com.tanner.script.export.action.ExportAction;
-import com.tanner.script.export.action.PathSelAction;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.io.File;
 
-public class ScriptExportDlg extends AbstractDataSourceDialog {
+public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
 
     private JPanel contentPane;
-    private JTextField exportPathText;
-    private JButton pathSelBtn;
     private JPanel dsTab;
     private JComboBox<?> dbBox;
     private JButton testBtn;
@@ -29,15 +25,14 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
     private JTextField oidText;
     private JTextField userText;
     private JTextField pwdText;
-    private JTextField heavyNodeCodeText;
-    private JTextField lightNodeCodeText;
+    private JButton loadBtn;
     private JButton exportBtn;
-    private JTextField mdNameText;
-    private JTextField mdModuleText;
-    private JCheckBox exportDeleteCheckBox;
-    private JCheckBox spiltGoCheckBox;
+    private JTable dbTable;
+    private JButton selectAllBtn;
+    private JButton deSelectAllBtn;
+    private JTextField filterTextField;
 
-    public ScriptExportDlg() {
+    public DataDictionaryExportDlg() {
         initUI();
         initListener();
         initData();
@@ -62,14 +57,12 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         addComponent("pwdText", pwdText);
         addComponent("dsTab", dsTab);
         addComponent("testBtn", testBtn);
-        addComponent("pathSelBtn", pathSelBtn);
-        addComponent("exportPathText", exportPathText);
-        addComponent("heavyNodeCodeText", heavyNodeCodeText);
-        addComponent("lightNodeCodeText", lightNodeCodeText);
-        addComponent("mdNameText", mdNameText);
-        addComponent("mdModuleText", mdModuleText);
-        addComponent("exportDeleteCheckBox", exportDeleteCheckBox);
-        addComponent("spiltGoCheckBox", spiltGoCheckBox);
+        addComponent("loadBtn", loadBtn);
+        addComponent("exportBtn", exportBtn);
+        addComponent("dbTable", dbTable);
+        addComponent("selectAllBtn", selectAllBtn);
+        addComponent("deSelectAllBtn", deSelectAllBtn);
+        addComponent("filterTextField", filterTextField);
     }
 
     private void initListener() {
@@ -79,16 +72,39 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         dbBox.addItemListener(new DBBoxListener(this));
         dbTypeBox.addItemListener(new DBTypeBoxListener(this));
         driverBox.addItemListener(new DriverBoxListener(this));
-        pathSelBtn.addActionListener(new PathSelAction(this));
+        loadBtn.addActionListener(new LoadAction(this));
         exportBtn.addActionListener(new ExportAction(this));
+        selectAllBtn.addActionListener(new SelectAllAction(this));
+        deSelectAllBtn.addActionListener(new DeSelectAllAction(this));
     }
 
     private void initData() {
-        File desktopPath = new File(System.getProperty("user.home") + File.separator + "Desktop");
-        if (desktopPath.exists()) {
-            exportPathText.setText(desktopPath.getAbsolutePath());
-        }
+        //初始化数据源
         DataSourceUtil.initDataSource(this);
+        //初始化表格
+        initDbTable();
+    }
+
+    private void initDbTable() {
+        DefaultTableModel tableModel = new DefaultTableModel(null,
+                new String[]{"序号", "选中", "表名", "表备注"}) {
+
+            @Override
+            public Class<?> getColumnClass(int c) {
+                return switch (c) {
+                    case 0 -> Integer.class;
+                    case 1 -> Boolean.class;
+                    default -> String.class;
+                };
+            }
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 1;
+            }
+
+        };
+        dbTable.setModel(tableModel);
     }
 
 }

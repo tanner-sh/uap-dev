@@ -1,5 +1,9 @@
 package com.tanner.base;
 
+import com.tanner.datadictionary.engine.IEngine;
+import com.tanner.datadictionary.engine.MySqlEngine;
+import com.tanner.datadictionary.engine.OracleEngine;
+
 import java.sql.*;
 import java.util.*;
 
@@ -86,6 +90,21 @@ public class DbUtil {
         return switch (columnType) {
             case Types.VARCHAR, Types.CHAR, Types.LONGVARCHAR -> "'" + columnValue + "'";
             default -> columnValue.toString();
+        };
+    }
+
+    public static IEngine getEngine(Connection connection) throws BusinessException {
+        String databaseProductName = null;
+        try {
+            DatabaseMetaData metaData = connection.getMetaData();
+            databaseProductName = metaData.getDatabaseProductName();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return switch (databaseProductName) {
+            case "Oracle" -> new OracleEngine();
+            case "MySql" -> new MySqlEngine();
+            default -> throw new BusinessException("不支持此数据库类型:" + databaseProductName);
         };
     }
 

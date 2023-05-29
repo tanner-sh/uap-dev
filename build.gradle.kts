@@ -18,6 +18,13 @@ intellij {
     plugins.set(listOf("com.intellij.java"))
 }
 
+dependencies {
+    // ÆäËûÒÀÀµÏî...
+    implementation("com.itextpdf:itextpdf:5.5.13")
+    implementation("com.itextpdf:itext-asian:5.2.0")
+}
+
+
 tasks {
     // Set the JVM compatibility versions
     withType<JavaCompile> {

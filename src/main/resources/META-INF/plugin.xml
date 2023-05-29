@@ -31,12 +31,22 @@
                 popup="true" text="设置uap类路径">
             <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
         </action>
-        <action class="com.tanner.devconfig.action.DevConfigAction" description="集成配置"
+        <action class="com.tanner.patcher.action.ExportPatcherAction"
+                description="导出uap补丁"
+                id="dev.patcher.export"
+                text="导出uap补丁">
+            <add-to-group anchor="last" group-id="ChangesViewPopupMenu"/>
+            <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
+            <add-to-group anchor="last" group-id="Vcs.Log.ChangesBrowser.Popup"/>
+        </action>
+        <action class="com.tanner.devconfig.action.DevConfigAction"
+                description="集成配置"
                 id="dev.config"
                 popup="true"
                 text="集成配置">
         </action>
-        <action class="com.tanner.devconfig.action.OpenUapHomeAction" description="打开uap目录"
+        <action class="com.tanner.devconfig.action.OpenUapHomeAction"
+                description="打开uap目录"
                 id="dev.openuaphome"
                 popup="true"
                 text="打开UAP目录">
@@ -47,9 +57,9 @@
                 popup="true"
                 text="清除客户端缓存">
         </action>
-        <action class="com.tanner.devconfig.action.SciptExportAction"
+        <action class="com.tanner.devconfig.action.ScriptExportAction"
                 description="导出uap相关脚本"
-                id="dev.sciptexport"
+                id="dev.script.export"
                 popup="true"
                 text="脚本导出">
         </action>
@@ -59,20 +69,22 @@
                 popup="true"
                 text="搜索Action">
         </action>
-        <action class="com.tanner.patcher.action.ExportPatcherAction" description="导出uap补丁"
-                id="dev.patcher.export"
-                text="导出uap补丁">
-            <add-to-group anchor="last" group-id="ChangesViewPopupMenu"/>
-            <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
-            <add-to-group anchor="last" group-id="Vcs.Log.ChangesBrowser.Popup"/>
+        <action class="com.tanner.datadictionary.action.ExportDataDictionaryAction"
+                description="导出数据字典"
+                id="dev.datadictionary.export"
+                text="导出数据字典">
         </action>
         <action class="com.tanner.debug.action.NewServerApplicationAction"
                 description="server application"
-                id="dev.application.server.create" text="server application"/>
+                id="dev.application.server.create"
+                text="server application"/>
         <action class="com.tanner.debug.action.NewClientApplicationAction"
                 description="client application"
-                id="dev.application.client.create" text="client application"/>
-        <group class="com.tanner.debug.action.AppGroupAction" description="调试..." id="dev.debug"
+                id="dev.application.client.create"
+                text="client application"/>
+        <group class="com.tanner.debug.action.AppGroupAction"
+               description="调试..."
+               id="dev.debug"
                popup="true"
                text="调试...">
             <add-to-group anchor="last" group-id="ProjectViewPopupMenu"/>
@@ -82,12 +94,14 @@
         <group description="集成配置" icon="/img/logo.svg" id="dev.group" popup="true" text="集成配置">
             <add-to-group anchor="first" group-id="ToolbarRunGroup"/>
             <add-to-group anchor="last" group-id="ToolsMenu"/>
+            <add-to-group anchor="last" group-id="MainMenu"/>
             <!--添加到bar显示-->
             <reference id="dev.config"/>
             <reference id="dev.openuaphome"/>
             <reference id="dev.clearclientcache"/>
-            <reference id="dev.sciptexport"/>
+            <reference id="dev.script.export"/>
             <reference id="dev.actionsearch"/>
+            <reference id="dev.datadictionary.export"/>
         </group>
     </actions>
     <change-notes><![CDATA[
