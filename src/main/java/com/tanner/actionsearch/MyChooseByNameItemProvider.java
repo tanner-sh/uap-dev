@@ -56,6 +56,9 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
         List<NccActionItem> returnList = new ArrayList<>();
         String uapHomePath = UapProjectEnvironment.getInstance(project).getUapHomePath();
         Path yyconfigPath = Paths.get(uapHomePath).resolve(Paths.get("hotwebs", "nccloud", "WEB-INF", "extend", "yyconfig", "modules"));
+        if (!yyconfigPath.toFile().exists()) {
+            return returnList;
+        }
         Collection<File> xmlFiles = FileUtils.listFiles(yyconfigPath.toFile(), new String[]{"xml"}, true);
         IOFileFilter filter = new AndFileFilter(
                 new SuffixFileFilter(".xml"),           // 后缀名为".xml"

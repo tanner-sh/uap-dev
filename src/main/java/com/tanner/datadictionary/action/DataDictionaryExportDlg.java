@@ -31,6 +31,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     private JButton selectAllBtn;
     private JButton deSelectAllBtn;
     private JTextField filterTextField;
+    private JComboBox<?> exportAsBox;
 
     public DataDictionaryExportDlg() {
         initUI();
@@ -63,6 +64,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         addComponent("selectAllBtn", selectAllBtn);
         addComponent("deSelectAllBtn", deSelectAllBtn);
         addComponent("filterTextField", filterTextField);
+        addComponent("exportAsBox", exportAsBox);
     }
 
     private void initListener() {
@@ -83,6 +85,14 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         DataSourceUtil.initDataSource(this);
         //初始化表格
         initDbTable();
+        //初始化导出设置
+        initExportBox();
+    }
+
+    private void initExportBox() {
+        String[] exports = {"pdf", "markdown", "html"};
+        exportAsBox.setModel(new DefaultComboBoxModel(exports));
+        exportAsBox.getModel().setSelectedItem(exports[0]);
     }
 
     private void initDbTable() {
