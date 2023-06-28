@@ -10,17 +10,19 @@ public class ColumnInfo {
     private String nullAble;//可空
     private String defaultValue;//默认值
     private String comment;//注释
+    private String enumValue;//枚举
 
     public ColumnInfo() {
     }
 
-    public ColumnInfo(int columnId, String columnName, String type, String nullAble, String defaultValue, String comment) {
+    public ColumnInfo(int columnId, String columnName, String type, String nullAble, String defaultValue, String comment, String enumValue) {
         this.columnId = columnId;
         this.columnName = columnName;
         this.type = type;
         this.nullAble = nullAble;
         this.defaultValue = defaultValue;
         this.comment = comment;
+        this.enumValue = enumValue;
     }
 
     public int getColumnId() {
@@ -71,6 +73,14 @@ public class ColumnInfo {
         this.comment = comment;
     }
 
+    public String getEnumValue() {
+        return enumValue;
+    }
+
+    public void setEnumValue(String enumValue) {
+        this.enumValue = enumValue;
+    }
+
     @Override
     public String toString() {
         return "ColumnInfo{" +
@@ -80,7 +90,7 @@ public class ColumnInfo {
                 ", nullAble='" + nullAble + '\'' +
                 ", defaultValue='" + defaultValue + '\'' +
                 ", comment='" + comment + '\'' +
+                ", enumValue='" + enumValue + '\'' +
                 '}';
     }
-
 }

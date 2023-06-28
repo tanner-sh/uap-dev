@@ -32,6 +32,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     private JButton deSelectAllBtn;
     private JTextField filterTextField;
     private JComboBox<?> exportAsBox;
+    private JCheckBox needFilterDefField;
 
     public DataDictionaryExportDlg() {
         initUI();
@@ -65,6 +66,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         addComponent("deSelectAllBtn", deSelectAllBtn);
         addComponent("filterTextField", filterTextField);
         addComponent("exportAsBox", exportAsBox);
+        addComponent("needFilterDefField", needFilterDefField);
     }
 
     private void initListener() {

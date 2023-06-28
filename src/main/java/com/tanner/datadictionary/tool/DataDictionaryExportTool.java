@@ -21,20 +21,20 @@ public class DataDictionaryExportTool {
         this.connection = connection;
     }
 
-    public void export(String exportDirPath, List<TableInfo> selectedTables, String exportAs) throws Exception {
-        List<AggTable> aggTableList = buildAggTables(selectedTables);
+    public void export(String exportDirPath, List<TableInfo> selectedTables, String exportAs, boolean needFilterDefField) throws Exception {
+        List<AggTable> aggTableList = buildAggTables(selectedTables, needFilterDefField);
         IExportBuilder exportBuilder = getExportBuilder(exportAs);
         exportBuilder.build(aggTableList, exportDirPath);
         DbUtil.closeResource(connection, null, null);
     }
 
-    private List<AggTable> buildAggTables(List<TableInfo> selectedTables) throws Exception {
+    private List<AggTable> buildAggTables(List<TableInfo> selectedTables, boolean needFilterDefField) throws Exception {
         List<AggTable> aggTableList = new ArrayList<>();
         IEngine engine = DbUtil.getEngine(connection);
         for (TableInfo selectedTable : selectedTables) {
             AggTable aggTable = new AggTable();
             aggTable.setTableInfo(selectedTable);
-            List<ColumnInfo> columnInfoList = engine.getAllColumnInfo(connection, selectedTable.getTableName());
+            List<ColumnInfo> columnInfoList = engine.getAllColumnInfo(connection, selectedTable.getTableName(), needFilterDefField);
             aggTable.setColumnInfoList(columnInfoList);
             aggTableList.add(aggTable);
         }

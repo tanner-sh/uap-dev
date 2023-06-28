@@ -1,11 +1,11 @@
 package com.tanner.datadictionary.tool;
 
-import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.draw.DottedLineSeparator;
+import com.openhtmltopdf.css.parser.property.PageSize;
 import com.tanner.datadictionary.entity.AggTable;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
@@ -51,7 +51,7 @@ public class PdfBuilder implements IExportBuilder {
         //根据chapter章节分页
         //表格
         //设置表格模板
-        String[] tableHeader = {"序列", "列名", "类型", "可空", "默认值", "注释"};
+        String[] tableHeader = {"序列", "列名", "类型", "可空", "默认值", "注释", "枚举"};
         for (AggTable aggTable : aggTableList) {
             TableInfo tableInfo = aggTable.getTableInfo();
             Chapter chapter = new Chapter(new Paragraph(tableInfo.getTableName()), order);

@@ -65,8 +65,9 @@ public class ExportAction extends AbstractButtonAction {
         ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
         Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
         String exportAs = (String) dlg.getComponent(JComboBox.class, "exportAsBox").getSelectedItem();
+        boolean needFilterDefField = dlg.getComponent(JCheckBox.class, "needFilterDefField").isSelected();
         try {
-            new DataDictionaryExportTool(connection).export(virtualFile.getPath(), selectedTables, exportAs);
+            new DataDictionaryExportTool(connection).export(virtualFile.getPath(), selectedTables, exportAs, needFilterDefField);
         } catch (Exception e) {
             Messages.showWarningDialog("导出过程异常\n" + e.getMessage(), "错误");
             return;

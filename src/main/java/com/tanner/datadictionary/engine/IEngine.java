@@ -15,7 +15,8 @@ public interface IEngine {
             throws BusinessException;
 
     List<ColumnInfo> getAllColumnInfo(Connection connection,
-                                      String tableName)
+                                      String tableName,
+                                      boolean needFilterDefField)
             throws BusinessException;
 
 }

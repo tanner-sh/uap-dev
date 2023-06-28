@@ -41,7 +41,7 @@ public class HtmlBuilder implements IExportBuilder {
             //表格头
             oneTableContent.append("<table border=\"1\" cellspacing=\"0\">");
             oneTableContent.append("<thead>");
-            oneTableContent.append("<tr><th>序列</th><th>列名</th><th>类型</th><th>可空</th><th>默认值</th><th>注释</th></tr>");
+            oneTableContent.append("<tr><th>序列</th><th>列名</th><th>类型</th><th>可空</th><th>默认值</th><th>注释</th><th>枚举</th></tr>");
             oneTableContent.append("</thead>");
             //表格体
             oneTableContent.append("<thead>");
@@ -54,6 +54,7 @@ public class HtmlBuilder implements IExportBuilder {
                 oneTableContent.append("<th>").append(columnInfo.getNullAble()).append("</th>");
                 oneTableContent.append("<th>").append(columnInfo.getDefaultValue()).append("</th>");
                 oneTableContent.append("<th>").append(columnInfo.getComment()).append("</th>");
+                oneTableContent.append("<th>").append(columnInfo.getEnumValue()).append("</th>");
                 oneTableContent.append("</tr>");
             }
             oneTableContent.append("</thead>");

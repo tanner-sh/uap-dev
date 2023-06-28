@@ -7,7 +7,7 @@ import com.tanner.datadictionary.entity.TableInfo;
 import java.sql.Connection;
 import java.util.List;
 
-public class MySqlEngine implements IEngine{
+public class MySqlEngine implements IEngine {
 
     @Override
     public List<TableInfo> getAllTableInfo(Connection connection, String userName, String[] tableNamePattern) throws BusinessException {
@@ -15,7 +15,7 @@ public class MySqlEngine implements IEngine{
     }
 
     @Override
-    public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName) throws BusinessException {
+    public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName, boolean needFilterDefField) throws BusinessException {
         return null;
     }
 

@@ -30,7 +30,7 @@ public class MarkdownBuilder implements IExportBuilder {
             TableInfo tableInfo = aggTable.getTableInfo();
             List<ColumnInfo> columnInfoList = aggTable.getColumnInfoList();
             StringBuffer oneTableContent = new StringBuffer();
-            oneTableContent.append("## " + index + "." + tableInfo.getTableName() + " " + tableInfo.getComment() + "\n\n" + "|序列|列名|类型|可空|默认值|注释|" + "\n");
+            oneTableContent.append("## " + index + "." + tableInfo.getTableName() + " " + tableInfo.getComment() + "\n\n" + "|序列|列名|类型|可空|默认值|注释|枚举|" + "\n");
             oneTableContent.append(res1);
             //拼接列
             for (int k = 0; k < columnInfoList.size(); k++) {
@@ -40,7 +40,8 @@ public class MarkdownBuilder implements IExportBuilder {
                         append(columnInfo.getType()).append("|").
                         append(columnInfo.getNullAble()).append("|").
                         append(columnInfo.getDefaultValue()).append("|").
-                        append(columnInfo.getComment()).append("|").append("\n");
+                        append(columnInfo.getComment()).append("|").
+                        append(columnInfo.getEnumValue()).append("|").append("\n");
             }
             markdownContent.append(oneTableContent);
         }
