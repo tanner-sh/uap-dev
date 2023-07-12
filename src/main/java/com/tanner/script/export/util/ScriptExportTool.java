@@ -56,7 +56,7 @@ public class ScriptExportTool {
             for (Map<String, String> stringStringMap : configList) {
                 String deleteSql = stringStringMap.get("sql");
                 deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
-                deleteSql = deleteSql.replaceFirst("select \\*", "delete");
+                deleteSql = "delete " + deleteSql.substring(deleteSql.indexOf("from"));
                 deleteSql += ";";
                 if (spiltGo) {
                     deleteSql += "\ngo\n";

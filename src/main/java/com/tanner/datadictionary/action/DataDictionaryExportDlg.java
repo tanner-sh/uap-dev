@@ -33,6 +33,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     private JTextField filterTextField;
     private JComboBox<?> exportAsBox;
     private JCheckBox needFilterDefField;
+    private JTextField logTextField;
 
     public DataDictionaryExportDlg() {
         initUI();
@@ -67,6 +68,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         addComponent("filterTextField", filterTextField);
         addComponent("exportAsBox", exportAsBox);
         addComponent("needFilterDefField", needFilterDefField);
+        addComponent("logTextField", logTextField);
     }
 
     private void initListener() {
@@ -119,4 +121,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         dbTable.setModel(tableModel);
     }
 
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+    }
 }

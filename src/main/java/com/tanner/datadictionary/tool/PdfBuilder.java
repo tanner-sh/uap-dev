@@ -1,11 +1,11 @@
 package com.tanner.datadictionary.tool;
 
+import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import com.itextpdf.text.pdf.draw.DottedLineSeparator;
-import com.openhtmltopdf.css.parser.property.PageSize;
 import com.tanner.datadictionary.entity.AggTable;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
