@@ -7,10 +7,8 @@ import com.intellij.ide.actions.searcheverywhere.SearchEverywhereManager;
 import com.intellij.ide.util.gotoByName.ChooseByNamePopup;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
 import com.tanner.actionsearch.MyFilteringGotoByModel;
 import com.tanner.actionsearch.NccActionItem;
-import com.tanner.base.ProjectManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -38,14 +36,13 @@ public class ActionSearchAction extends GotoActionBase {
         @Override
         public void elementChosen(ChooseByNamePopup chooseByNamePopup, Object element) {
             if (element instanceof NccActionItem) {
-                Project project = ProjectManager.getInstance().getProject();
+                Project project = chooseByNamePopup.getProject();
                 SearchEverywhereManager seManager = SearchEverywhereManager.getInstance(project);
                 FeatureUsageTracker.getInstance().triggerFeatureUsed("SearchEverywhere");
                 IdeEventQueue.getInstance().getPopupManager().closeAllPopups(false);
                 seManager.show("ClassSearchEverywhereContributor", ((NccActionItem) element).getClazz(), anActionEvent);
             }
         }
-
     }
 
 }

@@ -44,8 +44,6 @@ public class ModuleUtil {
         } else if (moduleFileName.startsWith("maven_")) {
             moduleFileName = moduleFileName.substring(6);
             moduleType = MODULE_TYPE_MAVEN;
-        } else {
-
         }
         Library[] libraries = ProjectManager.getInstance().getProjectLibraries(project);
         Module module = ProjectManager.getInstance().getModule(file.getName());
@@ -72,14 +70,9 @@ public class ModuleUtil {
     private List<Pair<String, String>> getSourcePathList(int moduleType, String modulePath) {
         List<Pair<String, String>> list = new ArrayList<>();
         switch (moduleType) {
-            case MODULE_TYPE_NC:
-                list = scanNCSourcePath(modulePath);
-                break;
-            case MODULE_TYPE_MAVEN:
-                list.add(new Pair<>(modulePath + "/src/main/java", ""));
-                break;
-            default:
-                list.add(new Pair<>(modulePath + "/src", ""));
+            case MODULE_TYPE_NC -> list = scanNCSourcePath(modulePath);
+            case MODULE_TYPE_MAVEN -> list.add(new Pair<>(modulePath + "/src/main/java", ""));
+            default -> list.add(new Pair<>(modulePath + "/src", ""));
         }
         return list;
     }

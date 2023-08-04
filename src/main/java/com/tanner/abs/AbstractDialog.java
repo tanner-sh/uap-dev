@@ -6,7 +6,7 @@ import java.util.Map;
 
 public abstract class AbstractDialog extends JDialog {
 
-    private Map<String, JComponent> componentMap = new HashMap();
+    private Map<String, JComponent> componentMap = new HashMap<>();
 
     public <T> T getComponent(Class<T> clazz, String key) {
         return (T) componentMap.get(key);
