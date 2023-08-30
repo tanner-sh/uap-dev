@@ -42,6 +42,7 @@ public class PatcherDialog extends AbstractDialog {
     private JCheckBox needClearBrowserCache;
     private JTextArea functionDescription;
     private JTextArea configDescription;
+    private JTextField developer;
     private JBList<VirtualFile> fieldList;
 
     public PatcherDialog(final AnActionEvent event) {
@@ -64,6 +65,12 @@ public class PatcherDialog extends AbstractDialog {
             lastPatcherPath = System.getProperty("user.home");
         }
         savePath.setText(lastPatcherPath);
+        if (StringUtils.isEmpty(envSettingService.getDeveloper())) {
+            String userName = System.getProperties().getProperty("user.name", "unknown");
+            developer.setText(userName);
+        } else {
+            developer.setText(envSettingService.getDeveloper());
+        }
         // 保存路径按钮事件
         fileChooseBtn.addActionListener(e -> {
             FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
@@ -85,6 +92,10 @@ public class PatcherDialog extends AbstractDialog {
             Messages.showErrorDialog(this, "Please Select Save Path!", "Error");
             return;
         }
+        if (null == developer.getText() || "".equals(developer.getText())) {
+            Messages.showErrorDialog(this, "Please Set developer!", "Error");
+            return;
+        }
         ListModel<VirtualFile> model = fieldList.getModel();
         if (model.getSize() == 0) {
             Messages.showErrorDialog(this, "Please Select Export File!", "Error");
@@ -94,6 +105,7 @@ public class PatcherDialog extends AbstractDialog {
         UapProjectEnvironment envSettingService = UapProjectEnvironment.getInstance(event.getProject());
         if (envSettingService != null) {
             envSettingService.setLastPatcherPath(exportPath);
+            envSettingService.setDeveloper(developer.getText());
         }
         boolean srcFlag = srcFlagCheckBox.isSelected();
         boolean cloudFlag = cloudFlagCheckBox.isSelected();
@@ -114,7 +126,7 @@ public class PatcherDialog extends AbstractDialog {
             ExportPatcherUtil util = new ExportPatcherUtil(event, exportPath, patcherName.getText(),
                     srcFlag, serverName.getText(), cloudFlag, projectName.getText(), needDeployFlag,
                     needClearSwingCacheFlag, needClearBrowserCacheFlag, functionDescription.getText(),
-                    configDescription.getText());
+                    configDescription.getText(), developer.getText());
             try {
                 util.exportPatcher(progressBar);
                 String zipName = util.getZipName();

@@ -28,7 +28,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -91,14 +100,13 @@ public class ExportPatcherUtil {
     public ExportPatcherUtil(AnActionEvent event, String exportPath, String patchName,
                              boolean srcFlag, String webServerName, boolean cloudFlag, String projectName,
                              boolean needDeploy, boolean needClearSwingCache, boolean needClearBrowserCache,
-                             String functionDescription, String configDescription) {
+                             String functionDescription, String configDescription, String developer) {
         this.event = event;
         String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String dateStr = simpleDateFormat.format(new Date());
-        String userName = System.getProperties().getProperty("user.name","unknown");
         this.exportPath =
-                exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr + "_" + userName;
+                exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr + "_" + developer;
         this.patchName = patchName;
         this.srcFlag = srcFlag;
         if (StringUtils.isNotBlank(webServerName)) {

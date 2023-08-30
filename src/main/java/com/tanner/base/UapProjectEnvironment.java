@@ -24,6 +24,7 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
     private final String ATTR_NCCLOUDJAR = "nccloudJar";
     private final String ATTR_NCCHRJAR = "ncchrJar";
     private final String ATTR_LASTPATCHERPATH = "lastPatcherPath";
+    private final String ATTR_DEVELOPER = "developer";
     private String uapHomePath;//uapHome地址
     private String uapVersion;//uap版本
     private String ex_modules;//忽略的模块
@@ -32,6 +33,7 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
     private String nccloudJar;
     private String ncchrJAR;
     private String lastPatcherPath;//上一次的补丁地址
+    private String developer;// 开发者
 
 
     public UapProjectEnvironment() {
@@ -63,6 +65,7 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
         element.setAttribute(ATTR_NCCLOUDJAR, getNccloudJar());
         element.setAttribute(ATTR_NCCHRJAR, getNcchrJAR());
         element.setAttribute(ATTR_LASTPATCHERPATH, getLastPatcherPath());
+        element.setAttribute(ATTR_DEVELOPER, getDeveloper());
         return element;
     }
 
@@ -85,6 +88,8 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
                 : element.getAttributeValue(ATTR_NCCHRJAR));
         this.setLastPatcherPath(element.getAttributeValue(ATTR_LASTPATCHERPATH) == null ? ""
                 : element.getAttributeValue(ATTR_LASTPATCHERPATH));
+        this.setDeveloper(element.getAttributeValue(ATTR_DEVELOPER) == null ? ""
+                : element.getAttributeValue(ATTR_DEVELOPER));
     }
 
     public String getUapHomePath() {
@@ -141,6 +146,14 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
 
     public void setLastPatcherPath(String lastPatcherPath) {
         this.lastPatcherPath = lastPatcherPath;
+    }
+
+    public String getDeveloper() {
+        return developer;
+    }
+
+    public void setDeveloper(String developer) {
+        this.developer = developer;
     }
 
     public String getUapVersion() {
