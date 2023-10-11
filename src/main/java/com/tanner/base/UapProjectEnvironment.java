@@ -149,7 +149,7 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
     }
 
     public String getDeveloper() {
-        return developer;
+        return StringUtils.isBlank(developer) ? "" : developer;
     }
 
     public void setDeveloper(String developer) {
