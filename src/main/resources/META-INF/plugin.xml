@@ -74,6 +74,11 @@
                 id="dev.datadictionary.export"
                 text="导出数据字典">
         </action>
+        <action class="com.tanner.langsearch.LangSearchAction"
+                description="多语搜索"
+                id="dev.langsearch"
+                text="多语搜索">
+        </action>
         <action class="com.tanner.debug.action.NewServerApplicationAction"
                 description="server application"
                 id="dev.application.server.create"
@@ -102,6 +107,7 @@
             <reference id="dev.script.export"/>
             <reference id="dev.actionsearch"/>
             <reference id="dev.datadictionary.export"/>
+            <reference id="dev.langsearch"/>
         </group>
     </actions>
     <change-notes><![CDATA[
