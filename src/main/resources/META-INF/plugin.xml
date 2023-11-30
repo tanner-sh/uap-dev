@@ -51,6 +51,12 @@
                 popup="true"
                 text="打开UAP目录">
         </action>
+        <action class="com.tanner.devconfig.action.RunSysConfigAction"
+                description="运行sysConfig"
+                id="dev.runsysconfig"
+                popup="true"
+                text="运行sysConfig">
+        </action>
         <action class="com.tanner.devconfig.action.ClearClientCacheAction"
                 description="清除客户端缓存"
                 id="dev.clearclientcache"
@@ -103,6 +109,7 @@
             <!--添加到bar显示-->
             <reference id="dev.config"/>
             <reference id="dev.openuaphome"/>
+            <reference id="dev.runsysconfig"/>
             <reference id="dev.clearclientcache"/>
             <reference id="dev.script.export"/>
             <reference id="dev.actionsearch"/>
