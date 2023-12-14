@@ -59,6 +59,8 @@ public class SearchAction extends AbstractButtonAction {
     private String getLanguage(String path, String text) {
         if (path.contains("simpchn") || text.contains("simpchn")) {
             return "简体中文";
+        } else if (path.contains("english") || text.contains("english")) {
+            return "英文";
         }
         return "-";
     }

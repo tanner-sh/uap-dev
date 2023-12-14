@@ -10,7 +10,11 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.InputStream;
 import java.sql.Connection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -131,7 +135,7 @@ public class ScriptExportTool {
         if (!scriptDirectory.exists()) {
             scriptDirectory.mkdirs();
         }
-        List<Map<String, String>> configList = readExportConfig("lightNodeCode.yaml");
+        List<Map<String, String>> configList = readExportConfig("lightNodeCode_ncc2005.yaml");
         List<Object> allLightNodeCodeByParent = getAllLightNodeCodeByParent(lightNodeCode);
         for (Object nodeCode : allLightNodeCodeByParent) {
             File scriptFile = new File(scriptDirectory, nodeCode + ".sql");
