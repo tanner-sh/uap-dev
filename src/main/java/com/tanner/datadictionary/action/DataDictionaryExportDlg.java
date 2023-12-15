@@ -36,7 +36,8 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     private JTextField filterTextField;
     private JComboBox<?> exportAsBox;
     private JCheckBox needFilterDefField;
-    private JTextField logTextField;
+    private JPanel logPanel;
+    private JProgressBar progressBar;
 
     public DataDictionaryExportDlg(AnActionEvent event) {
         super(event.getProject());
@@ -52,6 +53,7 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
         setLocation((width - 800) / 2, (height - 600) / 2);
         setSize(580, 560);
+        progressBar.setPreferredSize(new Dimension(580, 30)); // 宽度 580px, 高度 30px
         //JComponent 集合
         addComponent("dbBox", dbBox);
         addComponent("dbTypeBox", dbTypeBox);
@@ -72,7 +74,8 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         addComponent("filterTextField", filterTextField);
         addComponent("exportAsBox", exportAsBox);
         addComponent("needFilterDefField", needFilterDefField);
-        addComponent("logTextField", logTextField);
+        addComponent("logPanel", logPanel);
+        addComponent("progressBar", progressBar);
     }
 
     private void initListener() {

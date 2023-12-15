@@ -20,6 +20,7 @@ import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.ToolUtils;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.sql.Connection;
@@ -70,14 +71,20 @@ public class ExportAction extends AbstractButtonAction {
         Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
         String exportAs = (String) dlg.getComponent(JComboBox.class, "exportAsBox").getSelectedItem();
         boolean needFilterDefField = dlg.getComponent(JCheckBox.class, "needFilterDefField").isSelected();
-        JTextField logTextField = dlg.getComponent(JTextField.class, "logTextField");
+        JProgressBar progressBar = dlg.getComponent(JProgressBar.class, "progressBar");
+        progressBar.setValue(0);
+        // 绘制百分比文本（进度条中间显示的百分数）
+        progressBar.setStringPainted(true);
+        progressBar.addChangeListener(e -> {
+            Dimension dimension = progressBar.getSize();
+            Rectangle rect = new Rectangle(0, 0, dimension.width, dimension.height);
+            progressBar.paintImmediately(rect);
+        });
         try {
-            new DataDictionaryExportTool(connection)
+            new DataDictionaryExportTool(connection, progressBar)
                     .export(virtualFile.getPath(), selectedTables, exportAs, needFilterDefField);
-            logTextField.setText("导出完毕!");
         } catch (Exception e) {
             String msg = "导出过程异常\n" + e.getMessage();
-            logTextField.setText(msg);
             Messages.showWarningDialog(msg, "错误");
             return;
         }
