@@ -16,6 +16,6 @@ public class CancelAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) {
-        getDialog().dispose();
+        getDialog().close(0);
     }
 }

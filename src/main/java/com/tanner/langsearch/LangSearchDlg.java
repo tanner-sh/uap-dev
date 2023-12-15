@@ -1,7 +1,10 @@
 package com.tanner.langsearch;
 
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractDataSourceDialog;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -19,19 +22,20 @@ public class LangSearchDlg extends AbstractDataSourceDialog {
     private JButton searchBtn;
     private JTable searchResultTable;
 
-    public LangSearchDlg() {
+    public LangSearchDlg(AnActionEvent event) {
+        super(event.getProject());
+        init();
         initUI();
         initListener();
         initData();
     }
 
     private void initUI() {
-        setContentPane(contentPane);
-        setModal(true);
         //获取显示屏尺寸，使界面居中
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        this.setBounds((width - 800) / 2, (height - 600) / 2, 1200, 480);
+        setLocation((width - 800) / 2, (height - 600) / 2);
+        setSize(1200, 480);
         //JComponent 集合
         addComponent("searchTextField", searchTextField);
         addComponent("searchBtn", searchBtn);
@@ -58,18 +62,6 @@ public class LangSearchDlg extends AbstractDataSourceDialog {
                         } catch (IOException ex) {
                             Messages.showInfoMessage("打开文件出错!: " + filePath, "提示");
                         }
-
-//                        try {
-//                            // 获取 Desktop 对象
-//                            Desktop desktop = Desktop.getDesktop();
-//                            // 检查桌面是否支持打开文件夹的操作
-//                            if (desktop.isSupported(Desktop.Action.OPEN)) {
-//                                // 打开文件所在文件夹并选中文件
-//                                desktop.open(file.getParentFile());
-//                            }
-//                        } catch (IOException ex) {
-//                            Messages.showInfoMessage("打开文件出错!: " + filePath, "提示");
-//                        }
                     }
                 }
             }
@@ -116,6 +108,16 @@ public class LangSearchDlg extends AbstractDataSourceDialog {
         columnModel.getColumn(3).setPreferredWidth(300);
         columnModel.getColumn(4).setPreferredWidth(480);
         columnModel.getColumn(5).setPreferredWidth(280);
+    }
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
+    }
+
+    @Override
+    protected Action @NotNull [] createActions() {
+        return new Action[0];
     }
 
 }

@@ -2,13 +2,14 @@ package com.tanner.devconfig;
 
 import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractDialog;
+import com.tanner.base.ProjectManager;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
 
 /**
  * 复制数据源
@@ -16,60 +17,27 @@ import java.awt.event.*;
 public class DataSourceCopyDlg extends AbstractDialog {
 
     private JPanel contentPane;
-    private JButton buttonOK;
-    private JButton buttonCancel;
     private JTextField newNameText;
 
     private DevConfigDialog parentDlg;
 
     public DataSourceCopyDlg() {
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
+        super(ProjectManager.getInstance().getProject());
+        init();
         //获取显示屏尺寸，使界面居中
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        this.setBounds((width - 600) / 2, (height - 200) / 2, 600, 200);
-
-        buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onOK();
-            }
-        });
-
-        buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        });
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-        contentPane.registerKeyboardAction(new ActionListener() {
-                                               public void actionPerformed(ActionEvent e) {
-                                                   onCancel();
-                                               }
-                                           }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        setLocation((width - 600) / 2, (height - 200) / 2);
+        setSize(600, 200);
     }
 
-    public static void main(String[] args) {
-        DataSourceCopyDlg dialog = new DataSourceCopyDlg();
-        dialog.pack();
-        dialog.setVisible(true);
-        System.exit(0);
-    }
-
-    private void onOK() {
+    @Override
+    protected void doOKAction() {
         String newName = newNameText.getText();
         if (StringUtils.isBlank(newName)) {
             Messages.showErrorDialog("数据源名称不能为空！", "出错了");
             return;
         }
-
         if (parentDlg.getDataSourceMetaMap().containsKey(newName)) {
             Messages.showErrorDialog("该数据源名称已存在！请更换一个", "出错了");
             return;
@@ -87,18 +55,13 @@ public class DataSourceCopyDlg extends AbstractDialog {
             parentDlg.setCurrMeta(newMeta);
         } catch (Exception e) {
             Messages.showErrorDialog(e.getMessage(), "出错了");
+            return;
         }
-        dispose();
-        int opt = Messages.showYesNoDialog("复制成功，是否退出设置窗口？", "提示",
-                Messages.getQuestionIcon());
+        int opt = Messages.showYesNoDialog("复制成功，是否退出设置窗口？", "提示", Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             DataSourceUtil.saveDesignDataSourceMeta(parentDlg);
-            parentDlg.dispose();
+            parentDlg.close(0);
         }
-    }
-
-    private void onCancel() {
-        dispose();
     }
 
     public DevConfigDialog getParentDlg() {
@@ -108,4 +71,10 @@ public class DataSourceCopyDlg extends AbstractDialog {
     public void setParentDlg(DevConfigDialog parentDlg) {
         this.parentDlg = parentDlg;
     }
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
+    }
+
 }

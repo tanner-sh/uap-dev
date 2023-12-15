@@ -9,7 +9,7 @@ import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.prop.xml.PropXml;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.io.File;

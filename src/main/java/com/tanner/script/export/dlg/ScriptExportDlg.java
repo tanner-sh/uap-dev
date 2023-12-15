@@ -1,5 +1,6 @@
 package com.tanner.script.export.dlg;
 
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.devconfig.action.button.datasource.TestConnectionAction;
 import com.tanner.devconfig.action.item.DBBoxListener;
@@ -8,6 +9,8 @@ import com.tanner.devconfig.action.item.DriverBoxListener;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.script.export.action.ExportAction;
 import com.tanner.script.export.action.PathSelAction;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
@@ -37,19 +40,20 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
     private JCheckBox exportDeleteCheckBox;
     private JCheckBox spiltGoCheckBox;
 
-    public ScriptExportDlg() {
+    public ScriptExportDlg(AnActionEvent event) {
+        super(event.getProject());
+        init();
         initUI();
         initListener();
         initData();
     }
 
     private void initUI() {
-        setContentPane(contentPane);
-        setModal(true);
         //获取显示屏尺寸，使界面居中
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        this.setBounds((width - 800) / 2, (height - 600) / 2, 580, 560);
+        setLocation((width - 800) / 2, (height - 600) / 2);
+        setSize(580, 560);
         //JComponent 集合
         addComponent("dbBox", dbBox);
         addComponent("dbTypeBox", dbTypeBox);
@@ -89,6 +93,16 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
             exportPathText.setText(desktopPath.getAbsolutePath());
         }
         DataSourceUtil.initDataSource(this);
+    }
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
+    }
+
+    @Override
+    protected Action @NotNull [] createActions() {
+        return new Action[0];
     }
 
 }

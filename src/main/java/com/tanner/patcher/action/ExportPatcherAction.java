@@ -13,9 +13,7 @@ public class ExportPatcherAction extends AbstractAnAction {
     public void doAction(AnActionEvent event) {
         PatcherDialog dialog = new PatcherDialog(event);
         dialog.setSize(900, 600);
-        dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
-        dialog.requestFocus();
+        dialog.show();
     }
 
     @Override

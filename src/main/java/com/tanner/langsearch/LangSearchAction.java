@@ -7,8 +7,8 @@ public class LangSearchAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        LangSearchDlg dialog = new LangSearchDlg();
-        dialog.setVisible(true);
+        LangSearchDlg dialog = new LangSearchDlg(event);
+        dialog.show();
     }
 
 }

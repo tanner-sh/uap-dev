@@ -4,7 +4,7 @@ import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
 import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;

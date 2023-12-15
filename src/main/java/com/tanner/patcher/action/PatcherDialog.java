@@ -12,21 +12,18 @@ import com.intellij.ui.ToolbarDecorator;
 import com.intellij.ui.components.JBList;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.UapProjectEnvironment;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 
 public class PatcherDialog extends AbstractDialog {
 
     private final AnActionEvent event;
+
     private JPanel contentPane;
-    private JButton buttonOK;
-    private JButton buttonCancel;
     private JTextField savePath;
     private JButton fileChooseBtn;
     private JPanel filePanel;
@@ -46,19 +43,13 @@ public class PatcherDialog extends AbstractDialog {
     private JBList<VirtualFile> fieldList;
 
     public PatcherDialog(final AnActionEvent event) {
+        super(event.getProject());
         this.event = event;
-        setTitle("export uap patcher...");
+        init();
+        setSize(900, 600);
+        setTitle("Export Uap Patcher...");
         logPanel.setVisible(false);
         patcherName.setEditable(true);
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
-        buttonOK.addActionListener(e -> onOK());
-        buttonCancel.addActionListener(e -> onCancel());
-        addWindowListener(new MyWindowAdapter());
-        contentPane.registerKeyboardAction(e -> onCancel(),
-                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
         UapProjectEnvironment envSettingService = UapProjectEnvironment.getInstance(event.getProject());
         String lastPatcherPath = envSettingService.getLastPatcherPath();
         if (StringUtils.isEmpty(lastPatcherPath) || !new File(lastPatcherPath).exists()) {
@@ -82,23 +73,24 @@ public class PatcherDialog extends AbstractDialog {
         });
     }
 
-    private void onOK() {
+    @Override
+    protected void doOKAction() {
         // 条件校验
         if (null == patcherName.getText() || "".equals(patcherName.getText())) {
-            Messages.showErrorDialog(this, "Please set patcher name!", "Error");
+            Messages.showErrorDialog("Please set patcher name!", "Error");
             return;
         }
         if (null == savePath.getText() || "".equals(savePath.getText())) {
-            Messages.showErrorDialog(this, "Please Select Save Path!", "Error");
+            Messages.showErrorDialog("Please select save path!", "Error");
             return;
         }
         if (null == developer.getText() || "".equals(developer.getText())) {
-            Messages.showErrorDialog(this, "Please Set developer!", "Error");
+            Messages.showErrorDialog("Please Set developer!", "Error");
             return;
         }
         ListModel<VirtualFile> model = fieldList.getModel();
         if (model.getSize() == 0) {
-            Messages.showErrorDialog(this, "Please Select Export File!", "Error");
+            Messages.showErrorDialog("Please select export file!", "Error");
             return;
         }
         String exportPath = savePath.getText();
@@ -146,24 +138,18 @@ public class PatcherDialog extends AbstractDialog {
         });
     }
 
-    private void onCancel() {
-        dispose();
-    }
-
     private void createUIComponents() {
         VirtualFile[] data = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
         assert data != null;
         fieldList = new JBList<VirtualFile>(data);
-        fieldList.setEmptyText("No File Selected!");
+        fieldList.setEmptyText("No file selected!");
         ToolbarDecorator decorator = ToolbarDecorator.createDecorator(fieldList);
         filePanel = decorator.createPanel();
     }
 
-    private class MyWindowAdapter extends WindowAdapter {
-
-        @Override
-        public void windowClosing(WindowEvent e) {
-            onCancel();
-        }
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
     }
+
 }

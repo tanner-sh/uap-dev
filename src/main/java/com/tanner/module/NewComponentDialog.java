@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ContentEntry;
 import com.intellij.openapi.roots.ModifiableRootModel;
 import com.intellij.openapi.roots.ModuleRootManager;
+import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -16,78 +17,54 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
 import com.tanner.base.ProjectManager;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import java.awt.event.*;
 import java.io.File;
 import java.text.MessageFormat;
 
-public class NewComponentDialog extends JDialog {
+public class NewComponentDialog extends DialogWrapper {
 
     private JPanel contentPane;
-    private JButton buttonOK;
-    private JButton buttonCancel;
 
     private JTextField displayText;
     private JTextField nameText;
     private AnActionEvent event;
 
     public NewComponentDialog(final AnActionEvent event) {
+        super(event.getProject());
+        init();
         this.event = event;
         Project project = event.getProject();
-        setTitle("creat new nc componet...");
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
-        buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onOK();
-            }
-        });
-
-        buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        });
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-        contentPane.registerKeyboardAction(new ActionListener() {
-                                               public void actionPerformed(ActionEvent e) {
-                                                   onCancel();
-                                               }
-                                           }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+        setTitle("Creat New Uap Componet...");
+        setSize(900, 300);
     }
 
-    private void onOK() {
+    @Override
+    protected void doOKAction() {
         String name = nameText.getText();
         if (StringUtils.isBlank(name)) {
-            Messages.showErrorDialog(this, "please set componet name!", "Error");
+            Messages.showErrorDialog("Please set componet name!", "Error");
             return;
         }
         String display = displayText.getText();
         if (StringUtils.isBlank(display)) {
-            Messages.showErrorDialog(this, "please set componet display!", "Error");
+            Messages.showErrorDialog("Please set componet display!", "Error");
             return;
         }
         if (!name.matches("[a-zA-Z]+")) {
-            Messages.showErrorDialog(this, "the name must be using letter only!", "Error");
+            Messages.showErrorDialog("The name must be using letter only!", "Error");
             return;
         }
         if (!display.matches("[a-zA-Z]+")) {
-            Messages.showErrorDialog(this, "the display must be using letter only!", "Error");
+            Messages.showErrorDialog("The display must be using letter only!", "Error");
             return;
         }
         String modulePath = event.getData(CommonDataKeys.VIRTUAL_FILE).getPath();
         File file = new File(modulePath + File.separator + name);
         if (file.exists()) {
-            Messages.showErrorDialog(this, "componet is exists! please replace name !", "Error");
+            Messages.showErrorDialog("Componet is exists! please replace name !", "Error");
         }
         //创建目录
         String[] dirs = new String[]{"META-INF", "METADATA", "resources", "src/public", "src/private",
@@ -131,14 +108,16 @@ public class NewComponentDialog extends JDialog {
                 }
             }
             Application applicationManager = ApplicationManager.getApplication();
-            applicationManager.runWriteAction(() -> modifiableModel.commit());
+            applicationManager.runWriteAction(modifiableModel::commit);
         } catch (BusinessException e) {
+            Messages.showErrorDialog(e.getMessage(), "Error");
         }
-        dispose();
+        close(0);
     }
 
-    private void onCancel() {
-        dispose();
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
     }
 
 }

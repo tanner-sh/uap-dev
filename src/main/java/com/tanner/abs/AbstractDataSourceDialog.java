@@ -1,8 +1,10 @@
 package com.tanner.abs;
 
+import com.intellij.openapi.project.Project;
 import com.tanner.dbdriver.entity.DatabaseDriverInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.DataSourceMeta;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -16,6 +18,10 @@ public abstract class AbstractDataSourceDialog extends AbstractDialog {
     private Map<String, DriverInfo> driverInfoMap = new HashMap<String, DriverInfo>();
     //当前数据源
     private DataSourceMeta currMeta;
+
+    protected AbstractDataSourceDialog(@Nullable Project project) {
+        super(project);
+    }
 
     public Map<String, DatabaseDriverInfo> getDatabaseDriverInfoMap() {
         return databaseDriverInfoMap;

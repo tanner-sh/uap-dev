@@ -5,7 +5,7 @@ import com.tanner.base.BusinessException;
 import com.tanner.base.ModuleFileUtil;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.debug.util.CreatApplicationConfigurationUtil;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -16,7 +16,13 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Vector;
 
 public class TableModelUtil {
 

@@ -7,7 +7,7 @@ import com.tanner.abs.AbstractDialog;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.script.export.util.ScriptExportTool;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

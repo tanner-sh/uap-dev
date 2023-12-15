@@ -40,7 +40,8 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
                 Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             DataSourceUtil.saveDesignDataSourceMeta(dialog);
-            dialog.dispose();
+            dialog.close(0);
         }
     }
+
 }

@@ -4,7 +4,7 @@ import com.tanner.base.BusinessException;
 import com.tanner.base.DbUtil;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.math.BigDecimal;
 import java.sql.Connection;

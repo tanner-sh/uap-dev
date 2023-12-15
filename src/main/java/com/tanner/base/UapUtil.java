@@ -2,7 +2,7 @@ package com.tanner.base;
 
 import com.tanner.devconfig.util.AESEncode;
 import com.tanner.devconfig.util.Encode;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;

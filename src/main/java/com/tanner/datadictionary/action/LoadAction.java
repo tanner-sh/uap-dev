@@ -12,7 +12,7 @@ import com.tanner.datadictionary.engine.IEngine;
 import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.ToolUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

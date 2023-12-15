@@ -4,22 +4,23 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
 import com.tanner.base.ProjectManager;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.text.MessageFormat;
 
-public class NewModuleDialog extends JDialog {
+public class NewModuleDialog extends DialogWrapper {
 
     private JPanel contentPane;
-    private JButton buttonOK;
-    private JButton buttonCancel;
 
     private JTextField location;
     private JButton locationFileChooseBtn;
@@ -29,6 +30,10 @@ public class NewModuleDialog extends JDialog {
     private String modulePath;
 
     public NewModuleDialog(final AnActionEvent event) {
+        super(event.getProject());
+        init();
+        setTitle("Creat New Uap Module...");
+        setSize(900, 300);
         this.event = event;
         if (event.getData(CommonDataKeys.VIRTUAL_FILE) == null) {
             modulePath = event.getProject().getBasePath();
@@ -36,36 +41,6 @@ public class NewModuleDialog extends JDialog {
             modulePath = event.getData(CommonDataKeys.VIRTUAL_FILE).getPath();
         }
         location.setText(modulePath);
-        setTitle("creat new nc module...");
-        setContentPane(contentPane);
-        setModal(true);
-        getRootPane().setDefaultButton(buttonOK);
-        buttonOK.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onOK();
-            }
-        });
-
-        buttonCancel.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                onCancel();
-            }
-        });
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });
-
-        // call onCancel() on ESCAPE
-        contentPane.registerKeyboardAction(new ActionListener() {
-                                               public void actionPerformed(ActionEvent e) {
-                                                   onCancel();
-                                               }
-                                           }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-
         // 保存路径按钮事件
         locationFileChooseBtn.addActionListener(new ActionListener() {
             @Override
@@ -80,20 +55,21 @@ public class NewModuleDialog extends JDialog {
         });
     }
 
-    private void onOK() {
+    @Override
+    protected void doOKAction() {
         String moduleNameText = moduleNameField.getText();
         String ncModuleNameText = ncModuleNameField.getText();
         if (StringUtils.isBlank(moduleNameText)) {
-            Messages.showErrorDialog(this, "Please set module name!", "Error");
+            Messages.showErrorDialog("Please set module name!", "Error");
             return;
         }
         if (StringUtils.isBlank(ncModuleNameText)) {
-            Messages.showErrorDialog(this, "Please set NC Module name!", "Error");
+            Messages.showErrorDialog("Please set NC Module name!", "Error");
             return;
         }
         String locationText = location.getText();
         if (StringUtils.isBlank(locationText)) {
-            Messages.showErrorDialog(this, "Please set Module file location !", "Error");
+            Messages.showErrorDialog("Please set Module file location !", "Error");
             return;
         }
         Project project = event.getProject();
@@ -116,14 +92,14 @@ public class NewModuleDialog extends JDialog {
             //设置类路径
             ProjectManager.getInstance().setModuleLibrary(project, module);
         } catch (BusinessException e) {
-            Messages.showErrorDialog(this, e.getMessage(), "Error");
+            Messages.showErrorDialog(e.getMessage(), "Error");
         }
-        dispose();
+        close(0);
     }
 
-    private void onCancel() {
-        dispose();
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
     }
-
 
 }

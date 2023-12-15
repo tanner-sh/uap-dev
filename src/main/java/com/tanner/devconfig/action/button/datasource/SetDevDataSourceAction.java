@@ -5,7 +5,7 @@ import com.tanner.abs.AbstractDialog;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

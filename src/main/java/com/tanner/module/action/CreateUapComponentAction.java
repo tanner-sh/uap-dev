@@ -24,10 +24,7 @@ public class CreateUapComponentAction extends AbstractAnAction {
             return;
         }
         NewComponentDialog dialog = new NewComponentDialog(event);
-        dialog.setSize(900, 300);
-        dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
-        dialog.requestFocus();
+        dialog.show();
     }
 
     @Override
@@ -39,4 +36,5 @@ public class CreateUapComponentAction extends AbstractAnAction {
                         file.getPath() + File.separator + "META-INF" + File.separator + "module.xml").exists();
         e.getPresentation().setEnabledAndVisible(flag);
     }
+
 }

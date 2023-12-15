@@ -7,8 +7,8 @@ public class ExportDataDictionaryAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        DataDictionaryExportDlg dialog = new DataDictionaryExportDlg();
-        dialog.setVisible(true);
+        DataDictionaryExportDlg dialog = new DataDictionaryExportDlg(event);
+        dialog.show();
     }
 
 }

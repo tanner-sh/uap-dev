@@ -1,11 +1,14 @@
 package com.tanner.datadictionary.action;
 
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.devconfig.action.button.datasource.TestConnectionAction;
 import com.tanner.devconfig.action.item.DBBoxListener;
 import com.tanner.devconfig.action.item.DBTypeBoxListener;
 import com.tanner.devconfig.action.item.DriverBoxListener;
 import com.tanner.devconfig.util.DataSourceUtil;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -35,19 +38,20 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     private JCheckBox needFilterDefField;
     private JTextField logTextField;
 
-    public DataDictionaryExportDlg() {
+    public DataDictionaryExportDlg(AnActionEvent event) {
+        super(event.getProject());
+        init();
         initUI();
         initListener();
         initData();
     }
 
     private void initUI() {
-        setContentPane(contentPane);
-        setModal(true);
         //获取显示屏尺寸，使界面居中
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
         int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        this.setBounds((width - 800) / 2, (height - 600) / 2, 580, 560);
+        setLocation((width - 800) / 2, (height - 600) / 2);
+        setSize(580, 560);
         //JComponent 集合
         addComponent("dbBox", dbBox);
         addComponent("dbTypeBox", dbTypeBox);
@@ -121,7 +125,14 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
         dbTable.setModel(tableModel);
     }
 
-    private void createUIComponents() {
-        // TODO: place custom component creation code here
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+        return contentPane;
     }
+
+    @Override
+    protected Action @NotNull [] createActions() {
+        return new Action[0];
+    }
+
 }

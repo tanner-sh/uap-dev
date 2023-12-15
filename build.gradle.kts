@@ -19,8 +19,8 @@ intellij {
 }
 
 dependencies {
-    // ÆäËûÒÀÀµÏî...
-    implementation("com.itextpdf:itextpdf:5.5.13")
+    // å…¶ä»–ä¾èµ–é¡¹...
+    implementation("com.itextpdf:itextpdf:5.5.13.3")
     implementation("com.itextpdf:itext-asian:5.2.0")
 }
 

@@ -5,7 +5,7 @@ import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractItemListener;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.util.DataSourceUtil;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.event.ItemEvent;

@@ -11,7 +11,7 @@ public class DevConfigAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        DevConfigDialog dialog = new DevConfigDialog();
-        dialog.setVisible(true);
+        DevConfigDialog dialog = new DevConfigDialog(event);
+        dialog.show();
     }
 }

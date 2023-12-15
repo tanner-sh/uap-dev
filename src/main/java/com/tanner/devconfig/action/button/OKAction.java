@@ -11,7 +11,7 @@ import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.devconfig.util.TableModelUtil;
 import com.tanner.library.action.LibrariesUtil;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -41,7 +41,7 @@ public class OKAction extends AbstractButtonAction {
         setLibraries(homeChanged);
         saveDataSource(homeChanged);
         saveModuleConfig(homeChanged);
-        getDialog().dispose();
+        getDialog().close(0);
     }
 
     /**

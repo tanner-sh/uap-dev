@@ -6,7 +6,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.io.FileUtil;
 import com.tanner.base.BaseUtil;
 import com.tanner.base.UapProjectEnvironment;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

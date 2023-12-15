@@ -9,7 +9,11 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
-import com.tanner.base.*;
+import com.tanner.base.BusinessException;
+import com.tanner.base.ClassLoaderUtil;
+import com.tanner.base.DbUtil;
+import com.tanner.base.ProjectManager;
+import com.tanner.base.UapProjectEnvironment;
 import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.datadictionary.tool.DataDictionaryExportTool;
 import com.tanner.dbdriver.entity.DriverInfo;
@@ -68,10 +72,13 @@ public class ExportAction extends AbstractButtonAction {
         boolean needFilterDefField = dlg.getComponent(JCheckBox.class, "needFilterDefField").isSelected();
         JTextField logTextField = dlg.getComponent(JTextField.class, "logTextField");
         try {
-            new DataDictionaryExportTool(connection, logTextField)
+            new DataDictionaryExportTool(connection)
                     .export(virtualFile.getPath(), selectedTables, exportAs, needFilterDefField);
+            logTextField.setText("导出完毕!");
         } catch (Exception e) {
-            Messages.showWarningDialog("导出过程异常\n" + e.getMessage(), "错误");
+            String msg = "导出过程异常\n" + e.getMessage();
+            logTextField.setText(msg);
+            Messages.showWarningDialog(msg, "错误");
             return;
         }
         Messages.showInfoMessage("导出完毕", "提示");

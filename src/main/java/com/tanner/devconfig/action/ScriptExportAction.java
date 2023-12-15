@@ -11,7 +11,7 @@ public class ScriptExportAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        ScriptExportDlg dialog = new ScriptExportDlg();
-        dialog.setVisible(true);
+        ScriptExportDlg dialog = new ScriptExportDlg(event);
+        dialog.show();
     }
 }
