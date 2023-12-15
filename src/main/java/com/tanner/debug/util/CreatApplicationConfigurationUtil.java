@@ -27,7 +27,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 import static com.intellij.execution.ShortenCommandLine.CLASSPATH_FILE;
 
@@ -91,24 +90,10 @@ public class CreatApplicationConfigurationUtil {
             throw new BusinessException("languageLevel not set!");
         }
         int feature = languageLevel.toJavaVersion().feature;
-        Map<String, String> envs = conf.getEnvs();
         if (serverFlag) {
             conf.setMainClassName(serverClass);
-            String exModulesStr = UapProjectEnvironment.getInstance().getEx_modules();
-            envs.put("FIELD_EX_MODULES", exModulesStr);
-            String hotwebs = envs.get("FIELD_HOTWEBS");
-            if (StringUtils.isBlank(hotwebs)) {
-                hotwebs = "nccloud,fs";
-            }
-            envs.put("FIELD_HOTWEBS", hotwebs);
-            envs.put("FIELD_ENCODING", "GB2312");
-
-            String timeZone = envs.get("FIELD_TIMEZONE");
-            if (StringUtils.isBlank(timeZone)) {
-                timeZone = "GMT+8";
-            }
-            envs.put("FIELD_TIMEZONE", timeZone);
-            conf.setVMParameters(getDefalutsServerVMParameters(feature));
+            String exModules = UapProjectEnvironment.getInstance().getEx_modules();
+            conf.setVMParameters(getDefalutsServerVMParameters(feature, exModules, homePath));
         } else {
             // ip和端口号读取home中的，没有就取默认值127.0.0.1:80
             IpAndPort ipAndPort = new IpAndPort();
@@ -139,16 +124,12 @@ public class CreatApplicationConfigurationUtil {
             }
             //本地调试移动用127.0.0.1
             ipAndPort.setAddress(DEFALUT_IP);
-            envs.put("FIELD_CLINET_IP",
-                    StringUtils.isBlank(ipAndPort.getAddress()) ? DEFALUT_IP : ipAndPort.getAddress());
-            envs.put("FIELD_CLINET_PORT",
-                    String.valueOf(ipAndPort.getPort() == null ? DEFALUT_PORT : ipAndPort.getPort()));
+            String clientIp = StringUtils.isBlank(ipAndPort.getAddress()) ? DEFALUT_IP : ipAndPort.getAddress();
+            String clientPort = String.valueOf(ipAndPort.getPort() == null ? DEFALUT_PORT : ipAndPort.getPort());
             conf.setMainClassName(clientClass);
-            conf.setVMParameters(getDefalutsClientVMParameters(feature));
+            conf.setVMParameters(getDefalutsClientVMParameters(feature, clientIp, clientPort));
         }
-        envs.put("FIELD_NC_HOME", homePath);
         conf.setModule(selectModule);
-        conf.setEnvs(envs);
         conf.setWorkingDirectory(homePath);
         conf.setShortenCommandLine(CLASSPATH_FILE);
     }
@@ -179,18 +160,18 @@ public class CreatApplicationConfigurationUtil {
         }
     }
 
-    private static String getDefalutsServerVMParameters(int feature) {
+    private static String getDefalutsServerVMParameters(int feature, String exModules, String homePath) {
         StringBuilder parameters = new StringBuilder();
-        parameters.append("-Dnc.exclude.modules=$FIELD_EX_MODULES$\n");
+        parameters.append("-Dnc.exclude.modules=").append(exModules).append("\n");
         parameters.append("-Dnc.runMode=develop\n");
-        parameters.append("-Dnc.server.location=$FIELD_NC_HOME$\n");
-        parameters.append("-DEJBConfigDir=$FIELD_NC_HOME$/ejbXMLs\n");
-        parameters.append("-DExtServiceConfigDir=$FIELD_NC_HOME$/ejbXMLs\n");
-        parameters.append("-Duap.hotwebs=$FIELD_HOTWEBS$\n");
+        parameters.append("-Dnc.server.location=").append(homePath).append("\n");
+        parameters.append("-DEJBConfigDir=").append(homePath).append("/ejbXMLs\n");
+        parameters.append("-DExtServiceConfigDir=").append(homePath).append("/ejbXMLs\n");
+        parameters.append("-Duap.hotwebs=").append("nccloud,fs").append("\n");
         parameters.append("-Duap.disable.codescan=false\n");
-        parameters.append("-Dorg.owasp.esapi.resources=$FIELD_NC_HOME$/ierp/bin/esapi\n");
-        parameters.append("-Dfile.encoding=$FIELD_ENCODING$\n");
-        parameters.append("-Duser.timezone=$FIELD_TIMEZONE$\n");//默认添加时区
+        parameters.append("-Dorg.owasp.esapi.resources=").append(homePath).append("/ierp/bin/esapi\n");
+        parameters.append("-Dfile.encoding=").append("GB2312").append("\n"); // 默认编码
+        parameters.append("-Duser.timezone=").append("GMT+8").append("\n");// 默认时区
         if (feature >= 8) {//jdk8以上
             parameters.append("-Xmx1024m\n");
             parameters.append("-XX:MetaspaceSize=128m\n");
@@ -203,11 +184,11 @@ public class CreatApplicationConfigurationUtil {
         return parameters.toString();
     }
 
-    private static String getDefalutsClientVMParameters(int feature) {
+    private static String getDefalutsClientVMParameters(int feature, String clientIp, String clientPort) {
         StringBuilder parameters = new StringBuilder();
         parameters.append("-Dnc.runMode=develop\n");
-        parameters.append("-Dnc.jstart.server=$FIELD_CLINET_IP$\n");
-        parameters.append("-Dnc.jstart.port=$FIELD_CLINET_PORT$\n");
+        parameters.append("-Dnc.jstart.server=").append(clientIp).append("\n");
+        parameters.append("-Dnc.jstart.port=").append(clientPort).append("\n");
         parameters.append("-Xmx768m -XX:MaxPermSize=256m\n");
         parameters.append("-Dnc.fi.autogenfile=N\n");
         return parameters.toString();
