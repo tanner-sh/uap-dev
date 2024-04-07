@@ -31,4 +31,5 @@ public class NewServerApplicationAction extends AbstractAnAction {
         boolean flag = isModuleChild(file, e);
         e.getPresentation().setEnabledAndVisible(flag);
     }
+
 }

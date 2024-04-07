@@ -137,7 +137,7 @@
                         serviceInterface="com.tanner.base.UapProjectEnvironment"/>
     </extensions>
     <id>uap-dev-2022</id>
-    <idea-version since-build="220.0"/>
+    <idea-version since-build="223.0"/>
     <name>uap-dev</name>
     <vendor email="bianhuakai1994@gmail.com" url="https://tanner-sh.github.io/home/">tanner</vendor>
     <version>1.0.0</version>
