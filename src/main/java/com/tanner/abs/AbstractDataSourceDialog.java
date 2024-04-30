@@ -13,9 +13,9 @@ import java.util.Map;
 public abstract class AbstractDataSourceDialog extends AbstractDialog {
 
     //数据源相关缓存
-    private Map<String, DatabaseDriverInfo> databaseDriverInfoMap = new HashMap<String, DatabaseDriverInfo>();
-    private Map<String, DataSourceMeta> dataSourceMetaMap = new LinkedHashMap<String, DataSourceMeta>();
-    private Map<String, DriverInfo> driverInfoMap = new HashMap<String, DriverInfo>();
+    private final Map<String, DatabaseDriverInfo> databaseDriverInfoMap = new HashMap<>();
+    private final Map<String, DataSourceMeta> dataSourceMetaMap = new LinkedHashMap<>();
+    private final Map<String, DriverInfo> driverInfoMap = new HashMap<>();
     //当前数据源
     private DataSourceMeta currMeta;
 

@@ -23,18 +23,17 @@ public class MarkdownBuilder implements IExportBuilder {
     }
 
     private String getMarkdownContent(List<AggTable> aggTableList) {
-        StringBuffer markdownContent = new StringBuffer();
+        StringBuilder markdownContent = new StringBuilder();
         String res1 = "|:------:|:------:|:------:|:------:|:------:|:------:|" + "\n";
         for (AggTable aggTable : aggTableList) {
-            Integer index = aggTableList.indexOf(aggTable) + 1;
+            int index = aggTableList.indexOf(aggTable) + 1;
             TableInfo tableInfo = aggTable.getTableInfo();
             List<ColumnInfo> columnInfoList = aggTable.getColumnInfoList();
-            StringBuffer oneTableContent = new StringBuffer();
-            oneTableContent.append("## " + index + "." + tableInfo.getTableName() + " " + tableInfo.getComment() + "\n\n" + "|序列|列名|类型|可空|默认值|注释|枚举|" + "\n");
+            StringBuilder oneTableContent = new StringBuilder();
+            oneTableContent.append("## ").append(index).append(".").append(tableInfo.getTableName()).append(" ").append(tableInfo.getComment()).append("\n\n").append("|序列|列名|类型|可空|默认值|注释|枚举|").append("\n");
             oneTableContent.append(res1);
             //拼接列
-            for (int k = 0; k < columnInfoList.size(); k++) {
-                ColumnInfo columnInfo = columnInfoList.get(k);
+            for (ColumnInfo columnInfo : columnInfoList) {
                 oneTableContent.append("|").append(columnInfo.getColumnId()).append("|").
                         append(columnInfo.getColumnName()).append("|").
                         append(columnInfo.getType()).append("|").

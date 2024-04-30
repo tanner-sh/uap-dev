@@ -5,7 +5,7 @@ import java.awt.event.KeyListener;
 
 public abstract class AbstractKeyListener implements KeyListener {
 
-    private AbstractDialog dialog;
+    private final AbstractDialog dialog;
 
     public AbstractKeyListener(AbstractDialog dialog) {
         this.dialog = dialog;

@@ -12,7 +12,7 @@ public class ContentEvent extends PdfPageEventHelper {
 
     private int page;
 
-    public Map<String, Integer> index = new LinkedHashMap<String, Integer>();
+    public Map<String, Integer> index = new LinkedHashMap<>();
 
     @Override
     public void onStartPage(PdfWriter writer, Document document) {

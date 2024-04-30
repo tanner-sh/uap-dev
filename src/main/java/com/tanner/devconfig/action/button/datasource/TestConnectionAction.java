@@ -37,7 +37,7 @@ public class TestConnectionAction extends AbstractButtonAction {
         try {
             classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
         } catch (Exception e) {
-            Messages.showMessageDialog("驱动加载失败", "错误", Messages.getErrorIcon());
+            Messages.showMessageDialog("Add driver error !", "错误", Messages.getErrorIcon());
             return;
         }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
@@ -53,13 +53,13 @@ public class TestConnectionAction extends AbstractButtonAction {
             connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
                     ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port), userName, pwd);
         } catch (Exception e) {
-            Messages.showMessageDialog("获取数据库连接失败\n" + e.getMessage(), "错误",
+            Messages.showMessageDialog("Get connection error \n" + e.getMessage(), "错误",
                     Messages.getErrorIcon());
             return;
         } finally {
             DbUtil.closeResource(connection, null, null);
         }
-        Messages.showMessageDialog("测试通过", "提示", Messages.getInformationIcon());
+        Messages.showMessageDialog("Test connection success !", "提示", Messages.getInformationIcon());
     }
 
 }

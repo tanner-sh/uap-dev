@@ -16,12 +16,10 @@ public class ClassLoaderUtil {
     public static ClassLoader getUapJdbcClassLoader(String homePath) throws BusinessException {
         try {
             //加载home/lib以及driver下所有jar包
-//            Collection<File> libJars = FileUtils.listFiles(new File(homePath, "lib"), null, true);
-//            Collection<File> driverJars = FileUtils.listFiles(new File(homePath, "driver"), null, true);
             Collection<File> allJars = FileUtils.listFiles(new File(homePath, "driver"), null, true);
             //oracle需要额外加载orai18n.jar，所以加载
             Collection<File> otherJars = FileUtils.listFiles(new File(homePath, "lib"), null, true);
-            otherJars = otherJars.stream().filter(otherJar -> otherJar.getName().startsWith("orai")).collect(Collectors.toList());
+            otherJars = otherJars.stream().filter(otherJar -> otherJar.getName().startsWith("orai")).toList();
             allJars.addAll(otherJars);
             Map<String, File> libJarsMap = allJars.stream().collect(
                     Collectors.toMap(File::getName, Function.identity(), (oldValue, newValue) -> newValue));

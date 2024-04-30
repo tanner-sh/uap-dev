@@ -12,7 +12,7 @@ public class NewClientApplicationAction extends AbstractAnAction {
 
     @Override
     public void doAction(@NotNull AnActionEvent event) {
-        String message = "success";
+        String message = "Success";
         try {
             CreatApplicationConfigurationUtil.createApplicationConfiguration(event, false);
             Messages.showInfoMessage(message, "Tips");

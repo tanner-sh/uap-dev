@@ -10,12 +10,12 @@ import java.util.List;
 public class MySqlEngine implements IEngine {
 
     @Override
-    public List<TableInfo> getAllTableInfo(Connection connection, String userName, String[] tableNamePattern) throws BusinessException {
+    public List<TableInfo> getAllTableInfo(Connection connection, String userName, String[] tableNamePattern) {
         return null;
     }
 
     @Override
-    public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName, boolean needFilterDefField) throws BusinessException {
+    public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName, boolean needFilterDefField) {
         return null;
     }
 

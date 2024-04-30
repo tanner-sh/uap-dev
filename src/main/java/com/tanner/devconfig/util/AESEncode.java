@@ -16,9 +16,7 @@ import java.security.Security;
 import java.util.Properties;
 
 /**
- * @description: TODO
- * @author: liuchao
- * @date: 2022/4/1
+ * copy from home
  */
 public class AESEncode {
     private static final Logger LOG = Logger.getInstance(AESEncode.class);

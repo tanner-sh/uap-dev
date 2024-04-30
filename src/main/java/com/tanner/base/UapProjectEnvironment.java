@@ -46,7 +46,7 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
 
     public static UapProjectEnvironment getInstance(Project project) {
         if (project == null) {
-            Messages.showMessageDialog("please open a project", "error", Messages.getErrorIcon());
+            Messages.showMessageDialog("Please open a project", "Error", Messages.getErrorIcon());
             return null;
         } else {
             return ServiceManager.getService(project, UapProjectEnvironment.class);

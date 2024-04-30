@@ -83,16 +83,16 @@ public class ExportPatcherUtil {
     /**
      * 导出变量
      **/
-    private AnActionEvent event;
-    private String exportPath;
-    private String patchName;
-    private boolean srcFlag = false;
+    private final AnActionEvent event;
+    private final String exportPath;
+    private final String patchName;
+    private final boolean srcFlag;
     private String webServerName = File.separator + "nccloud";
-    private boolean cloudFlag = false;
-    private String projectName;
-    private boolean needDeploy = false;
-    private boolean needClearSwingCache = false;
-    private boolean needClearBrowserCache = false;
+    private boolean cloudFlag;
+    private final String projectName;
+    private final boolean needDeploy;
+    private final boolean needClearSwingCache;
+    private final boolean needClearBrowserCache;
     private String functionDescription;
     private String configDescription;
     private String zipName = "";
@@ -123,19 +123,19 @@ public class ExportPatcherUtil {
         this.functionDescription = "";
         if (StringUtils.isNotBlank(functionDescription)) {
             this.functionDescription = Arrays.stream(functionDescription.split("\n"))
-                    .map(lineStr -> lineStr = "- " + lineStr).collect(Collectors.joining("\n"));
+                    .map(lineStr -> "- " + lineStr).collect(Collectors.joining("\n"));
         }
         this.configDescription = "";
         if (StringUtils.isNotBlank(configDescription)) {
             this.configDescription = Arrays.stream(configDescription.split("\n"))
-                    .map(lineStr -> lineStr = "- " + lineStr).collect(Collectors.joining("\n"));
+                    .map(lineStr -> "- " + lineStr).collect(Collectors.joining("\n"));
         }
     }
 
     /**
      * 导出补丁
      *
-     * @throws IOException
+     * @throws IOException IOException
      */
     public void exportPatcher(JProgressBar progressBar) throws Exception {
         //当前工程
@@ -144,28 +144,27 @@ public class ExportPatcherUtil {
         VirtualFile[] selectFile = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
         //所有module
         Map<String, Module> moduleMap = new HashMap<>();
-        Module[] modules = ModuleManager.getInstance(project).getModules();
+        Module[] modules = ModuleManager.getInstance(Objects.requireNonNull(project)).getModules();
         for (Module module : modules) {
             moduleMap.put(module.getName(), module);
         }
         //获取编译版本
         LanguageLevel languageLevel = LanguageLevelUtil.getEffectiveLanguageLevel(modules[0]);
-        if (languageLevel == null) {
-            throw new BusinessException("languageLevel not set!");
-        }
         String javaVersion = languageLevel.toJavaVersion().toString();
         //选取文件路径和模块之间的关系
-        Map<String, Set<String>> modulePathMap = new HashMap<String, Set<String>>();
+        Map<String, Set<String>> modulePathMap = new HashMap<>();
         //处理所有选中文件路径
-        for (VirtualFile file : selectFile) {
-            String path = new File(file.getPath()).getPath();
-            //从文件路径中截取module名
-            String moduleName = ModuleUtil.findModuleForFile(file, project).getName();
-            //判断如是选择了模块或者组件，则获取所有可导出的目录
-            List<String> fileList = getAllFileList(path, moduleMap.get(moduleName));
-            Set<String> fileUrlSet = modulePathMap.computeIfAbsent(moduleName, k -> new HashSet<>());
-            for (String str : fileList) {
-                getFileUrl(str, fileUrlSet);
+        if (selectFile != null) {
+            for (VirtualFile file : selectFile) {
+                String path = new File(file.getPath()).getPath();
+                //从文件路径中截取module名
+                String moduleName = Objects.requireNonNull(ModuleUtil.findModuleForFile(file, project)).getName();
+                //判断如是选择了模块或者组件，则获取所有可导出的目录
+                List<String> fileList = getAllFileList(path, moduleMap.get(moduleName));
+                Set<String> fileUrlSet = modulePathMap.computeIfAbsent(moduleName, k -> new HashSet<>());
+                for (String str : fileList) {
+                    getFileUrl(str, fileUrlSet);
+                }
             }
         }
         //进度条设定
@@ -189,7 +188,10 @@ public class ExportPatcherUtil {
                     "......start the " + moduleIndex + "th module : " + moduleName + ",total : "
                             + fileUrlSet.size() + "......");
             CompilerModuleExtension instance = CompilerModuleExtension.getInstance(module);
-            VirtualFile outPath = instance.getCompilerOutputPath();
+            VirtualFile outPath = null;
+            if (instance != null) {
+                outPath = instance.getCompilerOutputPath();
+            }
             if (outPath == null) {
                 throw new BusinessException(
                         "please set output folder or rebuild module ! module:" + moduleName);
@@ -254,7 +256,7 @@ public class ExportPatcherUtil {
             createNMCLog(moduleSet, classNameSet);
         }
         //导出readme
-        createReadMe(moduleSet, classNameSet, javaVersion);
+        createReadMe(moduleSet, javaVersion);
         //创建zip压缩包
         zipName = ZipUtil.toZip(exportPath, patchName);
         //删除导出的目录
@@ -264,13 +266,15 @@ public class ExportPatcherUtil {
     /**
      * 压缩后删除原目录
      *
-     * @param file
+     * @param file file
      */
     public void delete(File file) {
         if (file.isDirectory()) {
             File[] children = file.listFiles();
-            for (File child : children) {
-                delete(child);
+            if (children != null) {
+                for (File child : children) {
+                    delete(child);
+                }
             }
             file.delete();
         } else {
@@ -278,8 +282,7 @@ public class ExportPatcherUtil {
         }
     }
 
-    private void createReadMe(Set<String> moduleSet, Set<String> classNameSet, String javaVersion)
-            throws BusinessException {
+    private void createReadMe(Set<String> moduleSet, String javaVersion) throws BusinessException {
         //输出readme
         ConfigureFileUtil configureFileUtil = new ConfigureFileUtil();
         File readmeFile = new File(exportPath + File.separator + "README.md");
@@ -296,8 +299,8 @@ public class ExportPatcherUtil {
     /**
      * 创建nmc日志
      *
-     * @param moduleSet
-     * @param classNameSet
+     * @param moduleSet    moduleSet
+     * @param classNameSet classNameSet
      */
     private void createNMCLog(Set<String> moduleSet, Set<String> classNameSet)
             throws BusinessException {
@@ -311,43 +314,48 @@ public class ExportPatcherUtil {
         File installFile = new File(exportPath + File.separator + "installpatch.xml");
         String s = "";
         if (!cloudFlag) {
-            s = "<copy>\n" + "        <from>/replacement/modules/</from>\n"
-                    + "        <to>/modules/</to>\n" + "    </copy>\n" + "    <copy>\n"
-                    + "        <from>/replacement/hotwebs/</from>\n" + "        <to>/hotwebs/</to>\n"
-                    + "    </copy>";
+            s = """
+                    <copy>
+                            <from>/replacement/modules/</from>
+                            <to>/modules/</to>
+                        </copy>
+                        <copy>
+                            <from>/replacement/hotwebs/</from>
+                            <to>/hotwebs/</to>
+                        </copy>""";
         }
         String template = util.readTemplate("installpatch.xml");
         String content = MessageFormat.format(template, s);
         util.outFile(installFile, content, "UTF-8", false);
         //输出metadata
-        String modifyClasses = "";
+        StringBuilder modifyClasses = new StringBuilder();
         for (String className : classNameSet) {
             if (className.endsWith(TYPE_JAVA)) {//暂时只记录java文件
                 className = className.replace(TYPE_JAVA, "");
-                modifyClasses += "," + className;
+                modifyClasses.append(",").append(className);
             }
         }
-        if (StringUtils.isNotBlank(modifyClasses)) {
-            modifyClasses = modifyClasses.substring(1);
+        if (StringUtils.isNotBlank(modifyClasses.toString())) {
+            modifyClasses = new StringBuilder(modifyClasses.substring(1));
         }
-        String modifyModules = "";
+        StringBuilder modifyModules = new StringBuilder();
         for (String moduleName : moduleSet) {
-            modifyModules += "," + moduleName;
+            modifyModules.append(",").append(moduleName);
         }
-        if (StringUtils.isNotBlank(modifyModules)) {
-            modifyModules = modifyModules.substring(1);
+        if (StringUtils.isNotBlank(modifyModules.toString())) {
+            modifyModules = new StringBuilder(modifyModules.substring(1));
         }
         File metadataFile = new File(exportPath + File.separator + "packmetadata.xml");
         template = util.readTemplate("packmetadata.xml");
-        content = MessageFormat.format(template, modifyClasses, modifyModules, patchName, id, dateStr);
+        content = MessageFormat.format(template, modifyClasses.toString(), modifyModules.toString(), patchName, id, dateStr);
         util.outFile(metadataFile, content, "UTF-8", false);
     }
 
     /**
      * 获取nc模块名称
      *
-     * @param module
-     * @return
+     * @param module module
+     * @return String
      */
     private String getNCModuleName(Module module) {
         String ncModuleName = null;
@@ -374,9 +382,9 @@ public class ExportPatcherUtil {
     /**
      * 导出xml文件
      *
-     * @param moduleName
-     * @param fromFile
-     * @throws IOException
+     * @param moduleName moduleName
+     * @param fromFile   fromFile
+     * @throws IOException IOException
      */
     private void exportXml(String moduleName, String ncModuleName, File fromFile) throws Exception {
         //判断文件类型
@@ -418,11 +426,10 @@ public class ExportPatcherUtil {
     /**
      * 导出openapi中的md描述文件
      *
-     * @param moduleName
-     * @param fromFile
+     * @param moduleName moduleName
+     * @param fromFile   fromFile
      */
     private void exportOpenApiMD(String moduleName, File fromFile) throws Exception {
-        String fileName = fromFile.getName();
         String fromParentPath = fromFile.getParent();
         String toPath = exportPath + PATH_REPLACEMENT + fromParentPath.split(
                 Matcher.quoteReplacement(PATH_OPENAPI))[1];
@@ -432,9 +439,9 @@ public class ExportPatcherUtil {
     /**
      * 导出元数据文件
      *
-     * @param moduleName
-     * @param ncModuleName
-     * @param fromFile
+     * @param moduleName   moduleName
+     * @param ncModuleName ncModuleName
+     * @param fromFile     fromFile
      */
     private void exportMetaFile(String moduleName, String ncModuleName, File fromFile)
             throws Exception {
@@ -455,7 +462,7 @@ public class ExportPatcherUtil {
     /**
      * 导出多语文件
      *
-     * @param fromFile
+     * @param fromFile fromFile
      */
     private void exportProperties(String moduleName, File fromFile) throws Exception {
         String fileName = fromFile.getName();
@@ -472,9 +479,9 @@ public class ExportPatcherUtil {
     /**
      * 导出uppm文件
      *
-     * @param moduleName
-     * @param ncModuleName
-     * @param fromFile
+     * @param moduleName   moduleName
+     * @param ncModuleName ncModuleName
+     * @param fromFile     fromFile
      */
     private void exportUpm(String moduleName, String ncModuleName, File fromFile) throws Exception {
         String fileName = fromFile.getName();
@@ -486,10 +493,10 @@ public class ExportPatcherUtil {
     /**
      * 导出java文件
      *
-     * @param moduleName
-     * @param compilerOutputUrl
-     * @param fromFile
-     * @throws IOException
+     * @param moduleName        moduleName
+     * @param compilerOutputUrl compilerOutputUrl
+     * @param fromFile          fromFile
+     * @throws IOException IOException
      */
     private boolean exportJava(String moduleName, String ncModuleName, String compilerOutputUrl,
                                File fromFile) throws Exception {
@@ -558,8 +565,8 @@ public class ExportPatcherUtil {
     /**
      * 递归路径获取可导出的文件
      *
-     * @param elementPath
-     * @param fileUrlSet
+     * @param elementPath elementPath
+     * @param fileUrlSet  fileUrlSet
      */
     private void getFileUrl(String elementPath, Set<String> fileUrlSet) {
 
@@ -569,8 +576,10 @@ public class ExportPatcherUtil {
             File file = new File(elementPath);
             if (file.isDirectory()) {
                 File[] childrenFile = file.listFiles();
-                for (File childFile : childrenFile) {
-                    getFileUrl(childFile.getPath(), fileUrlSet);
+                if (childrenFile != null) {
+                    for (File childFile : childrenFile) {
+                        getFileUrl(childFile.getPath(), fileUrlSet);
+                    }
                 }
             } else {
                 if ((elementPath.endsWith(TYPE_JAVA) && elementPath.contains(PATH_SRC))
@@ -587,9 +596,9 @@ public class ExportPatcherUtil {
     /**
      * 输出补丁
      *
-     * @param moduleName
-     * @param srcPath
-     * @param toPath
+     * @param moduleName moduleName
+     * @param srcPath    srcPath
+     * @param toPath     toPath
      */
     private void outPatcher(String moduleName, String srcPath, String toPath) throws Exception {
         File from = new File(srcPath);
@@ -610,9 +619,9 @@ public class ExportPatcherUtil {
     /**
      * 获取选中目录下所有可导出目录
      *
-     * @param path
-     * @param module
-     * @return
+     * @param path   path
+     * @param module module
+     * @return List<String>
      */
     private List<String> getAllFileList(String path, Module module) {
         List<String> fileList = new ArrayList<>();
@@ -620,17 +629,19 @@ public class ExportPatcherUtil {
         //如果是模块，就向下寻找组件
         if (moduleFile.exists()) {
             File[] componentFiles = new File(path).listFiles();
-            for (File component : componentFiles) {
-                if (component.isFile()) {
-                    continue;
-                }
-                File componentFile = new File(component.getPath() + File.separator + FILE_COMPONENT);
-                if (componentFile.exists()) {
-                    fileList.addAll(getComponentPathList(component));
+            if (componentFiles != null) {
+                for (File component : componentFiles) {
+                    if (component.isFile()) {
+                        continue;
+                    }
+                    File componentFile = new File(component.getPath() + File.separator + FILE_COMPONENT);
+                    if (componentFile.exists()) {
+                        fileList.addAll(getComponentPathList(component));
+                    }
                 }
             }
         }
-        if (fileList.size() > 0) {
+        if (!fileList.isEmpty()) {
             return fileList;
         }
         //如果不是模块，则判断是不是组件
@@ -638,7 +649,7 @@ public class ExportPatcherUtil {
         if (componentFile.exists()) {
             fileList = getComponentPathList(new File(path));
         }
-        if (fileList.size() > 0) {
+        if (!fileList.isEmpty()) {
             return fileList;
         }
         //如果什么都不是，则判断是不是模块下的文件或者目录
@@ -652,14 +663,14 @@ public class ExportPatcherUtil {
     /**
      * 获取组件下边可导出的目录
      *
-     * @param componentFile
-     * @return
+     * @param componentFile componentFile
+     * @return List<String>
      */
     private List<String> getComponentPathList(File componentFile) {
 
         List<String> fileList = new ArrayList<>();
         if (componentFile.exists()) {
-            for (File file : componentFile.listFiles()) {
+            for (File file : Objects.requireNonNull(componentFile.listFiles())) {
                 if (file.isFile()) {
                     continue;
                 }

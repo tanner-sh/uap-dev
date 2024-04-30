@@ -35,7 +35,7 @@ public class MyFilteringGotoByModel extends FilteringGotoByModel<NccActionItem> 
 
     @Override
     public @Nls(capitalization = Nls.Capitalization.Sentence) String getPromptText() {
-        return "搜索Action";
+        return "Search action";
     }
 
     @Override
@@ -45,7 +45,7 @@ public class MyFilteringGotoByModel extends FilteringGotoByModel<NccActionItem> 
 
     @Override
     public @NotNull @NlsContexts.Label String getNotFoundMessage() {
-        return "not found";
+        return "Not found";
     }
 
     @Override

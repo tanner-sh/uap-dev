@@ -26,7 +26,7 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
         int index = box.getSelectedIndex();
         int count = box.getItemCount();
         if (count == 1) {
-            Messages.showMessageDialog("当前环境只剩一下一个数据源，请不要删除！", "tips",
+            Messages.showMessageDialog("Can not delete this datasource , because it is only one!", "Tips",
                     Messages.getInformationIcon());
             return;
         }
@@ -36,7 +36,7 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
         box.removeItem(dsName);
         box.setSelectedIndex(index);
         dialog.getDataSourceMetaMap().remove(dsName);
-        int opt = Messages.showYesNoDialog("删除成功，是否保存并退出设置窗口？", "提示",
+        int opt = Messages.showYesNoDialog("Delete success , do you want to exit ？", "提示",
                 Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             DataSourceUtil.saveDesignDataSourceMeta(dialog);

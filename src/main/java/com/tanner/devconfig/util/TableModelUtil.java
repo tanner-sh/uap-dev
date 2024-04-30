@@ -113,8 +113,8 @@ public class TableModelUtil {
         //获取模块配置
         String mustModuleStr = UapProjectEnvironment.getInstance().getMust_modules();
         String selModuleStr = UapProjectEnvironment.getInstance().getEx_modules();
-        Set<String> mustModuleSet = new HashSet();
-        Set<String> exModuleSet = new HashSet();
+        Set<String> mustModuleSet = new HashSet<>();
+        Set<String> exModuleSet = new HashSet<>();
         if (StringUtils.isBlank(mustModuleStr)) {
             mustModuleSet = ModuleFileUtil.getMustMoudleSet();
         } else {
@@ -148,8 +148,8 @@ public class TableModelUtil {
     /**
      * nc 模块名称
      *
-     * @param module
-     * @return
+     * @param module module
+     * @return String
      */
     private static String getNCModuleName(File module) {
         String ncModuleName = null;
@@ -181,8 +181,8 @@ public class TableModelUtil {
     /**
      * 更新模块选择内容
      *
-     * @param dialog
-     * @throws BusinessException
+     * @param dialog dialog
+     * @throws BusinessException BusinessException
      */
     public static void saveModuleConfig(AbstractDialog dialog) throws BusinessException {
         String oldMust = UapProjectEnvironment.getInstance().getMust_modules();

@@ -40,8 +40,8 @@ public class CreatApplicationConfigurationUtil {
     /**
      * 设置启动application
      *
-     * @param event
-     * @param serverFlag
+     * @param event      event
+     * @param serverFlag serverFlag
      */
     public static void createApplicationConfiguration(AnActionEvent event, boolean serverFlag)
             throws BusinessException {
@@ -78,7 +78,6 @@ public class CreatApplicationConfigurationUtil {
         if (StringUtils.isBlank(homePath)) {
             throw new BusinessException("请先设置NC Home");
         }
-        String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
         PropXml propXml = new PropXml();
         String filename = new File(homePath).getPath() + "/ierp/bin/prop.xml";
         File file = new File(filename);
@@ -86,9 +85,6 @@ public class CreatApplicationConfigurationUtil {
             throw new BusinessException("file :prop.xml not exists!");
         }
         LanguageLevel languageLevel = LanguageLevelUtil.getEffectiveLanguageLevel(selectModule);
-        if (languageLevel == null) {
-            throw new BusinessException("languageLevel not set!");
-        }
         int feature = languageLevel.toJavaVersion().feature;
         if (serverFlag) {
             conf.setMainClassName(serverClass);
@@ -127,7 +123,7 @@ public class CreatApplicationConfigurationUtil {
             String clientIp = StringUtils.isBlank(ipAndPort.getAddress()) ? DEFALUT_IP : ipAndPort.getAddress();
             String clientPort = String.valueOf(ipAndPort.getPort() == null ? DEFALUT_PORT : ipAndPort.getPort());
             conf.setMainClassName(clientClass);
-            conf.setVMParameters(getDefalutsClientVMParameters(feature, clientIp, clientPort));
+            conf.setVMParameters(getDefalutsClientVMParameters(clientIp, clientPort));
         }
         conf.setModule(selectModule);
         conf.setWorkingDirectory(homePath);
@@ -137,7 +133,7 @@ public class CreatApplicationConfigurationUtil {
     /**
      * 更新application
      *
-     * @throws BusinessException
+     * @throws BusinessException BusinessException
      */
     public static void update() throws BusinessException {
         Project project = ProjectManager.getInstance().getProject();
@@ -184,7 +180,7 @@ public class CreatApplicationConfigurationUtil {
         return parameters.toString();
     }
 
-    private static String getDefalutsClientVMParameters(int feature, String clientIp, String clientPort) {
+    private static String getDefalutsClientVMParameters(String clientIp, String clientPort) {
         StringBuilder parameters = new StringBuilder();
         parameters.append("-Dnc.runMode=develop\n");
         parameters.append("-Dnc.jstart.server=").append(clientIp).append("\n");

@@ -37,26 +37,24 @@ public class OKAction extends AbstractButtonAction {
                 UapProjectEnvironment.getInstance().getUapHomePath())) {
             homeChanged = true;
         }
-        setServiceConfig(homeChanged);
+        setServiceConfig();
         setLibraries(homeChanged);
-        saveDataSource(homeChanged);
-        saveModuleConfig(homeChanged);
+        saveDataSource();
+        saveModuleConfig();
         getDialog().close(0);
     }
 
     /**
      * 保存启动module
-     *
-     * @param homeChanged
      */
-    private void saveModuleConfig(boolean homeChanged) throws BusinessException {
+    private void saveModuleConfig() throws BusinessException {
         TableModelUtil.saveModuleConfig(getDialog());
     }
 
     /**
      * 保存工程依赖
      *
-     * @param homeChanged
+     * @param homeChanged homeChanged
      */
     private void setLibraries(boolean homeChanged) throws BusinessException {
         boolean setLibFlag = ((DevConfigDialog) getDialog()).isLibFlag();
@@ -64,7 +62,7 @@ public class OKAction extends AbstractButtonAction {
             return;
         }
         String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
-        int opt = Messages.showYesNoDialog("是否更新类路径？", "询问", Messages.getQuestionIcon());
+        int opt = Messages.showYesNoDialog("Update library ？", "询问", Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             try {
                 LibrariesUtil.setLibraries(homePath);
@@ -80,7 +78,7 @@ public class OKAction extends AbstractButtonAction {
     /**
      * 保存数据源
      */
-    private void saveDataSource(boolean homeChanged) {
+    private void saveDataSource() {
         DataSourceUtil.saveDesignDataSourceMeta((DevConfigDialog) getDialog());
     }
 
@@ -88,7 +86,7 @@ public class OKAction extends AbstractButtonAction {
     /**
      * 保存home
      */
-    private void setServiceConfig(boolean homeChanged) {
+    private void setServiceConfig() {
         String homePath = getDialog().getComponent(JTextField.class, "homeText").getText();
         UapProjectEnvironment.getInstance().setUapHomePath(homePath);
         UapProjectEnvironment.getInstance().setUapVersion(UapUtil.getUapVersion(homePath));

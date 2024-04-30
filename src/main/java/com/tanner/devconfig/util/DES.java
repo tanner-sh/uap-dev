@@ -1,5 +1,8 @@
 package com.tanner.devconfig.util;
 
+/**
+ * copy from home
+ */
 public class DES {
 
     private static final boolean[] ks = new boolean[]{false, false, true, true, true, true, true,

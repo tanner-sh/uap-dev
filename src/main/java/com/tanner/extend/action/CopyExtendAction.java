@@ -16,7 +16,7 @@ public class CopyExtendAction extends AbstractAnAction {
     public void doAction(AnActionEvent event) {
         try {
             ExtendCopyUtil.copyToNCHome(event);
-            Messages.showInfoMessage("success", "Tips");
+            Messages.showInfoMessage("Success", "Tips");
         } catch (Exception e) {
             Messages.showInfoMessage(e.getMessage(), "Error");
         }

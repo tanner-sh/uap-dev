@@ -29,8 +29,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PdfBuilder implements IExportBuilder {
 
@@ -57,7 +55,7 @@ public class PdfBuilder implements IExportBuilder {
         //存目录监听 开始
         doc.open();
         int order = 1;
-        List<Chapter> chapterList = new ArrayList<Chapter>();
+        List<Chapter> chapterList = new ArrayList<>();
         //根据chapter章节分页
         //表格
         //设置表格模板
@@ -158,8 +156,8 @@ public class PdfBuilder implements IExportBuilder {
         int columnSize = header.length;
         PdfPTable table = new PdfPTable(columnSize);
         table.setWidthPercentage(100);
-        for (int i = 0; i < columnSize; i++) {
-            PdfPCell pdfPCell = new PdfPCell(new Paragraph(header[i], font));
+        for (String s : header) {
+            PdfPCell pdfPCell = new PdfPCell(new Paragraph(s, font));
             pdfPCell.setVerticalAlignment(Element.ALIGN_CENTER);
             pdfPCell.setHorizontalAlignment(Element.ALIGN_LEFT);
             pdfPCell.setBackgroundColor(BaseColor.LIGHT_GRAY);
@@ -176,30 +174,19 @@ public class PdfBuilder implements IExportBuilder {
     }
 
     private PdfPTable buildCell(ColumnInfo columnInfo, PdfPTable pdfPTable, Font font) throws IllegalAccessException {
-        Font cnFont = getChineseFontAsStyle(12);
         Field[] fields = columnInfo.getClass().getDeclaredFields();
-        for (int j = 0; j < fields.length; j++) {
+        for (Field field : fields) {
             PdfPCell cell = new PdfPCell();
             cell.setVerticalAlignment(Element.ALIGN_CENTER);
             //将设置私有构造器设为可取值
-            fields[j].setAccessible(true);
+            field.setAccessible(true);
             // 得到类型和名字取值
-            Paragraph paragraph = new Paragraph(ObjectUtils.toString(fields[j].get(columnInfo), ""), font);
+            Paragraph paragraph = new Paragraph(ObjectUtils.toString(field.get(columnInfo), ""), font);
             //添加到表格
             cell.addElement(paragraph);
             pdfPTable.addCell(cell);
         }
         return pdfPTable;
-    }
-
-    private boolean isChineseContent(String content) {
-        String regex = "[一-龥]";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(content);
-        if (matcher.find()) {
-            return true;
-        }
-        return false;
     }
 
 }

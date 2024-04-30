@@ -26,8 +26,7 @@ public class EjbConfCopyUtil {
     /**
      * 递归路径获取可导出的文件
      *
-     * @param filePath
-     * @param fileUrlSet
+     * @param filePath filePath
      */
     private Set<String> getFileUrl(String filePath) {
         Set<String> fileUrlSet = new HashSet<>();
@@ -52,7 +51,7 @@ public class EjbConfCopyUtil {
     /**
      * 只拷贝选中的模块的upm文件到home
      *
-     * @param event
+     * @param event event
      */
     public void copy(AnActionEvent event) {
         String homePath = UapProjectEnvironment.getInstance().getUapHomePath();

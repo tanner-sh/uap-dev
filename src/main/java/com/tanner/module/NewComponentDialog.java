@@ -30,7 +30,7 @@ public class NewComponentDialog extends DialogWrapper {
 
     private JTextField displayText;
     private JTextField nameText;
-    private AnActionEvent event;
+    private final AnActionEvent event;
 
     public NewComponentDialog(final AnActionEvent event) {
         super(event.getProject());

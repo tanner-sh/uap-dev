@@ -47,7 +47,7 @@ public class DataSourceUtil {
             //做一次值切换，触发监听显示数据源详情
             dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(-1);
             dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(0);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
 
@@ -97,8 +97,7 @@ public class DataSourceUtil {
     }
 
     private static String findDriverType(String driverClass, DriverInfo[] infos) {
-        for (int i = 0; i < infos.length; i++) {
-            DriverInfo info = infos[i];
+        for (DriverInfo info : infos) {
             if (info.getDriverClass().equals(driverClass)) {
                 return info.getDriverType();
             }
@@ -109,7 +108,7 @@ public class DataSourceUtil {
     /**
      * 填充数据源信息到界面
      *
-     * @param dlg
+     * @param dlg dlg
      */
     public static void fillDataSourceMeta(AbstractDataSourceDialog dlg) {
         DataSourceMeta meta = dlg.getCurrMeta();
@@ -145,8 +144,8 @@ public class DataSourceUtil {
     /**
      * 填充数据库地址信息
      *
-     * @param dlg
-     * @param url
+     * @param dlg dlg
+     * @param url url
      */
     private static void fillDBConnUrl(AbstractDataSourceDialog dlg, String url) {
         if (ToolUtils.isJDBCUrl(url)) {
@@ -175,7 +174,7 @@ public class DataSourceUtil {
     /**
      * 数据源保存
      *
-     * @param dlg
+     * @param dlg dlg
      */
     public static void saveDesignDataSourceMeta(DevConfigDialog dlg) {
         try {

@@ -32,14 +32,14 @@ public class ExtendCopyUtil {
     /**
      * 拷贝一个模块的鉴权文件到home中，拷贝方法就是将该模块鉴权文件目录下的所有xml文件拷贝到home中的鉴权文件目录下
      *
-     * @param event
-     * @throws Exception
+     * @param event event
+     * @throws Exception Exception
      */
     public static void copyToNCHome(AnActionEvent event) throws Exception {
         Module module = BaseUtil.getModule(event);
         String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
         if (StringUtils.isBlank(homePath)) {
-            Messages.showMessageDialog("请先设置NC Home", "Error", Messages.getErrorIcon());
+            Messages.showMessageDialog("Not set NC Home", "Error", Messages.getErrorIcon());
             return;
         }
         copyDir(module.getModuleNioFile().getParent().toString() + PROJECT_CONFIG_FILE_PATH,
@@ -49,9 +49,9 @@ public class ExtendCopyUtil {
     /**
      * 将某个文件下下的所有xml文件拷贝到另一个文件夹
      *
-     * @param fromDirPath
-     * @param toDirPath
-     * @throws IOException
+     * @param fromDirPath fromDirPath
+     * @param toDirPath toDirPath
+     * @throws IOException IOException
      */
     private static void copyDir(String fromDirPath, String toDirPath) throws IOException {
         File file = new File(fromDirPath);
@@ -82,9 +82,9 @@ public class ExtendCopyUtil {
     /**
      * 复制xml文件
      *
-     * @param fromFilePath
-     * @param newFilePath
-     * @throws IOException
+     * @param fromFilePath fromFilePath
+     * @param newFilePath newFilePath
+     * @throws IOException IOException
      */
     private static void copyXmlFile(@NotNull String fromFilePath, @NotNull String newFilePath)
             throws IOException {

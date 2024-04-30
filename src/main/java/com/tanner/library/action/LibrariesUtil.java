@@ -15,8 +15,18 @@ import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -109,9 +119,9 @@ public class LibrariesUtil {
     /**
      * 设置依赖库
      *
-     * @param urlSet
-     * @param project
-     * @param libraryModel
+     * @param urlSet       urlSet
+     * @param project      project
+     * @param libraryModel libraryModel
      */
     private static void setLibrary(List<String> urlSet, Project project,
                                    Library.ModifiableModel libraryModel) {
@@ -147,9 +157,9 @@ public class LibrariesUtil {
     /**
      * 扫描指定目录下的lib 和classes
      *
-     * @param basePath
-     * @param libFlag
-     * @return
+     * @param basePath basePath
+     * @param libFlag  libFlag
+     * @return List<String>
      */
     private static List<String> scanJarAndClasses(String basePath, boolean libFlag,
                                                   boolean classFlag) {
@@ -187,9 +197,9 @@ public class LibrariesUtil {
     /**
      * hotweb下非ui类jar包转移到external下
      *
-     * @param homePath
-     * @param externalPath
-     * @param webServers
+     * @param homePath     homePath
+     * @param externalPath externalPath
+     * @param webServers   webServers
      */
     private static void hotwebEspecial(String homePath, String externalPath, String... webServers) {
         String hotwebsPath = homePath + File.separator + "hotwebs";
@@ -206,7 +216,7 @@ public class LibrariesUtil {
                 return;
             }
             boolean isNCCloudFlag = server.equals("nccloud");
-            StringBuffer jarBuffer = new StringBuffer("");
+            StringBuilder jarBuffer = new StringBuilder();
             for (File file : files) {
                 try {
                     //nccloud的jar需要解压提取鉴权文件
@@ -224,8 +234,8 @@ public class LibrariesUtil {
                     FileUtil.copy(file, newFile);
                     //复制后删除
                     file.delete();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (IOException ignored) {
+
                 }
             }
             //复制classes文件夹到external目录下
@@ -234,12 +244,12 @@ public class LibrariesUtil {
                 if (fromPath.exists()) {
                     File toPath = new File(externalPath + File.separator + "classes");
                     FileUtil.copyFileOrDir(fromPath, toPath);
-                    for (File file : fromPath.listFiles()) {
+                    for (File file : Objects.requireNonNull(fromPath.listFiles())) {
                         FileUtil.delete(file);
                     }
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (IOException ignored) {
+
             }
             String str = jarBuffer.toString();
             if (str.startsWith(",")) {
@@ -259,7 +269,7 @@ public class LibrariesUtil {
     /**
      * 读取jar包
      *
-     * @param jarFile
+     * @param jarFile jarFile
      */
     private static void unZip(String homePath, File jarFile) throws IOException {
         String outPath =
@@ -298,8 +308,8 @@ public class LibrariesUtil {
     /**
      * 扫描nc module
      *
-     * @param modulesPath
-     * @return
+     * @param modulesPath modulesPath
+     * @return Map<String, List < String>>
      */
     private static Map<String, List<String>> scanModules(String modulesPath) {
         Map<String, List<String>> jarMap = new HashMap<>();
@@ -313,10 +323,9 @@ public class LibrariesUtil {
         List<String> clientLibrarySet = new ArrayList<>();
         for (File module : modules) {
             String modulePath = module.getPath();
-            String publicPath = modulePath;
             String clientPath = modulePath + File.separator + "client";
             String privatePath = modulePath + File.separator + "META-INF";
-            publicLibrarySet.addAll(scanJarAndClasses(publicPath, true, true));
+            publicLibrarySet.addAll(scanJarAndClasses(modulePath, true, true));
             privateLibrarySet.addAll(scanJarAndClasses(privatePath, true, true));
             clientLibrarySet.addAll(scanJarAndClasses(clientPath, true, true));
         }
@@ -332,9 +341,9 @@ public class LibrariesUtil {
         if (!name.startsWith("yyconfig")) {
             return false;
         }
-        flag = name.indexOf(".xml") > -1;
+        flag = name.contains(".xml");
         if (!flag) {
-            flag = name.indexOf(".json") > -1;
+            flag = name.contains(".json");
         }
         if (flag) {
             flag = !isSystemConfig(name);
@@ -346,7 +355,7 @@ public class LibrariesUtil {
         String[] systemNames = new String[]{"yyconfig/configreader/configreader.xml", "log.xml",
                 "yyconfig/baseapi/baseapi.xml"};
         for (String systemName : systemNames) {
-            if (name.indexOf(systemName) > -1) {
+            if (name.contains(systemName)) {
                 return true;
             }
         }

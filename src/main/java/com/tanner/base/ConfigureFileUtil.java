@@ -1,25 +1,23 @@
 package com.tanner.base;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
 public class ConfigureFileUtil {
 
     /**
-     * 读取数据库模版文件
-     *
-     * @param fileName
-     * @return
-     */
-    public String getVMFile(String fileName) {
-        return this.getClass().getResource("../../.." + fileName).getFile();
-    }
-
-    /**
      * 读取输入模版
      *
-     * @param fileName
-     * @return
+     * @param fileName fileName
+     * @return String
      */
     public String readTemplate(String fileName) throws BusinessException {
         InputStream in = this.getClass().getResourceAsStream("../../../template/" + fileName);
@@ -29,9 +27,9 @@ public class ConfigureFileUtil {
     /**
      * 读取输入模板
      *
-     * @param file
-     * @return
-     * @throws BusinessException
+     * @param file file
+     * @return String
+     * @throws BusinessException BusinessException
      */
     public String readTemplate(File file) throws BusinessException {
         try {
@@ -48,10 +46,7 @@ public class ConfigureFileUtil {
             InputStreamReader isr = new InputStreamReader(in, StandardCharsets.UTF_8);
             BufferedReader br = new BufferedReader(isr);
             String lineTxt;
-            while (true) {
-                if ((lineTxt = br.readLine()) == null) {
-                    break;
-                }
+            while ((lineTxt = br.readLine()) != null) {
                 tempBuilder.append(lineTxt);
                 tempBuilder.append("\r\n");
             }
@@ -65,8 +60,8 @@ public class ConfigureFileUtil {
     /**
      * 输出文件
      *
-     * @param file
-     * @param content
+     * @param file    file
+     * @param content content
      */
     public void outFile(File file, String content, String charset, boolean bomFlag) {
         try {
@@ -78,8 +73,7 @@ public class ConfigureFileUtil {
             dos = new OutputStreamWriter(fos, charset);
             dos.write(content);
             dos.close();
-        } catch (FileNotFoundException e) {
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
     }
 }

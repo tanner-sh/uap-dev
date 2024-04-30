@@ -4,8 +4,20 @@ import com.tanner.datadictionary.engine.IEngine;
 import com.tanner.datadictionary.engine.MySqlEngine;
 import com.tanner.datadictionary.engine.OracleEngine;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.Driver;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
 
 public class DbUtil {
 
@@ -21,10 +33,10 @@ public class DbUtil {
                 }
             }
             resultSet = preparedStatement.executeQuery();
-            List<Map<String, Object>> resultList = new ArrayList<Map<String, Object>>();
+            List<Map<String, Object>> resultList = new ArrayList<>();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             while (resultSet.next()) {
-                Map<String, Object> map = new HashMap<String, Object>();
+                Map<String, Object> map = new HashMap<>();
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                     String columnName = resultSetMetaData.getColumnName(i);
                     Object columnValue = resultSet.getObject(columnName);
@@ -42,7 +54,7 @@ public class DbUtil {
 
     public static List<String> getInsertScripts(Connection connection, String tableName,
                                                 String querySql, List<Object> paramList, boolean spiltGo) throws BusinessException {
-        List<String> exportSqls = new ArrayList<String>();
+        List<String> exportSqls = new ArrayList<>();
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         try {
@@ -53,13 +65,11 @@ public class DbUtil {
                 }
             }
             resultSet = preparedStatement.executeQuery();
-            List<Map<String, Object>> resultList = new ArrayList<Map<String, Object>>();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             while (resultSet.next()) {
                 StringBuilder exportSql = new StringBuilder("insert into ").append(tableName).append(" ");
                 StringBuilder columnNames = new StringBuilder("(");
                 StringBuilder columnValues = new StringBuilder("(");
-                Map<String, Object> map = new HashMap<String, Object>();
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                     String columnName = resultSetMetaData.getColumnName(i);
                     int columnType = resultSetMetaData.getColumnType(i);
@@ -94,7 +104,7 @@ public class DbUtil {
     }
 
     public static IEngine getEngine(Connection connection) throws BusinessException {
-        String databaseProductName = null;
+        String databaseProductName;
         try {
             DatabaseMetaData metaData = connection.getMetaData();
             databaseProductName = metaData.getDatabaseProductName();
@@ -110,7 +120,7 @@ public class DbUtil {
 
     public static Connection getConnection(ClassLoader classLoader, String driverClass,
                                            String jdbcUrl, String userName, String pwd) throws BusinessException {
-        Connection connection = null;
+        Connection connection;
         try {
             Class<?> driverClazz = classLoader.loadClass(driverClass);
             Driver deiver = (Driver) driverClazz.getConstructor().newInstance();
@@ -132,22 +142,22 @@ public class DbUtil {
         if (resultSet != null) {
             try {
                 resultSet.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
+            } catch (SQLException ignored) {
+
             }
         }
         if (preparedStatement != null) {
             try {
                 preparedStatement.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
+            } catch (SQLException ignored) {
+
             }
         }
         if (connection != null) {
             try {
                 connection.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
+            } catch (SQLException ignored) {
+
             }
         }
     }

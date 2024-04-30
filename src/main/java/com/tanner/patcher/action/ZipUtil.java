@@ -53,27 +53,29 @@ public class ZipUtil {
     /**
      * 压缩目录
      *
-     * @param dir
-     * @param out
-     * @param basePath
+     * @param dir dir
+     * @param out out
+     * @param basePath basePath
      */
     private static void compressDirectory(File dir, ZipOutputStream out, String basePath) {
         if (!dir.exists()) {
             return;
         }
         File[] files = dir.listFiles();
-        for (int i = 0; i < files.length; i++) {
-            /* 递归 */
-            compress(files[i], out, basePath);
+        if (files != null) {
+            for (File file : files) {
+                /* 递归 */
+                compress(file, out, basePath);
+            }
         }
     }
 
     /**
      * 压缩文件
      *
-     * @param file
-     * @param out
-     * @param basePath
+     * @param file file
+     * @param out out
+     * @param basePath basePath
      */
     private static void compressFile(File file, ZipOutputStream out, String basePath) {
         if (!file.exists()) {

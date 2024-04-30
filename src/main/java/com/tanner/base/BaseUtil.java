@@ -18,7 +18,7 @@ public class BaseUtil {
         {
             Project project = event.getProject();
             if (project == null) {
-                Messages.showMessageDialog("无法获取当前项目", "Error", Messages.getErrorIcon());
+                Messages.showMessageDialog("Not find project", "Error", Messages.getErrorIcon());
                 throw new RuntimeException("无法获取当前项目");
             }
             return project;
@@ -30,7 +30,7 @@ public class BaseUtil {
         {
             Module module = event.getData(LangDataKeys.MODULE);
             if (module == null) {
-                Messages.showMessageDialog("无法获取当前模块", "Error", Messages.getErrorIcon());
+                Messages.showMessageDialog("Not find project", "Error", Messages.getErrorIcon());
                 throw new RuntimeException("无法获取当前模块");
             }
             return module;

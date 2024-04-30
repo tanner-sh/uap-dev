@@ -14,7 +14,7 @@ import java.util.Set;
  */
 public class DefaultModuleAction extends AbstractButtonAction {
 
-    private int type;
+    private final int type;
 
     public DefaultModuleAction(AbstractDialog dialog, int type) {
         super(dialog);
@@ -39,7 +39,7 @@ public class DefaultModuleAction extends AbstractButtonAction {
             int count = getDialog().getComponent(JTable.class, "mustTable").getRowCount();
             for (int i = 0; i < count; i++) {
                 Object obj = mustTable.getModel().getValueAt(i, 1);
-                boolean checked = obj == null ? false : Boolean.valueOf(obj.toString());
+                boolean checked = obj != null && Boolean.parseBoolean(obj.toString());
                 table.setValueAt(checked, i, 1);
             }
         }

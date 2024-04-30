@@ -12,13 +12,13 @@ import java.util.regex.Pattern;
 
 public final class UapUtil {
 
-    private static Encode encode = new Encode();
+    private static final Encode encode = new Encode();
 
     /**
      * 根据home获取home版本
      *
-     * @param ncHomePath
-     * @return
+     * @param ncHomePath ncHomePath
+     * @return String
      */
     public static String getUapVersion(String ncHomePath) {
         String ncscriptPath = ncHomePath + File.separator + "ncscript";
@@ -30,17 +30,11 @@ public final class UapUtil {
             }
         }
         Properties properties = new Properties();
-        FileInputStream fis = null; // 读
-        try {
-            fis = new FileInputStream(versionFile);
+        // 读
+        try (FileInputStream fis = new FileInputStream(versionFile)) {
             properties.load(fis);
         } catch (IOException e) {
             return null;
-        } finally {
-            try {
-                fis.close();
-            } catch (IOException e) {
-            }
         }
         String version = (String) properties.get("version");
         if (StringUtils.isBlank(version)) {
@@ -62,9 +56,9 @@ public final class UapUtil {
     /**
      * 解密数据源密码
      *
-     * @param homePath
-     * @param text
-     * @return
+     * @param homePath homePath
+     * @param text     text
+     * @return String
      */
     public static String decodeDbPwd(String text, String homePath) {
         File propFile = new File(homePath, "/ierp/bin/key.properties");
@@ -78,9 +72,9 @@ public final class UapUtil {
     /**
      * 加密数据源密码
      *
-     * @param homePath
-     * @param text
-     * @return
+     * @param homePath homePath
+     * @param text     text
+     * @return String
      */
     public static String encodeDbPwd(String text, String homePath) {
         File propFile = new File(homePath, "/ierp/bin/key.properties");

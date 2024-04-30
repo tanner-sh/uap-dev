@@ -4,19 +4,21 @@ import com.intellij.ide.util.projectWizard.ModuleBuilder;
 import com.intellij.openapi.module.ModifiableModuleModel;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleType;
-import com.intellij.openapi.options.ConfigurationException;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.projectRoots.JavaSdk;
 import com.intellij.openapi.projectRoots.JavaSdkVersion;
 import com.intellij.openapi.projectRoots.Sdk;
-import com.intellij.openapi.roots.*;
+import com.intellij.openapi.roots.CompilerModuleExtension;
+import com.intellij.openapi.roots.ContentEntry;
+import com.intellij.openapi.roots.LanguageLevelProjectExtension;
+import com.intellij.openapi.roots.ModifiableRootModel;
+import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.roots.libraries.Library;
 import com.intellij.openapi.roots.ui.configuration.ModulesProvider;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VfsUtilCore;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BusinessException;
@@ -37,10 +39,6 @@ public class UapModuleBuilder extends ModuleBuilder {
     private Library[] libraries;
     private String myCompilerOutputPath;
 
-    private static String getUrlByPath(String path) {
-        return VfsUtil.getUrlForLibraryRoot(new File(path));
-    }
-
     @Override
     public ModuleType<?> getModuleType() {
         return StdModuleTypes.JAVA;
@@ -49,10 +47,6 @@ public class UapModuleBuilder extends ModuleBuilder {
     @Override
     public @Nullable List<Module> commit(@NotNull Project project, ModifiableModuleModel model,
                                          ModulesProvider modulesProvider) {
-        if (project == null) {
-            //todo 这里回头定义一个报错
-            return null;
-        }
         LanguageLevelProjectExtension extension = LanguageLevelProjectExtension.getInstance(
                 ProjectManager.getInstance().getDefaultProject());
         Boolean aDefault = extension.getDefault();
@@ -73,10 +67,7 @@ public class UapModuleBuilder extends ModuleBuilder {
     }
 
     @Override
-    public void setupRootModel(@NotNull ModifiableRootModel rootModel) throws ConfigurationException {
-        if (rootModel == null) {
-            return;//todo 这里扔一个报错
-        }
+    public void setupRootModel(@NotNull ModifiableRootModel rootModel) {
         //设置jdk
         CompilerModuleExtension compilerModuleExtension = rootModel.getModuleExtension(
                 CompilerModuleExtension.class);
@@ -123,7 +114,7 @@ public class UapModuleBuilder extends ModuleBuilder {
 
     public List<Pair<String, String>> getSourcePaths() {
         if (this.mySourcePaths == null) {
-            List<Pair<String, String>> paths = new ArrayList();
+            List<Pair<String, String>> paths = new ArrayList<>();
             String entryPath = this.getContentEntryPath();
             String path = entryPath + File.separator + "src";
             (new File(path)).mkdirs();
@@ -135,7 +126,7 @@ public class UapModuleBuilder extends ModuleBuilder {
     }
 
     public void setSourcePaths(List<Pair<String, String>> sourcePaths) {
-        this.mySourcePaths = sourcePaths != null ? new ArrayList(sourcePaths) : null;
+        this.mySourcePaths = sourcePaths != null ? new ArrayList<>(sourcePaths) : null;
     }
 
     public void addSourcePath(Pair<String, String> sourcePathInfo) {
@@ -147,7 +138,7 @@ public class UapModuleBuilder extends ModuleBuilder {
             try {
                 libraries = com.tanner.base.ProjectManager.getInstance()
                         .getProjectLibraries(com.tanner.base.ProjectManager.getInstance().getProject());
-            } catch (BusinessException e) {
+            } catch (BusinessException ignored) {
             }
         }
         this.libraries = libraries;

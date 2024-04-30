@@ -1,9 +1,11 @@
 package com.tanner.prop.entity;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public class DataSourceMeta implements Serializable, Cloneable {
 
+    @Serial
     private static final long serialVersionUID = 1774004595340815036L;
     private String dataSourceName = "design";
     private String oidMark = "ZZ";

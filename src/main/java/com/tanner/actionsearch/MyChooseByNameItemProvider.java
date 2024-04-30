@@ -4,6 +4,7 @@ import com.intellij.ide.util.gotoByName.ChooseByNameItemProvider;
 import com.intellij.ide.util.gotoByName.ChooseByNameViewModel;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.util.Processor;
 import com.tanner.actionsearch.entity.Action;
 import com.tanner.actionsearch.entity.Actions;
@@ -23,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
@@ -41,7 +43,7 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
             boolean everywhere,
             @NotNull ProgressIndicator cancelled,
             @NotNull Processor<Object> consumer) {
-        List<NccActionItem> nccActionItems = getAllNccActionItems(base.getProject())
+        List<NccActionItem> nccActionItems = Objects.requireNonNull(getAllNccActionItems(base.getProject()))
                 .stream()
                 .filter(nccActionItem -> nccActionItem.toString().contains(pattern))
                 .collect(Collectors.toList());
@@ -54,7 +56,12 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
 
     private List<NccActionItem> getAllNccActionItems(Project project) {
         List<NccActionItem> returnList = new ArrayList<>();
-        String uapHomePath = UapProjectEnvironment.getInstance(project).getUapHomePath();
+        UapProjectEnvironment instance = UapProjectEnvironment.getInstance(project);
+        if (instance == null) {
+            Messages.showMessageDialog("Please open a project", "Error", Messages.getErrorIcon());
+            return null;
+        }
+        String uapHomePath = instance.getUapHomePath();
         Path yyconfigPath = Paths.get(uapHomePath).resolve(Paths.get("hotwebs", "nccloud", "WEB-INF", "extend", "yyconfig", "modules"));
         if (!yyconfigPath.toFile().exists()) {
             return returnList;

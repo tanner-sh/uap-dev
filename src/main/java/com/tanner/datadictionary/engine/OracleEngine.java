@@ -25,7 +25,7 @@ public class OracleEngine implements IEngine {
         if (!ArrayUtils.isEmpty(tableNamePattern)) {
             querySql.append(" AND ( 1 = 2 ");
             for (String key : tableNamePattern) {
-                querySql.append(" or upper(TABLE_NAME) LIKE '" + key.toUpperCase() + "'");
+                querySql.append(" or upper(TABLE_NAME) LIKE '").append(key.toUpperCase()).append("'");
             }
             querySql.append(" ) ");
         }

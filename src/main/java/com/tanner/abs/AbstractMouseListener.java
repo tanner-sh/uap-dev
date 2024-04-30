@@ -5,7 +5,7 @@ import java.awt.event.MouseListener;
 
 public abstract class AbstractMouseListener implements MouseListener {
 
-    private AbstractDialog dlg;
+    private final AbstractDialog dlg;
 
     public AbstractMouseListener(AbstractDialog dlg) {
         this.dlg = dlg;

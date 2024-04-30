@@ -51,16 +51,17 @@ public class PatcherDialog extends AbstractDialog {
         logPanel.setVisible(false);
         patcherName.setEditable(true);
         UapProjectEnvironment envSettingService = UapProjectEnvironment.getInstance(event.getProject());
-        String lastPatcherPath = envSettingService.getLastPatcherPath();
+        String lastPatcherPath = null;
+        if (envSettingService != null) {
+            lastPatcherPath = envSettingService.getLastPatcherPath();
+        }
         if (StringUtils.isEmpty(lastPatcherPath) || !new File(lastPatcherPath).exists()) {
             lastPatcherPath = System.getProperty("user.home");
         }
         savePath.setText(lastPatcherPath);
-        if (StringUtils.isEmpty(envSettingService.getDeveloper())) {
+        if (envSettingService != null && StringUtils.isEmpty(envSettingService.getDeveloper())) {
             String userName = System.getProperties().getProperty("user.name", "unknown");
             developer.setText(userName);
-        } else {
-            developer.setText(envSettingService.getDeveloper());
         }
         // 保存路径按钮事件
         fileChooseBtn.addActionListener(e -> {
@@ -141,7 +142,7 @@ public class PatcherDialog extends AbstractDialog {
     private void createUIComponents() {
         VirtualFile[] data = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
         assert data != null;
-        fieldList = new JBList<VirtualFile>(data);
+        fieldList = new JBList<>(data);
         fieldList.setEmptyText("No file selected!");
         ToolbarDecorator decorator = ToolbarDecorator.createDecorator(fieldList);
         filePanel = decorator.createPanel();

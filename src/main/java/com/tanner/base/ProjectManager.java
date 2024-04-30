@@ -41,7 +41,7 @@ public class ProjectManager {
     /**
      * 获取当前project
      *
-     * @return
+     * @return Project
      */
     public Project getProject() {
         if (project == null) {
@@ -57,7 +57,7 @@ public class ProjectManager {
     /**
      * 获取当前project下所有module
      *
-     * @return
+     * @return Module[]
      */
     public Module[] getAllModule(Project project) {
         if (project == null) {
@@ -69,8 +69,8 @@ public class ProjectManager {
     /**
      * 根据moduleName获得module
      *
-     * @param moduleName
-     * @return
+     * @param moduleName moduleName
+     * @return Module
      */
     public Module getModule(String moduleName) {
         Project project = getProject();
@@ -80,8 +80,8 @@ public class ProjectManager {
     /**
      * 获取工程library
      *
-     * @param project
-     * @return
+     * @param project project
+     * @return Library[]
      */
     public Library[] getProjectLibraries(Project project) throws BusinessException {
         List<String> list = ClassPathConstantUtil.getNCLibrary();
@@ -100,8 +100,8 @@ public class ProjectManager {
     /**
      * 获取LibraryTable
      *
-     * @param project
-     * @return
+     * @param project project
+     * @return LibraryTable
      */
     private LibraryTable getLibraryTable(Project project) {
         if (project == null) {
@@ -114,7 +114,7 @@ public class ProjectManager {
     /**
      * 设置module的library
      *
-     * @param module
+     * @param module module
      */
     public void setModuleLibrary(Project project, Module module) throws BusinessException {
         Library[] libraries = getProjectLibraries(project);

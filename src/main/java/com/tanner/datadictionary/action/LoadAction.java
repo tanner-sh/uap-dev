@@ -53,14 +53,14 @@ public class LoadAction extends AbstractButtonAction {
         List<TableInfo> tableInfoList = engine.getAllTableInfo(connection, userName, tableNamePattern);
         DbUtil.closeResource(connection, null, null);
         for (int i = 0; i < tableInfoList.size(); i++) {
-            Vector<Object> rowData = new Vector<Object>();
+            Vector<Object> rowData = new Vector<>();
             rowData.add(i + 1);
             rowData.add(true);
             rowData.add(tableInfoList.get(i).getTableName());
             rowData.add(tableInfoList.get(i).getComment());
             ((DefaultTableModel) dbTable.getModel()).addRow(rowData);
         }
-        Messages.showInfoMessage("加载完毕", "提示");
+        Messages.showInfoMessage("Load success!", "提示");
     }
 
 }

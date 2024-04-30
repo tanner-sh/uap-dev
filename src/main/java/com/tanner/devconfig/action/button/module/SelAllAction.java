@@ -12,14 +12,13 @@ import java.awt.event.ActionEvent;
  */
 public class SelAllAction extends AbstractButtonAction {
 
-    private int type;
+    private final int type;
 
     public SelAllAction(AbstractDialog dialog, int type) {
         super(dialog);
         this.type = type;
     }
-
-
+    
     @Override
     public void doAction(ActionEvent event) {
         JTable table = null;

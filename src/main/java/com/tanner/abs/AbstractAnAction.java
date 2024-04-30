@@ -33,15 +33,15 @@ public abstract class AbstractAnAction extends AnAction {
     /**
      * 子类实现
      *
-     * @param event
+     * @param event event
      */
     public abstract void doAction(AnActionEvent event);
 
     /**
      * 获取选中文件
      *
-     * @param event
-     * @return
+     * @param event event
+     * @return VirtualFile
      */
     public VirtualFile getSelectFile(AnActionEvent event) {
         return event.getData(CommonDataKeys.VIRTUAL_FILE);
@@ -54,8 +54,8 @@ public abstract class AbstractAnAction extends AnAction {
     /**
      * 是否nc module 根目录
      *
-     * @param event
-     * @return
+     * @param event event
+     * @return boolean
      */
     public boolean isUapMoudle(@NotNull AnActionEvent event) {
         VirtualFile selectFile = getSelectFile(event);
@@ -110,8 +110,8 @@ public abstract class AbstractAnAction extends AnAction {
     /**
      * 获取选中模块
      *
-     * @param event
-     * @return
+     * @param event event
+     * @return Module
      */
     public Module getSelectModule(AnActionEvent event) {
         return event.getData(LangDataKeys.MODULE);

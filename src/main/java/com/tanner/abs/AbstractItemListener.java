@@ -8,7 +8,7 @@ import java.awt.event.ItemListener;
  */
 public abstract class AbstractItemListener implements ItemListener {
 
-    private AbstractDialog dialog;
+    private final AbstractDialog dialog;
 
     public AbstractItemListener(AbstractDialog dialog) {
         this.dialog = dialog;

@@ -10,7 +10,7 @@ import java.util.Map;
 
 public abstract class AbstractDialog extends DialogWrapper {
 
-    private Map<String, JComponent> componentMap = new HashMap<>();
+    private final Map<String, JComponent> componentMap = new HashMap<>();
 
     protected AbstractDialog(@Nullable Project project) {
         super(project);

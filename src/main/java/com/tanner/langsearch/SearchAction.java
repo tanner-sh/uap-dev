@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.Properties;
 import java.util.Vector;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -35,7 +34,7 @@ public class SearchAction extends AbstractButtonAction {
         JTextField searchTextField = getDialog().getComponent(JTextField.class, "searchTextField");
         String searchText = searchTextField.getText();
         if (StringUtils.isBlank(searchText)) {
-            Messages.showInfoMessage("搜索框不允许为空!", "提示");
+            Messages.showInfoMessage("Text can not be null!", "提示");
             return;
         }
         JTable searchResultTable = getDialog().getComponent(JTable.class, "searchResultTable");
@@ -45,7 +44,7 @@ public class SearchAction extends AbstractButtonAction {
         String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
         List<LangInfo> langInfos = readLangFromJar(homePath, searchText);
         for (LangInfo langInfo : langInfos) {
-            Vector<Object> rowData = new Vector<Object>();
+            Vector<Object> rowData = new Vector<>();
             rowData.add(langInfos.indexOf(langInfo) + 1);
             rowData.add(langInfo.getLineNumber());
             rowData.add(langInfo.getLanguage());
@@ -69,7 +68,6 @@ public class SearchAction extends AbstractButtonAction {
         String langLibPath = homePath + File.separator + "langlib";
         Collection<File> jarFiles = FileUtils.listFiles(new File(langLibPath), new String[]{"jar"}, true);
         List<LangInfo> matchedLangs = new ArrayList<>();
-        Properties properties = new Properties();
         for (File file : jarFiles) {
             try {
                 JarFile jarFile = new JarFile(file);
@@ -84,16 +82,15 @@ public class SearchAction extends AbstractButtonAction {
                                     int lineNumber = lines.indexOf(line) + 1;
                                     String path = file.getPath();
                                     String language = getLanguage(path, entry.getName());
-                                    String text = line;
-                                    matchedLangs.add(new LangInfo(lineNumber, path, entry.getName(), language, text));
+                                    matchedLangs.add(new LangInfo(lineNumber, path, entry.getName(), language, line));
                                 });
 
                         is.close();
                     }
                 }
                 jarFile.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Exception ignored) {
+
             }
         }
         return matchedLangs;

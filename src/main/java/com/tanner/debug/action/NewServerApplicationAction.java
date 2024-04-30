@@ -15,7 +15,7 @@ public class NewServerApplicationAction extends AbstractAnAction {
 
     @Override
     public void doAction(@NotNull AnActionEvent event) {
-        String message = "success";
+        String message = "Success";
         try {
             CreatApplicationConfigurationUtil.createApplicationConfiguration(event, true);
             Messages.showInfoMessage(message, "Tips");

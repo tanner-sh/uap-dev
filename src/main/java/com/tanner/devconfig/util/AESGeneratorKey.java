@@ -9,9 +9,7 @@ import java.net.UnknownHostException;
 import java.security.*;
 
 /**
- * @description: TODO
- * @author: liuchao
- * @date: 2022/4/1
+ * copy from home
  */
 public class AESGeneratorKey {
     private static final byte[] KEY_END = new byte[]{43, 65, 23, 6, -54, -24, -16, 26, 7, 34, -29, -52, -14, 27, 38, 41};

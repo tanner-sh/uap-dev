@@ -47,7 +47,7 @@ public class ExportAction extends AbstractButtonAction {
             }
         }
         if (selectedTables.isEmpty()) {
-            Messages.showInfoMessage("请选择至少一个!", "提示");
+            Messages.showInfoMessage("You must select one or more!", "提示");
             return;
         }
         File desktopPath = new File(System.getProperty("user.home") + File.separator + "Desktop");
@@ -88,7 +88,7 @@ public class ExportAction extends AbstractButtonAction {
             Messages.showWarningDialog(msg, "错误");
             return;
         }
-        Messages.showInfoMessage("导出完毕", "提示");
+        Messages.showInfoMessage("Success", "提示");
     }
 
 }

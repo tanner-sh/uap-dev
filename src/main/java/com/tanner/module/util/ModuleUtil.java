@@ -12,6 +12,7 @@ import com.tanner.module.UapModuleType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class ModuleUtil {
 
@@ -34,7 +35,6 @@ public class ModuleUtil {
      */
     public void coverToModule(Project project, String filePath) throws BusinessException {
         File file = new File(filePath);
-        String modulePath = filePath;
         String moduleFileName = getModuleFileName(file);
         //0 是常规java模块，1是nc模块，2是maven模块
         int moduleType = MODULE_TYPE_JAVA;
@@ -50,10 +50,10 @@ public class ModuleUtil {
         if (module == null) {
             //创建module
             UapModuleBuilder builder = new UapModuleType().createModuleBuilder();
-            builder.setModuleFilePath(modulePath + File.separator + moduleFileName);
-            builder.setContentEntryPath(modulePath);
+            builder.setModuleFilePath(filePath + File.separator + moduleFileName);
+            builder.setContentEntryPath(filePath);
             builder.setName(file.getName());
-            List<Pair<String, String>> list = getSourcePathList(moduleType, modulePath);
+            List<Pair<String, String>> list = getSourcePathList(moduleType, filePath);
             builder.setSourcePaths(list);
             builder.setLibraries(libraries);
             builder.commitModule(project, null);
@@ -63,9 +63,9 @@ public class ModuleUtil {
     /**
      * 扫描source目录
      *
-     * @param moduleType
-     * @param modulePath
-     * @return
+     * @param moduleType moduleType
+     * @param modulePath modulePath
+     * @return List<Pair < String, String>>
      */
     private List<Pair<String, String>> getSourcePathList(int moduleType, String modulePath) {
         List<Pair<String, String>> list = new ArrayList<>();
@@ -78,9 +78,9 @@ public class ModuleUtil {
     }
 
     private List<Pair<String, String>> scanNCSourcePath(String modulePath) {
-        List<Pair<String, String>> list = new ArrayList();
+        List<Pair<String, String>> list = new ArrayList<>();
         File moduleFile = new File(modulePath);
-        for (File componentFile : moduleFile.listFiles()) {
+        for (File componentFile : Objects.requireNonNull(moduleFile.listFiles())) {
             if (componentFile.isFile()) {
                 continue;
             }
@@ -89,7 +89,7 @@ public class ModuleUtil {
             if (file.exists()) {
                 File srcFile = new File(file.getParent() + File.separator + "src");
                 if (srcFile.exists()) {
-                    for (File f : srcFile.listFiles()) {
+                    for (File f : Objects.requireNonNull(srcFile.listFiles())) {
                         if (f.getName().equals("client") || f.getName().equals("public") || f.getName()
                                 .equals("private")) {
                             list.add(new Pair<>(f.getPath(), ""));
@@ -113,10 +113,8 @@ public class ModuleUtil {
             moduleName = "maven_" + file.getName();
             if (ncModuleFile.exists()) {
                 moduleName = "nc_" + file.getName();
-            } else {
-
             }
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         moduleName += ".iml";
         return moduleName;

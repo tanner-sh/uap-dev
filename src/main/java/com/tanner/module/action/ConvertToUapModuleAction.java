@@ -27,13 +27,13 @@ public class ConvertToUapModuleAction extends AbstractAnAction {
             try {
                 util.coverToModule(event.getProject(), f.getPath());
             } catch (BusinessException businessException) {
-                Messages.showErrorDialog(businessException.getMessage(), "wrong");
+                Messages.showErrorDialog(businessException.getMessage(), "Wrong");
                 flag = false;
                 break;
             }
         }
         if (flag) {
-            Messages.showInfoMessage("finish", "success");
+            Messages.showInfoMessage("Finish", "Success");
         }
 
     }

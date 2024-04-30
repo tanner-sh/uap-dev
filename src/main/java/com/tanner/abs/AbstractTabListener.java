@@ -7,7 +7,7 @@ import java.awt.event.MouseListener;
 
 public abstract class AbstractTabListener implements ChangeListener, MouseListener {
 
-    private AbstractDialog dlg;
+    private final AbstractDialog dlg;
 
     public AbstractTabListener(AbstractDialog dlg) {
         this.dlg = dlg;

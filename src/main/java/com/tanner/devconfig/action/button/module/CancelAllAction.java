@@ -12,7 +12,7 @@ import java.awt.event.ActionEvent;
  */
 public class CancelAllAction extends AbstractButtonAction {
 
-    private int type;
+    private final int type;
 
     public CancelAllAction(AbstractDialog dialog, int type) {
         super(dialog);

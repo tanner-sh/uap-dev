@@ -40,7 +40,7 @@ public class SetDevDataSourceAction extends AbstractButtonAction {
                 dialog.getComponent(JComboBox.class, "dbBox").insertItemAt("design", index + 1);
                 dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(index + 1);
                 DataSourceUtil.saveDesignDataSourceMeta(dialog);
-            } catch (Exception ex) {
+            } catch (Exception ignored) {
 
             }
         }

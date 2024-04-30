@@ -25,6 +25,6 @@ public class ClearClientCacheAction extends AbstractAnAction {
                 return;
             }
         }
-        Messages.showInfoMessage("清除完毕", "清除完毕");
+        Messages.showInfoMessage("Clear done!", "清除完毕");
     }
 }

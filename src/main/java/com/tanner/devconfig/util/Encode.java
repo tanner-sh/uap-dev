@@ -1,5 +1,8 @@
 package com.tanner.devconfig.util;
 
+/**
+ * copy from home
+ */
 public class Encode {
 
     public Encode() {
