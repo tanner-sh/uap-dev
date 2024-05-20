@@ -52,17 +52,20 @@ public class PatcherDialog extends AbstractDialog {
         patcherName.setEditable(true);
         UapProjectEnvironment envSettingService = UapProjectEnvironment.getInstance(event.getProject());
         String lastPatcherPath = null;
+        String userName = null;
         if (envSettingService != null) {
             lastPatcherPath = envSettingService.getLastPatcherPath();
+            userName = envSettingService.getDeveloper();
         }
         if (StringUtils.isEmpty(lastPatcherPath) || !new File(lastPatcherPath).exists()) {
             lastPatcherPath = System.getProperty("user.home");
         }
         savePath.setText(lastPatcherPath);
-        if (envSettingService != null && StringUtils.isEmpty(envSettingService.getDeveloper())) {
-            String userName = System.getProperties().getProperty("user.name", "unknown");
-            developer.setText(userName);
+        if (StringUtils.isEmpty(userName)) {
+            userName = System.getProperties().getProperty("user.name", "unknown");
+
         }
+        developer.setText(userName);
         // 保存路径按钮事件
         fileChooseBtn.addActionListener(e -> {
             FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();

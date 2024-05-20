@@ -1,15 +1,23 @@
 package com.tanner.devconfig.action.button.datasource;
 
-import com.intellij.openapi.ui.Messages;
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
+import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.prop.entity.ToolUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -26,19 +34,37 @@ public class TestConnectionAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) {
+        Project project = ProjectManager.getInstance().getProject();
+        // 创建一个后台任务
+        Task.Backgroundable task = new Task.Backgroundable(project, "Testing datasource ...", true) {
+            public void run(@NotNull ProgressIndicator indicator) {
+                // 设置初始进度
+                if (testConnection()) {
+                    Notification notification = new Notification("Task Notification Group", "Done", "Test passed !", NotificationType.INFORMATION);
+                    Notifications.Bus.notify(notification, project);
+                } else {
+                    Notification notification = new Notification("Task Notification Group", "Error", "Test connection error !", NotificationType.ERROR);
+                    Notifications.Bus.notify(notification, project);
+                }
+            }
+        };
+        // 显示进度条并开始执行任务
+        ProgressManager.getInstance().run(task);
+    }
+
+    private boolean testConnection() {
         AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
-        String homePath = null;
+        String homePath;
         if (dlg instanceof DevConfigDialog) {
             homePath = dlg.getComponent(JTextField.class, "homeText").getText();
         } else {
             homePath = UapProjectEnvironment.getInstance().getUapHomePath();
         }
-        ClassLoader classLoader = null;
+        ClassLoader classLoader;
         try {
             classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
         } catch (Exception e) {
-            Messages.showMessageDialog("Add driver error !", "错误", Messages.getErrorIcon());
-            return;
+            return false;
         }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
@@ -52,14 +78,12 @@ public class TestConnectionAction extends AbstractButtonAction {
         try {
             connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
                     ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port), userName, pwd);
+            return true;
         } catch (Exception e) {
-            Messages.showMessageDialog("Get connection error \n" + e.getMessage(), "错误",
-                    Messages.getErrorIcon());
-            return;
+            return false;
         } finally {
             DbUtil.closeResource(connection, null, null);
         }
-        Messages.showMessageDialog("Test connection success !", "提示", Messages.getInformationIcon());
     }
 
 }

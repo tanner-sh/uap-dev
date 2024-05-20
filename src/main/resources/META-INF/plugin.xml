@@ -133,8 +133,8 @@
     ]]></description>
     <extensions defaultExtensionNs="com.intellij">
         <moduleType id="NCCMODULE" implementationClass="com.tanner.module.UapModuleType"/>
-        <projectService serviceImplementation="com.tanner.base.UapProjectEnvironment"
-                        serviceInterface="com.tanner.base.UapProjectEnvironment"/>
+        <projectService serviceImplementation="com.tanner.base.UapProjectEnvironment"/>
+        <notificationGroup id="Task Notification Group" displayType="BALLOON"/>
     </extensions>
     <id>uap-dev-2022</id>
     <idea-version since-build="223.0"/>
