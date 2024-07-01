@@ -4,7 +4,9 @@ import com.tanner.base.BusinessException;
 import com.tanner.base.DbUtil;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -33,10 +35,20 @@ public class OracleEngine implements IEngine {
         List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql.toString(), null);
         for (Map<String, Object> stringObjectMap : queryResult) {
             String tableName = (String) stringObjectMap.get("TABLE_NAME");
-            String comments = (String) stringObjectMap.get("COMMENTS");
+            // 优先从元数据信息中获取
+            String comments = getTableCommentsFromMD(connection, tableName);
+            if (StringUtils.isEmpty(comments)) {
+                comments = (String) stringObjectMap.get("COMMENTS");
+            }
             tableInfoList.add(new TableInfo(tableName, comments));
         }
         return tableInfoList;
+    }
+
+    private String getTableCommentsFromMD(Connection connection, String tableName) throws BusinessException {
+        String querySql = "select DISPLAYNAME from MD_CLASS where UPPER(DEFAULTTABLENAME) = ? ";
+        List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql, Collections.singletonList(tableName));
+        return CollectionUtils.isEmpty(queryResult) ? "" : queryResult.get(0).get("DISPLAYNAME").toString();
     }
 
     @Override
@@ -62,16 +74,30 @@ public class OracleEngine implements IEngine {
             columnInfoList.clear();
             columnInfoList.addAll(filteredList);
         }
-        querySql = new StringBuilder("SELECT COLUMN_NAME, COMMENTS FROM USER_COL_COMMENTS");
-        querySql.append(" WHERE TABLE_NAME = ?");
+        // 先从元数据中获取字段备注信息
+        querySql = new StringBuilder("SELECT NAME,DISPLAYNAME FROM MD_COLUMN WHERE UPPER(TABLEID) = ?");
         queryResult = DbUtil.executeQuery(connection, querySql.toString(), Collections.singletonList(tableName));
-        for (Map<String, Object> rowMap : queryResult) {
-            String column_name = (String) rowMap.get("COLUMN_NAME");
-            String comments = (String) rowMap.get("COMMENTS");
-            columnInfoList.stream()
-                    .filter(columnInfo -> columnInfo.getColumnName().equals(column_name))
-                    .forEach(columnInfo -> columnInfo.setComment(comments));
+        if (CollectionUtils.isNotEmpty(queryResult)) {
+            for (Map<String, Object> rowMap : queryResult) {
+                String name = (String) rowMap.get("NAME");
+                String displayname = (String) rowMap.get("DISPLAYNAME");
+                columnInfoList.stream()
+                        .filter(columnInfo -> columnInfo.getColumnName().equalsIgnoreCase(name))
+                        .forEach(columnInfo -> columnInfo.setComment(displayname));
+            }
+        } else {
+            querySql = new StringBuilder("SELECT COLUMN_NAME, COMMENTS FROM USER_COL_COMMENTS");
+            querySql.append(" WHERE TABLE_NAME = ?");
+            queryResult = DbUtil.executeQuery(connection, querySql.toString(), Collections.singletonList(tableName));
+            for (Map<String, Object> rowMap : queryResult) {
+                String column_name = (String) rowMap.get("COLUMN_NAME");
+                String comments = (String) rowMap.get("COMMENTS");
+                columnInfoList.stream()
+                        .filter(columnInfo -> columnInfo.getColumnName().equals(column_name))
+                        .forEach(columnInfo -> columnInfo.setComment(comments));
+            }
         }
+        // 从元数据中获取枚举信息
         for (ColumnInfo columnInfo : columnInfoList) {
             String enumValue = getEnumValueFromMD(connection, tableName, columnInfo.getColumnName());
             columnInfo.setEnumValue(enumValue);
