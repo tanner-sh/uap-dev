@@ -24,20 +24,24 @@ public class ScriptExportTool {
     private String jdbcUrl;
     private String userName;
     private String pwd;
-    private boolean exportDelete;
+    private int exportMode;
     private boolean spiltGo;
     private Connection connection;
+
+    private final static int EXPORTMODE_DELETE_THEN_INSERT = 0;
+    private final static int EXPORTMODE_INSERT = 1;
+    private final static int EXPORTMODE_DELETE = 2;
 
     public ScriptExportTool() {
 
     }
 
-    public ScriptExportTool(String driverClass, String jdbcUrl, String userName, String pwd, boolean exportDelete, boolean spiltGo) {
+    public ScriptExportTool(String driverClass, String jdbcUrl, String userName, String pwd, int exportMode, boolean spiltGo) {
         this.driverClass = driverClass;
         this.jdbcUrl = jdbcUrl;
         this.userName = userName;
         this.pwd = pwd;
-        this.exportDelete = exportDelete;
+        this.exportMode = exportMode;
         this.spiltGo = spiltGo;
     }
 
@@ -53,21 +57,42 @@ public class ScriptExportTool {
         DbUtil.closeResource(connection, null, null);
     }
 
-    private List<String> getExportSqls(List<Map<String, String>> configList, String parma)
-            throws Exception {
-        List<String> exportSqls = new ArrayList<String>();
-        if (exportDelete) {
-            for (Map<String, String> stringStringMap : configList) {
-                String deleteSql = stringStringMap.get("sql");
-                deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
-                deleteSql = "delete " + deleteSql.substring(deleteSql.indexOf("from"));
-                deleteSql += ";";
-                if (spiltGo) {
-                    deleteSql += "\ngo\n";
-                }
-                exportSqls.add(deleteSql);
-            }
+    private List<String> getExportSqls(List<Map<String, String>> configList, String parma) throws Exception {
+        List<String> exportSqls = new ArrayList<>();
+        switch (exportMode) {
+            case EXPORTMODE_DELETE_THEN_INSERT:
+                exportSqls.addAll(buildDeleteSqls(configList, parma));
+                exportSqls.addAll(buildInsertSqls(configList, parma));
+                break;
+            case EXPORTMODE_INSERT:
+                exportSqls.addAll(buildInsertSqls(configList, parma));
+                break;
+            case EXPORTMODE_DELETE:
+                exportSqls.addAll(buildDeleteSqls(configList, parma));
+                break;
+            default:
+                break;
         }
+        return exportSqls;
+    }
+
+    private List<String> buildDeleteSqls(List<Map<String, String>> configList, String parma) throws Exception {
+        List<String> exportSqls = new ArrayList<>();
+        for (Map<String, String> stringStringMap : configList) {
+            String deleteSql = stringStringMap.get("sql");
+            deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
+            deleteSql = "delete " + deleteSql.substring(deleteSql.indexOf("from"));
+            deleteSql += ";";
+            if (spiltGo) {
+                deleteSql += "\ngo\n";
+            }
+            exportSqls.add(deleteSql);
+        }
+        return exportSqls;
+    }
+
+    private List<String> buildInsertSqls(List<Map<String, String>> configList, String parma) throws Exception {
+        List<String> exportSqls = new ArrayList<>();
         for (Map<String, String> stringStringMap : configList) {
             String tableName = stringStringMap.get("tableName");
             String querySql = stringStringMap.get("sql");

@@ -37,8 +37,8 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
     private JButton exportBtn;
     private JTextField mdNameText;
     private JTextField mdModuleText;
-    private JCheckBox exportDeleteCheckBox;
     private JCheckBox spiltGoCheckBox;
+    private JComboBox<?> exportModeComboBox;
 
     public ScriptExportDlg(AnActionEvent event) {
         super(event.getProject());
@@ -72,7 +72,7 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         addComponent("lightNodeCodeText", lightNodeCodeText);
         addComponent("mdNameText", mdNameText);
         addComponent("mdModuleText", mdModuleText);
-        addComponent("exportDeleteCheckBox", exportDeleteCheckBox);
+        addComponent("exportModeComboBox", exportModeComboBox);
         addComponent("spiltGoCheckBox", spiltGoCheckBox);
     }
 
@@ -93,6 +93,14 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
             exportPathText.setText(desktopPath.getAbsolutePath());
         }
         DataSourceUtil.initDataSource(this);
+        // 初始化导出模式
+        initExportModeBox();
+    }
+
+    private void initExportModeBox() {
+        String[] exportModes = {"先删除后导入", "仅插入", "仅删除"};
+        exportModeComboBox.setModel(new DefaultComboBoxModel(exportModes));
+        exportModeComboBox.getModel().setSelectedItem(exportModes[0]);
     }
 
     @Override

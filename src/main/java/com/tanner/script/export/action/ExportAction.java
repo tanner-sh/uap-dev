@@ -40,10 +40,10 @@ public class ExportAction extends AbstractButtonAction {
         String lightNodeCode = getDialog().getComponent(JTextField.class, "lightNodeCodeText").getText();
         String mdName = getDialog().getComponent(JTextField.class, "mdNameText").getText();
         String mdModule = getDialog().getComponent(JTextField.class, "mdModuleText").getText();
-        boolean exportDelete = getDialog().getComponent(JCheckBox.class, "exportDeleteCheckBox").isSelected();
+        int exportMode = getDialog().getComponent(JComboBox.class, "exportModeComboBox").getSelectedIndex();
         boolean spiltGo = getDialog().getComponent(JCheckBox.class, "spiltGoCheckBox").isSelected();
         try {
-            new ScriptExportTool(info.getDriverClass(), jdbcUrl, userName, pwd, exportDelete, spiltGo).export(exportPath,
+            new ScriptExportTool(info.getDriverClass(), jdbcUrl, userName, pwd, exportMode, spiltGo).export(exportPath,
                     heavyNodeCode, lightNodeCode, mdName, mdModule);
         } catch (Exception e) {
             Messages.showWarningDialog("导出脚本异常\n" + e.getMessage(), "错误");
