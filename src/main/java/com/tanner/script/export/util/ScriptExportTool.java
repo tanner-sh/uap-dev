@@ -3,6 +3,7 @@ package com.tanner.script.export.util;
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
 import com.tanner.base.UapProjectEnvironment;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
@@ -105,14 +106,22 @@ public class ScriptExportTool {
     }
 
     private List<Object> getAllHeavyNodeCodeByParent(String heavyNodeCode) throws Exception {
-        List<Object> nodeCodes = new ArrayList<Object>();
-        StringBuilder querySql = new StringBuilder("select FUNCODE from SM_FUNCREGISTER");
-        querySql.append(" start with CFUNID = (select CFUNID from SM_FUNCREGISTER");
-        querySql.append(" where FUNCODE = ?) CONNECT BY PRIOR CFUNID = PARENT_ID order by FUNCODE");
+        // 判断是否为模块编码
+        List<Object> heavyCodes = new ArrayList<>();
+        StringBuilder querySql;
+        if (isModuleId(heavyNodeCode)) {
+            querySql = new StringBuilder("select FUNCODE from SM_FUNCREGISTER");
+            querySql.append(" where OWN_MODULE in ((select MODULEID from DAP_DAPSYSTEM");
+            querySql.append(" start with MODULEID = ? CONNECT BY PRIOR MODULEID = PARENTCODE))");
+        } else {
+            querySql = new StringBuilder("select FUNCODE from SM_FUNCREGISTER");
+            querySql.append(" start with CFUNID = (select CFUNID from SM_FUNCREGISTER");
+            querySql.append(" where FUNCODE = ?) CONNECT BY PRIOR CFUNID = PARENT_ID order by FUNCODE");
+        }
         List<Map<String, Object>> list = DbUtil.executeQuery(connection, querySql.toString(),
                 Collections.singletonList(heavyNodeCode));
-        list.forEach(mm -> nodeCodes.addAll(mm.values()));
-        return nodeCodes;
+        list.forEach(mm -> heavyCodes.addAll(mm.values()));
+        return heavyCodes;
     }
 
     private List<Map<String, String>> readExportConfig(String yamlName) {
@@ -142,14 +151,28 @@ public class ScriptExportTool {
     }
 
     private List<Object> getAllLightNodeCodeByParent(String lightNodeCode) throws Exception {
-        List<Object> nodeCodes = new ArrayList<Object>();
-        StringBuilder querySql = new StringBuilder("select code from sm_appregister");
-        querySql.append(" start with PK_APPREGISTER = (select PK_APPREGISTER from sm_appregister");
-        querySql.append(" where CODE = ?) CONNECT BY PRIOR PK_APPREGISTER = PARENT_ID order by code");
+        // 判断是否为模块编码
+        List<Object> lightCodes = new ArrayList<>();
+        StringBuilder querySql;
+        if (isModuleId(lightNodeCode)) {
+            querySql = new StringBuilder("select code from sm_appregister");
+            querySql.append(" where OWN_MODULE in (select MODULEID from DAP_DAPSYSTEM");
+            querySql.append(" start with MODULEID = ? CONNECT BY PRIOR MODULEID = PARENTCODE)");
+        } else {
+            querySql = new StringBuilder("select code from sm_appregister");
+            querySql.append(" start with PK_APPREGISTER = (select PK_APPREGISTER from sm_appregister");
+            querySql.append(" where CODE = ?) CONNECT BY PRIOR PK_APPREGISTER = PARENT_ID order by code");
+        }
         List<Map<String, Object>> list = DbUtil.executeQuery(connection, querySql.toString(),
                 Collections.singletonList(lightNodeCode));
-        list.forEach(mm -> nodeCodes.addAll(mm.values()));
-        return nodeCodes;
+        list.forEach(mm -> lightCodes.addAll(mm.values()));
+        return lightCodes;
+    }
+
+    private boolean isModuleId(String code) throws Exception {
+        String sql = "select 1 from DAP_DAPSYSTEM where MODULEID = ?";
+        List<Map<String, Object>> list = DbUtil.executeQuery(connection, sql, Collections.singletonList(code));
+        return CollectionUtils.isNotEmpty(list);
     }
 
     private void exportLightNodeCode(String exportPath, String lightNodeCode) throws Exception {

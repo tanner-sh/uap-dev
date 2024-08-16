@@ -73,7 +73,7 @@ public class LibrariesUtil {
         List<String> langList = scanJarAndClasses(langPath, false, false);
         //扫描hotwebs
         String externalPath = homePath + File.separator + "external";
-        hotwebEspecial(homePath, externalPath, "nccloud", "ncchr");//移动pub_platform到external
+        hotwebEspecial(homePath, externalPath, "nccloud", "ncchr", "fbip");//移动pub_platform到external
         //扫描lib 和 external
         String libPath = homePath + File.separator + "lib";
         List<String> libList = scanJarAndClasses(libPath, false, false);
@@ -209,13 +209,13 @@ public class LibrariesUtil {
                             + "lib");
             File externalFile = new File(externalPath + File.separator + "lib");
             if (!hotwebFile.exists() || !externalFile.exists()) {
-                return;
+                continue;
             }
             File[] files = hotwebFile.listFiles();
             if (files == null) {
-                return;
+                continue;
             }
-            boolean isNCCloudFlag = server.equals("nccloud");
+            boolean isNCCloudFlag = server.equals("nccloud") || server.equals("fbip");
             StringBuilder jarBuffer = new StringBuilder();
             for (File file : files) {
                 try {
@@ -223,7 +223,7 @@ public class LibrariesUtil {
                     if (file.getName().endsWith("jar") && !file.getName().contains("_src")) {
                         jarBuffer.append(",").append(file.getName());
                         if (isNCCloudFlag) {
-                            unZip(homePath, file);
+                            unZip(homePath, server, file);
                         }
                     }
                     File newFile = new File(externalFile.getPath() + File.separator + file.getName());
@@ -271,9 +271,9 @@ public class LibrariesUtil {
      *
      * @param jarFile jarFile
      */
-    private static void unZip(String homePath, File jarFile) throws IOException {
+    private static void unZip(String homePath, String server, File jarFile) throws IOException {
         String outPath =
-                homePath + File.separator + "hotwebs" + File.separator + "nccloud" + File.separator
+                homePath + File.separator + "hotwebs" + File.separator + server + File.separator
                         + "WEB-INF" + File.separator + "extend";
         JarFile jar = new JarFile(jarFile.getPath());
         Enumeration<JarEntry> entries = jar.entries();
