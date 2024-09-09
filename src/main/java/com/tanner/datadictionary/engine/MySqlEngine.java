@@ -1,6 +1,5 @@
 package com.tanner.datadictionary.engine;
 
-import com.tanner.base.BusinessException;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
 
