@@ -16,11 +16,11 @@ import java.security.Security;
  * copy from home
  */
 public class AESGeneratorKey {
+    public static final String DEFAULT_PROVIDER_NAME = "BC";
     private static final byte[] KEY_END = new byte[]{43, 65, 23, 6, -54, -24, -16, 26, 7, 34, -29, -52, -14, 27, 38, 41};
     private static final int AESKEY_LENGTH = 256;
     private static final int TRANS_KEY_LENGTH = 32;
     private static final byte[] DEFAULT_TRANS_KEY = new byte[]{34, 25, 64, 23, 54, 65, 76, 34, -3, -54, -13, -35, 34, 54, 23};
-    public static final String DEFAULT_PROVIDER_NAME = "BC";
     private static final String DEFAUL_WAY = "SHA1PRNG";
 
     static {

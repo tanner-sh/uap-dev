@@ -87,12 +87,12 @@ public class ExportPatcherUtil {
     private final String exportPath;
     private final String patchName;
     private final boolean srcFlag;
-    private String webServerName = File.separator + "nccloud";
-    private boolean cloudFlag;
     private final String projectName;
     private final boolean needDeploy;
     private final boolean needClearSwingCache;
     private final boolean needClearBrowserCache;
+    private String webServerName = File.separator + "nccloud";
+    private boolean cloudFlag;
     private String functionDescription;
     private String configDescription;
     private String zipName = "";

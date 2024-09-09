@@ -26,11 +26,10 @@ import java.text.MessageFormat;
 
 public class NewComponentDialog extends DialogWrapper {
 
+    private final AnActionEvent event;
     private JPanel contentPane;
-
     private JTextField displayText;
     private JTextField nameText;
-    private final AnActionEvent event;
 
     public NewComponentDialog(final AnActionEvent event) {
         super(event.getProject());

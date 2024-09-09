@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 
 public class ScriptExportTool {
 
+    private final static int EXPORTMODE_DELETE_THEN_INSERT = 0;
+    private final static int EXPORTMODE_INSERT = 1;
+    private final static int EXPORTMODE_DELETE = 2;
     private String driverClass;
     private String jdbcUrl;
     private String userName;
@@ -28,10 +31,6 @@ public class ScriptExportTool {
     private int exportMode;
     private boolean spiltGo;
     private Connection connection;
-
-    private final static int EXPORTMODE_DELETE_THEN_INSERT = 0;
-    private final static int EXPORTMODE_INSERT = 1;
-    private final static int EXPORTMODE_DELETE = 2;
 
     public ScriptExportTool() {
 

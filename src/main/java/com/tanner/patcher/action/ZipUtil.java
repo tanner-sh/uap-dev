@@ -53,8 +53,8 @@ public class ZipUtil {
     /**
      * 压缩目录
      *
-     * @param dir dir
-     * @param out out
+     * @param dir      dir
+     * @param out      out
      * @param basePath basePath
      */
     private static void compressDirectory(File dir, ZipOutputStream out, String basePath) {
@@ -73,8 +73,8 @@ public class ZipUtil {
     /**
      * 压缩文件
      *
-     * @param file file
-     * @param out out
+     * @param file     file
+     * @param out      out
      * @param basePath basePath
      */
     private static void compressFile(File file, ZipOutputStream out, String basePath) {

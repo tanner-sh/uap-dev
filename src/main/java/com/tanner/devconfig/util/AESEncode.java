@@ -19,9 +19,9 @@ import java.util.Properties;
  * copy from home
  */
 public class AESEncode {
-    private static final Logger LOG = Logger.getInstance(AESEncode.class);
     static final IvParameterSpec iv = new IvParameterSpec(getUTF8Bytes("1234567890123456"));
     static final String transform = "AES/CBC/PKCS5Padding";
+    private static final Logger LOG = Logger.getInstance(AESEncode.class);
     private static final String FLAY = "#";
     private static String KEY = null;
 

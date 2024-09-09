@@ -18,7 +18,7 @@ public class SelAllAction extends AbstractButtonAction {
         super(dialog);
         this.type = type;
     }
-    
+
     @Override
     public void doAction(ActionEvent event) {
         JTable table = null;

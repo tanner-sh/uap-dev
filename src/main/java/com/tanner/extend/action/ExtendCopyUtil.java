@@ -50,7 +50,7 @@ public class ExtendCopyUtil {
      * 将某个文件下下的所有xml文件拷贝到另一个文件夹
      *
      * @param fromDirPath fromDirPath
-     * @param toDirPath toDirPath
+     * @param toDirPath   toDirPath
      * @throws IOException IOException
      */
     private static void copyDir(String fromDirPath, String toDirPath) throws IOException {
@@ -83,7 +83,7 @@ public class ExtendCopyUtil {
      * 复制xml文件
      *
      * @param fromFilePath fromFilePath
-     * @param newFilePath newFilePath
+     * @param newFilePath  newFilePath
      * @throws IOException IOException
      */
     private static void copyXmlFile(@NotNull String fromFilePath, @NotNull String newFilePath)
