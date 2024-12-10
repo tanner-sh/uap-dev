@@ -14,7 +14,6 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.pom.java.LanguageLevel;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
-import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -100,9 +99,8 @@ public class ExportPatcherUtil {
     public ExportPatcherUtil(AnActionEvent event, String exportPath, String patchName,
                              boolean srcFlag, String webServerName, boolean cloudFlag, String projectName,
                              boolean needDeploy, boolean needClearSwingCache, boolean needClearBrowserCache,
-                             String functionDescription, String configDescription, String developer) {
+                             String functionDescription, String configDescription, String developer, String uapVersion) {
         this.event = event;
-        String uapVersion = UapProjectEnvironment.getInstance().getUapVersion();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String dateStr = simpleDateFormat.format(new Date());
         this.exportPath =

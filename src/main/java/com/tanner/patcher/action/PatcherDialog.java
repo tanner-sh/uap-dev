@@ -40,6 +40,7 @@ public class PatcherDialog extends AbstractDialog {
     private JTextArea functionDescription;
     private JTextArea configDescription;
     private JTextField developer;
+    private JTextField uapVersion;
     private JBList<VirtualFile> fieldList;
 
     public PatcherDialog(final AnActionEvent event) {
@@ -63,7 +64,6 @@ public class PatcherDialog extends AbstractDialog {
         savePath.setText(lastPatcherPath);
         if (StringUtils.isEmpty(userName)) {
             userName = System.getProperties().getProperty("user.name", "unknown");
-
         }
         developer.setText(userName);
         // 保存路径按钮事件
@@ -92,6 +92,10 @@ public class PatcherDialog extends AbstractDialog {
             Messages.showErrorDialog("Please Set developer!", "Error");
             return;
         }
+        if (null == uapVersion.getText() || "".equals(uapVersion.getText())) {
+            Messages.showErrorDialog("Please Set uapVersion!", "Error");
+            return;
+        }
         ListModel<VirtualFile> model = fieldList.getModel();
         if (model.getSize() == 0) {
             Messages.showErrorDialog("Please select export file!", "Error");
@@ -102,6 +106,7 @@ public class PatcherDialog extends AbstractDialog {
         if (envSettingService != null) {
             envSettingService.setLastPatcherPath(exportPath);
             envSettingService.setDeveloper(developer.getText());
+            envSettingService.setUapVersion(uapVersion.getText());
         }
         boolean srcFlag = srcFlagCheckBox.isSelected();
         boolean cloudFlag = cloudFlagCheckBox.isSelected();
@@ -122,7 +127,7 @@ public class PatcherDialog extends AbstractDialog {
             ExportPatcherUtil util = new ExportPatcherUtil(event, exportPath, patcherName.getText(),
                     srcFlag, serverName.getText(), cloudFlag, projectName.getText(), needDeployFlag,
                     needClearSwingCacheFlag, needClearBrowserCacheFlag, functionDescription.getText(),
-                    configDescription.getText(), developer.getText());
+                    configDescription.getText(), developer.getText(), uapVersion.getText());
             try {
                 util.exportPatcher(progressBar);
                 String zipName = util.getZipName();
