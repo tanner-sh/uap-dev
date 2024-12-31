@@ -54,9 +54,11 @@ public class PatcherDialog extends AbstractDialog {
         UapProjectEnvironment envSettingService = UapProjectEnvironment.getInstance(event.getProject());
         String lastPatcherPath = null;
         String userName = null;
+        String version = null;
         if (envSettingService != null) {
             lastPatcherPath = envSettingService.getLastPatcherPath();
             userName = envSettingService.getDeveloper();
+            version = envSettingService.getUapVersion();
         }
         if (StringUtils.isEmpty(lastPatcherPath) || !new File(lastPatcherPath).exists()) {
             lastPatcherPath = System.getProperty("user.home");
@@ -66,6 +68,7 @@ public class PatcherDialog extends AbstractDialog {
             userName = System.getProperties().getProperty("user.name", "unknown");
         }
         developer.setText(userName);
+        uapVersion.setText(version);
         // 保存路径按钮事件
         fileChooseBtn.addActionListener(e -> {
             FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
