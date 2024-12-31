@@ -132,6 +132,14 @@
       </p>
     ]]></description>
     <extensions defaultExtensionNs="com.intellij">
+        <toolWindow
+                id="LogWatcher"
+                factoryClass="com.tanner.logwatcher.LogWatcherToolWindowFactory"
+                anchor="bottom"
+                icon="/img/log.svg"
+        />
+    </extensions>
+    <extensions defaultExtensionNs="com.intellij">
         <moduleType id="NCCMODULE" implementationClass="com.tanner.module.UapModuleType"/>
         <projectService serviceImplementation="com.tanner.base.UapProjectEnvironment"/>
         <notificationGroup id="Task Notification Group" displayType="BALLOON"/>
