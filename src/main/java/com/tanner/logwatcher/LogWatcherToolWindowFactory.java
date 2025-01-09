@@ -12,9 +12,6 @@ import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
-import javax.swing.*;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -43,7 +40,7 @@ public class LogWatcherToolWindowFactory implements ToolWindowFactory, DumbAware
             return;
         }
         Path logDirPath = Paths.get(uapHomePath, "nclogs");
-        logWatcherService.startWatching(logDirPath, StandardCharsets.UTF_8);
+        logWatcherService.startWatching(logDirPath);
     }
 
 }
