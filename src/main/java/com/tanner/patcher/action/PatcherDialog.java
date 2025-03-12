@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.Objects;
 
 public class PatcherDialog extends AbstractDialog {
 
@@ -69,6 +70,9 @@ public class PatcherDialog extends AbstractDialog {
         }
         developer.setText(userName);
         uapVersion.setText(version);
+        if (Objects.equals(version, "fbip81")) {
+            serverName.setText("fbip");
+        }
         // 保存路径按钮事件
         fileChooseBtn.addActionListener(e -> {
             FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();

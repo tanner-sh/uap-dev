@@ -163,7 +163,7 @@ public class CreatApplicationConfigurationUtil {
         parameters.append("-Dnc.server.location=").append(homePath).append("\n");
         parameters.append("-DEJBConfigDir=").append(homePath).append("/ejbXMLs\n");
         parameters.append("-DExtServiceConfigDir=").append(homePath).append("/ejbXMLs\n");
-        parameters.append("-Duap.hotwebs=").append("nccloud,fs").append("\n");
+        parameters.append("-Duap.hotwebs=").append("nccloud,fs,fbip").append("\n");
         parameters.append("-Duap.disable.codescan=false\n");
         parameters.append("-Dorg.owasp.esapi.resources=").append(homePath).append("/ierp/bin/esapi\n");
         parameters.append("-Dfile.encoding=").append("GB2312").append("\n"); // 默认编码
