@@ -248,7 +248,7 @@ public class ExportPatcherUtil {
         System.out.println("............finished all ,module count : " + moduleIndex + " total:" + count
                 + ".............");
         //创建ncm日志文件,只有ncccloud和ncchr的代码创建
-        if (webServerName.endsWith("nccloud") || webServerName.endsWith("ncchr")) {
+        if (webServerName.endsWith("nccloud") || webServerName.endsWith("ncchr") || webServerName.endsWith("fbip")) {
             //修改模块包含对应的web服务
             moduleSet.add(webServerName.substring(1));
             createNMCLog(moduleSet, classNameSet);
