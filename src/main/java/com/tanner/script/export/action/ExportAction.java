@@ -5,6 +5,7 @@ import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.dbdriver.entity.DriverInfo;
+import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.script.export.util.ScriptExportTool;
 import org.apache.commons.lang3.StringUtils;
@@ -42,6 +43,14 @@ public class ExportAction extends AbstractButtonAction {
         String mdModule = getDialog().getComponent(JTextField.class, "mdModuleText").getText();
         int exportMode = getDialog().getComponent(JComboBox.class, "exportModeComboBox").getSelectedIndex();
         boolean spiltGo = getDialog().getComponent(JCheckBox.class, "spiltGoCheckBox").isSelected();
+        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        DataSourceMeta dataSourceMeta = null;
+        if (StringUtils.isNotBlank(dsname)) {
+            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
+        }
+        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+            jdbcUrl = dataSourceMeta.getDatabaseUrl();
+        }
         try {
             new ScriptExportTool(info.getDriverClass(), jdbcUrl, userName, pwd, exportMode, spiltGo).export(exportPath,
                     heavyNodeCode, lightNodeCode, mdName, mdModule);

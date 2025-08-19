@@ -16,7 +16,9 @@ import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.DevConfigDialog;
+import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -66,6 +68,11 @@ public class TestConnectionAction extends AbstractButtonAction {
         } catch (Exception e) {
             return false;
         }
+        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        DataSourceMeta dataSourceMeta = null;
+        if (StringUtils.isNotBlank(dsname)) {
+            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
+        }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         String exampleUrl = info.getDriverUrl();
@@ -74,10 +81,13 @@ public class TestConnectionAction extends AbstractButtonAction {
         String userName = dlg.getComponent(JTextField.class, "userText").getText();
         String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
         String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
+        String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
+        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+            jdbcUrl = dataSourceMeta.getDatabaseUrl();
+        }
         Connection connection = null;
         try {
-            connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
-                    ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port), userName, pwd);
+            connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
             return true;
         } catch (Exception e) {
             return false;

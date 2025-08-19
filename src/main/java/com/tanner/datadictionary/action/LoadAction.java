@@ -11,6 +11,7 @@ import com.tanner.base.UapProjectEnvironment;
 import com.tanner.datadictionary.engine.IEngine;
 import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
+import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,8 +47,16 @@ public class LoadAction extends AbstractButtonAction {
         for (int rowCount = dbTable.getModel().getRowCount(); rowCount > 0; rowCount--) {
             ((DefaultTableModel) dbTable.getModel()).removeRow(rowCount - 1);
         }
+        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        DataSourceMeta dataSourceMeta = null;
+        if (StringUtils.isNotBlank(dsname)) {
+            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
+        }
         String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
         ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+            jdbcUrl = dataSourceMeta.getDatabaseUrl();
+        }
         Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
         IEngine engine = DbUtil.getEngine(connection);
         List<TableInfo> tableInfoList = engine.getAllTableInfo(connection, userName, tableNamePattern);

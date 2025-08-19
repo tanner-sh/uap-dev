@@ -17,7 +17,9 @@ import com.tanner.base.UapProjectEnvironment;
 import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.datadictionary.tool.DataDictionaryExportTool;
 import com.tanner.dbdriver.entity.DriverInfo;
+import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -68,6 +70,14 @@ public class ExportAction extends AbstractButtonAction {
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
         String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
         ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        DataSourceMeta dataSourceMeta = null;
+        if (StringUtils.isNotBlank(dsname)) {
+            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
+        }
+        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+            jdbcUrl = dataSourceMeta.getDatabaseUrl();
+        }
         Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
         String exportAs = (String) dlg.getComponent(JComboBox.class, "exportAsBox").getSelectedItem();
         boolean needFilterDefField = dlg.getComponent(JCheckBox.class, "needFilterDefField").isSelected();
