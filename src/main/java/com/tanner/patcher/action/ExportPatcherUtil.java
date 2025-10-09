@@ -1,5 +1,8 @@
 package com.tanner.patcher.action;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.module.LanguageLevelUtil;
@@ -514,7 +517,8 @@ public class ExportPatcherUtil {
             if (patchPath.contains(PATH_CLIENT)) {
                 className = className.replace(PATH_CLIENT, "");
                 javaName = javaName.replace(PATH_CLIENT, "");
-                if (patchPath.contains(webServerName) && webServerName.contains("nccloud")) {
+                if ((patchPath.contains(File.separator + "nccloud") || patchPath.contains(File.separator + "fbip"))
+                        && (webServerName.contains("nccloud") || webServerName.contains("fbip"))) {
                     toPath = exportPath + PATH_REPLACEMENT + PATH_HOTWEBS + webServerName + PATH_WEB_INF
                             + PATH_CLASSES;
                 } else {
