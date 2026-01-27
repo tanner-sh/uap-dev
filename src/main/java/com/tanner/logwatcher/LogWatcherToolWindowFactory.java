@@ -2,8 +2,10 @@ package com.tanner.logwatcher;
 
 import com.intellij.execution.impl.ConsoleViewImpl;
 import com.intellij.execution.ui.ConsoleView;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.ui.content.Content;
@@ -28,6 +30,7 @@ public class LogWatcherToolWindowFactory implements ToolWindowFactory, DumbAware
         // 启动日志监控服务
         LogWatcherService logWatcherService = new LogWatcherService();
         logWatcherService.setConsoleView(consoleView);
+        Disposer.register(content, logWatcherService);
         // 获取日志文件夹位置
         UapProjectEnvironment uapProjectEnvironment = UapProjectEnvironment.getInstance(project);
         if (uapProjectEnvironment == null) {
@@ -40,7 +43,7 @@ public class LogWatcherToolWindowFactory implements ToolWindowFactory, DumbAware
             return;
         }
         Path logDirPath = Paths.get(uapHomePath, "nclogs");
-        logWatcherService.startWatching(logDirPath);
+        ApplicationManager.getApplication().executeOnPooledThread(() -> logWatcherService.startWatching(logDirPath));
     }
 
 }
