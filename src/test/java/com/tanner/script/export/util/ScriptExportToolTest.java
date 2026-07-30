@@ -31,4 +31,26 @@ public class ScriptExportToolTest {
             assertTrue(expected.getMessage().contains("缺少 FROM"));
         }
     }
+
+    @Test
+    public void countsOnlyUnquotedSqlPlaceholders() {
+        assertEquals(2, ScriptExportTool.countSqlPlaceholders(
+                "select '?' as literal from demo where a = ? and b = \"?\" and c = ?"));
+        assertEquals(1, ScriptExportTool.countSqlPlaceholders(
+                "select 'it''s ?' from demo where code = ?"));
+    }
+
+    @Test
+    public void selectsLightNodeConfigByNccVersion() {
+        assertEquals("lightNodeCode_ncc2005.yaml",
+                ScriptExportTool.selectLightNodeConfig("ncc2005"));
+        assertEquals("lightNodeCode_ncc2005.yaml",
+                ScriptExportTool.selectLightNodeConfig("ncc2111"));
+        assertEquals("lightNodeCode.yaml",
+                ScriptExportTool.selectLightNodeConfig("ncc1909"));
+        assertEquals("lightNodeCode.yaml",
+                ScriptExportTool.selectLightNodeConfig("nc65"));
+        assertEquals("lightNodeCode.yaml",
+                ScriptExportTool.selectLightNodeConfig(null));
+    }
 }

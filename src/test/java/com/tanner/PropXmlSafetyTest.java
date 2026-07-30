@@ -85,6 +85,23 @@ public class PropXmlSafetyTest {
         assertEquals(3.75f, loaded.values[1], 0.001f);
     }
 
+    @Test
+    public void nullFieldsAreExplicitAndRoundTripAsNull() throws Exception {
+        File beanFile = temporaryFolder.newFile("nullable.xml");
+        NullableBean bean = new NullableBean();
+
+        ObjectToXML.saveAsXmlFile(beanFile.getPath(), bean);
+
+        String raw = Files.readString(beanFile.toPath(), Charset.forName("GB2312"));
+        assertTrue(raw.contains("<value value=\"null\""));
+        assertTrue(raw.contains("<values arrayValue=\"null\""));
+        NullableBean loaded = (NullableBean) XMLToObject.getJavaObjectFromFile(
+                beanFile, NullableBean.class, true);
+        assertEquals(null, loaded.value);
+        assertEquals(null, loaded.values);
+        assertEquals(null, loaded.nested);
+    }
+
     private void writeProp(File propFile, File home, DataSourceMeta... metas)
             throws Exception {
         PropInfo info = new PropInfo();
@@ -105,6 +122,15 @@ public class PropXmlSafetyTest {
         public float[] values;
 
         public FloatBean() {
+        }
+    }
+
+    public static class NullableBean {
+        public String value;
+        public String[] values;
+        public FloatBean nested;
+
+        public NullableBean() {
         }
     }
 }

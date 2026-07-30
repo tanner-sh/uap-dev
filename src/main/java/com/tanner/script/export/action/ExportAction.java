@@ -3,6 +3,7 @@ package com.tanner.script.export.action;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.tanner.abs.AbstractButtonAction;
@@ -77,7 +78,9 @@ public class ExportAction extends AbstractButtonAction {
                     indicator.setIndeterminate(true);
                     new ScriptExportTool(homePath, info.getDriverClass(), finalJdbcUrl,
                             userName, pwd, exportMode, spiltGo).export(exportPath,
-                            heavyNodeCode, lightNodeCode, mdName, mdModule);
+                            heavyNodeCode, lightNodeCode, mdName, mdModule, indicator);
+                } catch (ProcessCanceledException exception) {
+                    throw exception;
                 } catch (Exception exception) {
                     failure = exception;
                 }

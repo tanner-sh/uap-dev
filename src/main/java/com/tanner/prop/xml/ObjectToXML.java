@@ -136,16 +136,17 @@ public class ObjectToXML {
                     if (oc != null && oc.getClass() != fa[i].getType() && !isPrimitive(oc.getClass())) {
                         child.setAttribute("ClassType", fa[i].getType().getName());
                     }
-                    if (oc != null) {
-                        if (isPrimitive(oc.getClass())) {
-                            child.appendChild(doc.createTextNode(oc.toString()));
-                            appendChild(doc, nod, child);
-                        } else if (oc.getClass().isArray()) {
-                            getDocument(doc, nod, oc, deep, fa[i].getType(), fa[i].getName());
-                        } else {
-                            getDocument(doc, child, oc, deep, fa[i].getType(), null);
-                            appendChild(doc, nod, child);
-                        }
+                    if (oc == null) {
+                        getDocument(doc, child, null, deep, fa[i].getType(), fa[i].getName());
+                        appendChild(doc, nod, child);
+                    } else if (isPrimitive(oc.getClass())) {
+                        child.appendChild(doc.createTextNode(oc.toString()));
+                        appendChild(doc, nod, child);
+                    } else if (oc.getClass().isArray()) {
+                        getDocument(doc, nod, oc, deep, fa[i].getType(), fa[i].getName());
+                    } else {
+                        getDocument(doc, child, oc, deep, fa[i].getType(), null);
+                        appendChild(doc, nod, child);
                     }
                     fa[i].setAccessible(isAccessible);
                 }

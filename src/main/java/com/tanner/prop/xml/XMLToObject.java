@@ -246,6 +246,10 @@ public class XMLToObject {
                     if (fa[i].getType().isArray()) {
                         Object oa = revertArray(item, fa[i].getType(), fa[i].getName());
                         fa[i].set(o, oa);
+                    } else if (isNullNode(cNode)) {
+                        if (!fa[i].getType().isPrimitive()) {
+                            fa[i].set(o, null);
+                        }
                     } else if (isPrimitive(c)) {
                         NodeList nlc = cNode.getChildNodes();
                         if (nlc.item(0) == null) {

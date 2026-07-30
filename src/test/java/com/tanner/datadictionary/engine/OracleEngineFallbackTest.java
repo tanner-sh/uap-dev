@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,11 +35,76 @@ public class OracleEngineFallbackTest {
         assertEquals("", columns.get(0).getEnumValue());
     }
 
+    @Test
+    public void loadsAllColumnEnumsWithOneMetadataQuery() throws Exception {
+        AtomicInteger enumQueries = new AtomicInteger();
+        OracleEngine engine = new OracleEngine();
+
+        List<ColumnInfo> columns = engine.getAllColumnInfo(
+                connectionWithMetadataEnums(enumQueries), "DEMO", false);
+
+        assertEquals(2, columns.size());
+        assertEquals("0=停用;\n1=启用;", columns.get(0).getEnumValue());
+        assertEquals("A=甲;", columns.get(1).getEnumValue());
+        assertEquals(1, enumQueries.get());
+    }
+
     private Connection connectionWithoutMetadataTables() {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class[]{Connection.class}, (proxy, method, args) -> {
                     if ("prepareStatement".equals(method.getName())) {
                         return preparedStatement((String) args[0]);
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+    }
+
+    private Connection connectionWithMetadataEnums(AtomicInteger enumQueries) {
+        return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[]{Connection.class}, (proxy, method, args) -> {
+                    if ("prepareStatement".equals(method.getName())) {
+                        String sql = (String) args[0];
+                        return (PreparedStatement) Proxy.newProxyInstance(
+                                getClass().getClassLoader(),
+                                new Class[]{PreparedStatement.class},
+                                (statement, statementMethod, statementArgs) -> {
+                                    if ("executeQuery".equals(statementMethod.getName())) {
+                                        if (sql.toUpperCase().contains("USER_TAB_COLUMNS")) {
+                                            return resultSet(List.of(
+                                                    row("COLUMN_NAME", "STATUS",
+                                                            "COLUMN_ID", BigDecimal.ONE,
+                                                            "DATA_TYPE", "NUMBER",
+                                                            "NULLABLE", "Y",
+                                                            "DATA_DEFAULT", null),
+                                                    row("COLUMN_NAME", "TYPE",
+                                                            "COLUMN_ID", BigDecimal.TWO,
+                                                            "DATA_TYPE", "VARCHAR2",
+                                                            "NULLABLE", "Y",
+                                                            "DATA_DEFAULT", null)));
+                                        }
+                                        if (sql.toUpperCase().contains("MD_COLUMN")) {
+                                            return resultSet(List.of());
+                                        }
+                                        if (sql.toUpperCase().contains("USER_COL_COMMENTS")) {
+                                            return resultSet(List.of());
+                                        }
+                                        if (sql.toUpperCase().contains("JOIN MD_ENUMVALUE")) {
+                                            enumQueries.incrementAndGet();
+                                            return resultSet(List.of(
+                                                    row("PROPERTY_NAME", "STATUS",
+                                                            "ENUM_VALUE", "0",
+                                                            "ENUM_NAME", "停用"),
+                                                    row("PROPERTY_NAME", "STATUS",
+                                                            "ENUM_VALUE", "1",
+                                                            "ENUM_NAME", "启用"),
+                                                    row("PROPERTY_NAME", "TYPE",
+                                                            "ENUM_VALUE", "A",
+                                                            "ENUM_NAME", "甲")));
+                                        }
+                                        return resultSet(List.of());
+                                    }
+                                    return defaultValue(statementMethod.getReturnType());
+                                });
                     }
                     return defaultValue(method.getReturnType());
                 });

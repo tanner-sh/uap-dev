@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import javax.swing.*;
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.Map;
 
 /**
  * 数据源初始化工具类
@@ -228,16 +229,8 @@ public class DataSourceUtil {
                 throw new BusinessException("找不到数据源配置: " + filename);
             }
             JComboBox dbBox = dlg.getComponent(JComboBox.class, "dbBox");
-            DataSourceMeta[] metas = new DataSourceMeta[dbBox.getItemCount()];
-            for (int i = 0; i < metas.length; i++) {
-                Object item = dbBox.getItemAt(i);
-                metas[i] = dlg.getDataSourceMetaMap().get(String.valueOf(item));
-                if (metas[i] == null) {
-                    throw new BusinessException("数据源列表与配置不一致: " + item);
-                }
-                metas[i].setMaxCon(50);
-                metas[i].setMinCon(1);
-            }
+            DataSourceMeta[] metas = collectDataSourcesForSave(dbBox,
+                    dlg.getDataSourceMetaMap());
             new PropXml().saveMeta(filename, metas, nchome);
         } catch (Exception e) {
             if (e instanceof BusinessException businessException) {
@@ -245,6 +238,20 @@ public class DataSourceUtil {
             }
             throw new BusinessException("保存数据源配置失败:\n" + e.getMessage());
         }
+    }
+
+    static DataSourceMeta[] collectDataSourcesForSave(JComboBox dbBox,
+                                                       Map<String, DataSourceMeta> sourceMap)
+            throws BusinessException {
+        DataSourceMeta[] metas = new DataSourceMeta[dbBox.getItemCount()];
+        for (int i = 0; i < metas.length; i++) {
+            Object item = dbBox.getItemAt(i);
+            metas[i] = sourceMap.get(String.valueOf(item));
+            if (metas[i] == null) {
+                throw new BusinessException("数据源列表与配置不一致: " + item);
+            }
+        }
+        return metas;
     }
 
 }

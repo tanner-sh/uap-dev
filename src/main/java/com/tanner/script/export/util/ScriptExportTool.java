@@ -1,7 +1,9 @@
 package com.tanner.script.export.util;
 
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
+import com.tanner.base.UapUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -9,18 +11,20 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 
 public class ScriptExportTool {
@@ -36,6 +40,7 @@ public class ScriptExportTool {
     private int exportMode;
     private boolean spiltGo;
     private Connection connection;
+    private ProgressIndicator progressIndicator;
 
     public ScriptExportTool() {
 
@@ -54,16 +59,27 @@ public class ScriptExportTool {
 
     public void export(String exportPath, String heavyNodeCode, String lightNodeCode, String mdName,
                        String mdModule) throws Exception {
+        export(exportPath, heavyNodeCode, lightNodeCode, mdName, mdModule, null);
+    }
+
+    public void export(String exportPath, String heavyNodeCode, String lightNodeCode, String mdName,
+                       String mdModule, ProgressIndicator indicator) throws Exception {
+        this.progressIndicator = indicator;
         try (URLClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
              Connection openedConnection = DbUtil.getConnection(classLoader, driverClass, jdbcUrl,
                      userName, pwd)) {
             this.connection = openedConnection;
+            checkCanceled();
             exportHeavyNodeCode(exportPath, heavyNodeCode);
+            checkCanceled();
             exportLightNodeCode(exportPath, lightNodeCode);
+            checkCanceled();
             exportMdName(exportPath, mdName);
+            checkCanceled();
             exportMdModule(exportPath, mdModule);
         } finally {
             connection = null;
+            progressIndicator = null;
         }
     }
 
@@ -89,6 +105,7 @@ public class ScriptExportTool {
     private List<String> buildDeleteSqls(List<Map<String, String>> configList, String parma) throws Exception {
         List<String> exportSqls = new ArrayList<>();
         for (Map<String, String> stringStringMap : configList) {
+            checkCanceled();
             exportSqls.add(buildDeleteStatement(stringStringMap.get("sql"), parma, spiltGo));
         }
         return exportSqls;
@@ -172,33 +189,99 @@ public class ScriptExportTool {
     private List<String> buildInsertSqls(List<Map<String, String>> configList, String parma) throws Exception {
         List<String> exportSqls = new ArrayList<>();
         for (Map<String, String> stringStringMap : configList) {
+            checkCanceled();
             String tableName = stringStringMap.get("tableName");
             String querySql = stringStringMap.get("sql");
-            long count = querySql.codePoints().filter(ch -> ch == '?').count();
-            List<Object> paramList = Arrays.stream(new Object[(int) count]).map(p -> p = parma)
-                    .collect(Collectors.toList());
-            exportSqls.addAll(DbUtil.getInsertScripts(connection, tableName, querySql, paramList, spiltGo));
+            int count = countSqlPlaceholders(querySql);
+            List<Object> paramList = new ArrayList<>(Collections.nCopies(count, parma));
+            exportSqls.addAll(DbUtil.getInsertScripts(connection, tableName, querySql, paramList,
+                    spiltGo, progressIndicator));
         }
         return exportSqls;
     }
 
     private List<Object> getAllHeavyNodeCodeByParent(String heavyNodeCode) throws Exception {
-        // 判断是否为模块编码
-        List<Object> heavyCodes = new ArrayList<>();
-        StringBuilder querySql;
+        LinkedHashSet<Object> heavyCodes = new LinkedHashSet<>();
         if (isModuleId(heavyNodeCode)) {
-            querySql = new StringBuilder("select FUNCODE from SM_FUNCREGISTER");
-            querySql.append(" where OWN_MODULE in ((select MODULEID from DAP_DAPSYSTEM");
-            querySql.append(" start with MODULEID = ? CONNECT BY PRIOR MODULEID = PARENTCODE))");
+            for (String moduleId : getDescendantModuleIds(heavyNodeCode)) {
+                checkCanceled();
+                List<Map<String, Object>> rows = DbUtil.executeQuery(connection,
+                        "select FUNCODE from SM_FUNCREGISTER where OWN_MODULE = ?",
+                        Collections.singletonList(moduleId));
+                rows.forEach(row -> addValue(row, "FUNCODE", heavyCodes));
+            }
         } else {
-            querySql = new StringBuilder("select FUNCODE from SM_FUNCREGISTER");
-            querySql.append(" start with CFUNID = (select CFUNID from SM_FUNCREGISTER");
-            querySql.append(" where FUNCODE = ?) CONNECT BY PRIOR CFUNID = PARENT_ID order by FUNCODE");
+            collectNodeCodes("SM_FUNCREGISTER", "FUNCODE", "CFUNID", "PARENT_ID",
+                    heavyNodeCode, heavyCodes);
         }
-        List<Map<String, Object>> list = DbUtil.executeQuery(connection, querySql.toString(),
-                Collections.singletonList(heavyNodeCode));
-        list.forEach(mm -> heavyCodes.addAll(mm.values()));
-        return heavyCodes;
+        return new ArrayList<>(heavyCodes);
+    }
+
+    private List<String> getDescendantModuleIds(String rootModuleId) throws Exception {
+        LinkedHashSet<String> moduleIds = new LinkedHashSet<>();
+        Deque<String> pending = new ArrayDeque<>();
+        pending.add(rootModuleId);
+        while (!pending.isEmpty()) {
+            checkCanceled();
+            String moduleId = pending.removeFirst();
+            if (!moduleIds.add(moduleId)) {
+                continue;
+            }
+            List<Map<String, Object>> rows = DbUtil.executeQuery(connection,
+                    "select MODULEID from DAP_DAPSYSTEM where PARENTCODE = ?",
+                    Collections.singletonList(moduleId));
+            for (Map<String, Object> row : rows) {
+                String child = Objects.toString(row.get("MODULEID"), "");
+                if (!child.isBlank() && !moduleIds.contains(child)) {
+                    pending.addLast(child);
+                }
+            }
+        }
+        return new ArrayList<>(moduleIds);
+    }
+
+    private void collectNodeCodes(String tableName, String codeColumn, String idColumn,
+                                  String parentColumn, String rootCode,
+                                  LinkedHashSet<Object> codes) throws Exception {
+        checkCanceled();
+        List<Map<String, Object>> roots = DbUtil.executeQuery(connection,
+                "select " + idColumn + "," + codeColumn + " from " + tableName
+                        + " where " + codeColumn + " = ?",
+                Collections.singletonList(rootCode));
+        Deque<String> pending = new ArrayDeque<>();
+        Set<String> visited = new LinkedHashSet<>();
+        for (Map<String, Object> root : roots) {
+            addValue(root, codeColumn, codes);
+            String rootId = Objects.toString(root.get(idColumn), "");
+            if (!rootId.isBlank()) {
+                pending.add(rootId);
+            }
+        }
+        while (!pending.isEmpty()) {
+            checkCanceled();
+            String parentId = pending.removeFirst();
+            if (!visited.add(parentId)) {
+                continue;
+            }
+            List<Map<String, Object>> children = DbUtil.executeQuery(connection,
+                    "select " + idColumn + "," + codeColumn + " from " + tableName
+                            + " where " + parentColumn + " = ? order by " + codeColumn,
+                    Collections.singletonList(parentId));
+            for (Map<String, Object> child : children) {
+                addValue(child, codeColumn, codes);
+                String childId = Objects.toString(child.get(idColumn), "");
+                if (!childId.isBlank() && !visited.contains(childId)) {
+                    pending.addLast(childId);
+                }
+            }
+        }
+    }
+
+    private void addValue(Map<String, Object> row, String key, Set<Object> values) {
+        Object value = row.get(key);
+        if (value != null) {
+            values.add(value);
+        }
     }
 
     private List<Map<String, String>> readExportConfig(String yamlName) throws Exception {
@@ -223,29 +306,29 @@ public class ScriptExportTool {
         List<Map<String, String>> configList = readExportConfig("heavyNodeCode.yaml");
         List<Object> allHeavyNodeCodeByParent = getAllHeavyNodeCodeByParent(heavyNodeCode);
         for (Object nodeCode : allHeavyNodeCodeByParent) {
+            checkCanceled();
             File scriptFile = resolveSqlFile(scriptDirectory, Objects.toString(nodeCode, ""));
             scriptFile.createNewFile();
-            writeSqlLines(scriptFile, getExportSqls(configList, (String) nodeCode));
+            writeSqlLines(scriptFile, getExportSqls(configList,
+                    Objects.toString(nodeCode, "")));
         }
     }
 
     private List<Object> getAllLightNodeCodeByParent(String lightNodeCode) throws Exception {
-        // 判断是否为模块编码
-        List<Object> lightCodes = new ArrayList<>();
-        StringBuilder querySql;
+        LinkedHashSet<Object> lightCodes = new LinkedHashSet<>();
         if (isModuleId(lightNodeCode)) {
-            querySql = new StringBuilder("select code from sm_appregister");
-            querySql.append(" where OWN_MODULE in (select MODULEID from DAP_DAPSYSTEM");
-            querySql.append(" start with MODULEID = ? CONNECT BY PRIOR MODULEID = PARENTCODE)");
+            for (String moduleId : getDescendantModuleIds(lightNodeCode)) {
+                checkCanceled();
+                List<Map<String, Object>> rows = DbUtil.executeQuery(connection,
+                        "select CODE from SM_APPREGISTER where OWN_MODULE = ?",
+                        Collections.singletonList(moduleId));
+                rows.forEach(row -> addValue(row, "CODE", lightCodes));
+            }
         } else {
-            querySql = new StringBuilder("select code from sm_appregister");
-            querySql.append(" start with PK_APPREGISTER = (select PK_APPREGISTER from sm_appregister");
-            querySql.append(" where CODE = ?) CONNECT BY PRIOR PK_APPREGISTER = PARENT_ID order by code");
+            collectNodeCodes("SM_APPREGISTER", "CODE", "PK_APPREGISTER", "PARENT_ID",
+                    lightNodeCode, lightCodes);
         }
-        List<Map<String, Object>> list = DbUtil.executeQuery(connection, querySql.toString(),
-                Collections.singletonList(lightNodeCode));
-        list.forEach(mm -> lightCodes.addAll(mm.values()));
-        return lightCodes;
+        return new ArrayList<>(lightCodes);
     }
 
     private boolean isModuleId(String code) throws Exception {
@@ -262,12 +345,15 @@ public class ScriptExportTool {
         if (!scriptDirectory.exists()) {
             scriptDirectory.mkdirs();
         }
-        List<Map<String, String>> configList = readExportConfig("lightNodeCode_ncc2005.yaml");
+        String version = UapUtil.getUapVersion(homePath);
+        List<Map<String, String>> configList = readExportConfig(selectLightNodeConfig(version));
         List<Object> allLightNodeCodeByParent = getAllLightNodeCodeByParent(lightNodeCode);
         for (Object nodeCode : allLightNodeCodeByParent) {
+            checkCanceled();
             File scriptFile = resolveSqlFile(scriptDirectory, Objects.toString(nodeCode, ""));
             scriptFile.createNewFile();
-            writeSqlLines(scriptFile, getExportSqls(configList, (String) nodeCode));
+            writeSqlLines(scriptFile, getExportSqls(configList,
+                    Objects.toString(nodeCode, "")));
         }
     }
 
@@ -297,6 +383,49 @@ public class ScriptExportTool {
         File scriptFile = resolveSqlFile(scriptDirectory, mdModule);
         scriptFile.createNewFile();
         writeSqlLines(scriptFile, getExportSqls(configList, mdModule));
+    }
+
+    static String selectLightNodeConfig(String version) {
+        if (version != null && version.startsWith("ncc")) {
+            String digits = version.substring(3).replaceAll("\\D", "");
+            if (digits.length() >= 4) {
+                try {
+                    if (Integer.parseInt(digits.substring(0, 4)) >= 2005) {
+                        return "lightNodeCode_ncc2005.yaml";
+                    }
+                } catch (NumberFormatException ignored) {
+                    // Use the compatible generic configuration.
+                }
+            }
+        }
+        return "lightNodeCode.yaml";
+    }
+
+    static int countSqlPlaceholders(String sql) {
+        int count = 0;
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        for (int i = 0; i < sql.length(); i++) {
+            char current = sql.charAt(i);
+            if (current == '\'' && !inDoubleQuote) {
+                if (inSingleQuote && i + 1 < sql.length() && sql.charAt(i + 1) == '\'') {
+                    i++;
+                } else {
+                    inSingleQuote = !inSingleQuote;
+                }
+            } else if (current == '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+            } else if (current == '?' && !inSingleQuote && !inDoubleQuote) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void checkCanceled() {
+        if (progressIndicator != null) {
+            progressIndicator.checkCanceled();
+        }
     }
 
     private File resolveSqlFile(File directory, String name) throws Exception {

@@ -1,5 +1,6 @@
 package com.tanner.base;
 
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.tanner.datadictionary.engine.IEngine;
 import com.tanner.datadictionary.engine.MySqlEngine;
 import com.tanner.datadictionary.engine.OracleEngine;
@@ -60,19 +61,30 @@ public class DbUtil {
 
     public static List<String> getInsertScripts(Connection connection, String tableName,
                                                 String querySql, List<Object> paramList, boolean spiltGo) throws BusinessException {
+        return getInsertScripts(connection, tableName, querySql, paramList, spiltGo, null);
+    }
+
+    public static List<String> getInsertScripts(Connection connection, String tableName,
+                                                String querySql, List<Object> paramList,
+                                                boolean spiltGo,
+                                                ProgressIndicator indicator)
+            throws BusinessException {
         List<String> exportSqls = new ArrayList<>();
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         try {
+            checkCanceled(indicator);
             preparedStatement = connection.prepareStatement(querySql);
             if (paramList != null) {
                 for (int i = 0; i < paramList.size(); i++) {
+                    checkCanceled(indicator);
                     preparedStatement.setObject(i + 1, paramList.get(i));
                 }
             }
             resultSet = preparedStatement.executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             while (resultSet.next()) {
+                checkCanceled(indicator);
                 StringBuilder exportSql = new StringBuilder("insert into ").append(tableName).append(" ");
                 StringBuilder columnNames = new StringBuilder("(");
                 StringBuilder columnValues = new StringBuilder("(");
@@ -98,6 +110,12 @@ public class DbUtil {
             throw new BusinessException("生成插入脚本失败:" + e.getMessage());
         } finally {
             closeResource(null, preparedStatement, resultSet);
+        }
+    }
+
+    private static void checkCanceled(ProgressIndicator indicator) {
+        if (indicator != null) {
+            indicator.checkCanceled();
         }
     }
 

@@ -10,7 +10,9 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -76,8 +78,12 @@ public class MySqlEngine implements IEngine {
             column.setNullAble(Objects.toString(row.get("NULLABLE"), ""));
             column.setDefaultValue(Objects.toString(row.get("DATA_DEFAULT"), ""));
             column.setComment(Objects.toString(row.get("COMMENTS"), ""));
-            column.setEnumValue(getEnumValueFromMetadata(connection, tableName, columnName));
             columns.add(column);
+        }
+        Map<String, String> enumValues = getEnumValuesFromMetadata(connection, tableName);
+        for (ColumnInfo column : columns) {
+            column.setEnumValue(enumValues.getOrDefault(
+                    column.getColumnName().toUpperCase(Locale.ROOT), ""));
         }
         return columns;
     }
@@ -105,24 +111,32 @@ public class MySqlEngine implements IEngine {
         }
     }
 
-    private String getEnumValueFromMetadata(Connection connection, String tableName,
-                                            String columnName) {
-        String sql = "SELECT VALUE, NAME FROM MD_ENUMVALUE "
-                + "WHERE ID = (SELECT DATATYPE FROM MD_PROPERTY "
-                + "WHERE UPPER(NAME) = ? AND CLASSID = "
-                + "(SELECT ID FROM MD_CLASS WHERE UPPER(DEFAULTTABLENAME) = ?)) "
-                + "ORDER BY VALUE";
+    private Map<String, String> getEnumValuesFromMetadata(Connection connection,
+                                                          String tableName) {
+        String sql = "SELECT P.NAME AS PROPERTY_NAME, E.VALUE AS ENUM_VALUE, "
+                + "E.NAME AS ENUM_NAME FROM MD_PROPERTY P "
+                + "JOIN MD_CLASS C ON C.ID = P.CLASSID "
+                + "JOIN MD_ENUMVALUE E ON E.ID = P.DATATYPE "
+                + "WHERE UPPER(C.DEFAULTTABLENAME) = ? ORDER BY P.NAME, E.VALUE";
         try {
             List<Map<String, Object>> rows = DbUtil.executeQuery(connection, sql,
-                    List.of(columnName.toUpperCase(), tableName.toUpperCase()));
-            List<String> values = new ArrayList<>();
+                    Collections.singletonList(tableName.toUpperCase(Locale.ROOT)));
+            Map<String, List<String>> valuesByColumn = new HashMap<>();
             for (Map<String, Object> row : rows) {
-                values.add(Objects.toString(row.get("VALUE"), "") + "="
-                        + Objects.toString(row.get("NAME"), ""));
+                String propertyName = Objects.toString(row.get("PROPERTY_NAME"), "");
+                if (propertyName.isBlank()) {
+                    continue;
+                }
+                valuesByColumn.computeIfAbsent(propertyName.toUpperCase(Locale.ROOT),
+                        ignored -> new ArrayList<>()).add(
+                        Objects.toString(row.get("ENUM_VALUE"), "") + "="
+                                + Objects.toString(row.get("ENUM_NAME"), "") + ";");
             }
-            return String.join(";\n", values);
+            Map<String, String> result = new HashMap<>();
+            valuesByColumn.forEach((key, values) -> result.put(key, String.join("\n", values)));
+            return result;
         } catch (BusinessException ignored) {
-            return "";
+            return Collections.emptyMap();
         }
     }
 

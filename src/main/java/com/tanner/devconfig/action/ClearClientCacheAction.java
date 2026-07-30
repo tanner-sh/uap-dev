@@ -1,9 +1,14 @@
 package com.tanner.devconfig.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractAnAction;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,14 +22,32 @@ public class ClearClientCacheAction extends AbstractAnAction {
     public void doAction(AnActionEvent event) {
         String cacheDirPath = System.getProperty("user.home") + File.separator + "NCCACHE";
         File cacheDir = new File(cacheDirPath);
-        if (cacheDir.exists()) {
-            try {
-                FileUtils.deleteDirectory(cacheDir);
-            } catch (IOException e) {
-                Messages.showInfoMessage("删除文件异常!\n" + e.getMessage(), "错误");
-                return;
+        Project project = event.getProject();
+        Task.Backgroundable task = new Task.Backgroundable(project, "Clearing NC client cache...",
+                false) {
+            private IOException failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                if (!cacheDir.exists()) {
+                    return;
+                }
+                try {
+                    FileUtils.deleteDirectory(cacheDir);
+                } catch (IOException exception) {
+                    failure = exception;
+                }
             }
-        }
-        Messages.showInfoMessage("Clear done!", "清除完毕");
+
+            @Override
+            public void onSuccess() {
+                if (failure != null) {
+                    Messages.showErrorDialog("删除文件异常!\n" + failure.getMessage(), "错误");
+                } else {
+                    Messages.showInfoMessage("Clear done!", "清除完毕");
+                }
+            }
+        };
+        ProgressManager.getInstance().run(task);
     }
 }

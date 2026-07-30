@@ -12,12 +12,12 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class OracleEngine implements IEngine {
 
@@ -107,9 +107,10 @@ public class OracleEngine implements IEngine {
             }
         }
         // 从元数据中获取枚举信息
+        Map<String, String> enumValues = getEnumValuesFromMD(connection, tableName);
         for (ColumnInfo columnInfo : columnInfoList) {
-            String enumValue = getEnumValueFromMD(connection, tableName, columnInfo.getColumnName());
-            columnInfo.setEnumValue(enumValue);
+            columnInfo.setEnumValue(enumValues.getOrDefault(
+                    columnInfo.getColumnName().toUpperCase(Locale.ROOT), ""));
         }
         return columnInfoList;
     }
@@ -125,33 +126,32 @@ public class OracleEngine implements IEngine {
         }
     }
 
-    private String getEnumValueFromMD(Connection connection, String tableName, String columnName) {
+    private Map<String, String> getEnumValuesFromMD(Connection connection, String tableName) {
         //TODO 这个sql有点问题 元数据字段不一定是和数据库字段名一致的
-        StringBuilder enumValue = new StringBuilder();
-        StringBuilder querySql = new StringBuilder("select VALUE, NAME from MD_ENUMVALUE");
-        querySql.append(" where id = (select DATATYPE from MD_PROPERTY");
-        querySql.append(" where upper(name) = ?");
-        querySql.append(" and CLASSID = (select id from md_class where upper(DEFAULTTABLENAME) = ?))");
-        querySql.append(" order by VALUE");
+        String querySql = "SELECT P.NAME AS PROPERTY_NAME, E.VALUE AS ENUM_VALUE, "
+                + "E.NAME AS ENUM_NAME FROM MD_PROPERTY P "
+                + "JOIN MD_CLASS C ON C.ID = P.CLASSID "
+                + "JOIN MD_ENUMVALUE E ON E.ID = P.DATATYPE "
+                + "WHERE UPPER(C.DEFAULTTABLENAME) = ? ORDER BY P.NAME, E.VALUE";
         try {
-            List<Map<String, Object>> queryResult = DbUtil.executeQuery(
-                    connection,
-                    querySql.toString(),
-                    Stream.of(columnName.toUpperCase(), tableName.toUpperCase())
-                            .collect(Collectors.toList()));
-            for (int i = 0; i < queryResult.size(); i++) {
-                Map<String, Object> rowMap = queryResult.get(i);
-                String value = Objects.toString(rowMap.get("VALUE"), "");
-                String name = Objects.toString(rowMap.get("NAME"), "");
-                enumValue.append(value).append("=").append(name).append(";");
-                if (i != queryResult.size() - 1) {
-                    enumValue.append("\n");
+            Map<String, List<String>> valuesByColumn = new HashMap<>();
+            for (Map<String, Object> row : DbUtil.executeQuery(connection, querySql,
+                    Collections.singletonList(tableName.toUpperCase(Locale.ROOT)))) {
+                String propertyName = Objects.toString(row.get("PROPERTY_NAME"), "");
+                if (propertyName.isBlank()) {
+                    continue;
                 }
+                String value = Objects.toString(row.get("ENUM_VALUE"), "");
+                String name = Objects.toString(row.get("ENUM_NAME"), "");
+                valuesByColumn.computeIfAbsent(propertyName.toUpperCase(Locale.ROOT),
+                        ignored -> new ArrayList<>()).add(value + "=" + name + ";");
             }
+            Map<String, String> result = new HashMap<>();
+            valuesByColumn.forEach((key, values) -> result.put(key, String.join("\n", values)));
+            return result;
         } catch (BusinessException ignored) {
-            return "";
+            return Collections.emptyMap();
         }
-        return enumValue.toString();
     }
 
 }

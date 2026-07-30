@@ -2,6 +2,7 @@ package com.tanner.extend.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BusinessException;
 import com.tanner.base.UapProjectEnvironment;
@@ -32,13 +33,25 @@ public final class ExtendCopyUtil {
         if (selected == null) {
             throw new BusinessException("请选择鉴权文件或目录");
         }
-        Path source = Path.of(selected.getPath()).toAbsolutePath().normalize();
+        return copyToNCHome(homePath, Path.of(selected.getPath()), null);
+    }
+
+    static int copyToNCHome(String homePath, Path selected,
+                            ProgressIndicator indicator) throws Exception {
+        if (StringUtils.isBlank(homePath)) {
+            throw new BusinessException("Not set NC Home");
+        }
+        if (selected == null) {
+            throw new BusinessException("请选择鉴权文件或目录");
+        }
+        Path source = selected.toAbsolutePath().normalize();
         Path targetRoot = Path.of(homePath + HOME_CONFIG_FILE_PATH)
                 .toAbsolutePath().normalize();
         List<Path> files;
         if (Files.isDirectory(source)) {
             try (Stream<Path> stream = Files.walk(source)) {
-                files = stream.filter(Files::isRegularFile)
+                files = stream.peek(path -> checkCanceled(indicator))
+                        .filter(Files::isRegularFile)
                         .filter(path -> path.getFileName().toString().endsWith(".xml"))
                         .toList();
             }
@@ -47,6 +60,7 @@ public final class ExtendCopyUtil {
         }
         int copied = 0;
         for (Path file : files) {
+            checkCanceled(indicator);
             if (!file.getFileName().toString().endsWith(".xml")) {
                 continue;
             }
@@ -63,6 +77,12 @@ public final class ExtendCopyUtil {
             copied++;
         }
         return copied;
+    }
+
+    private static void checkCanceled(ProgressIndicator indicator) {
+        if (indicator != null) {
+            indicator.checkCanceled();
+        }
     }
 
     private static Path relativeAfterSegment(Path path, String segment) {

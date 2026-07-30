@@ -3,7 +3,7 @@ package com.tanner.upm.action;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.util.io.FileUtil;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BaseUtil;
 import com.tanner.base.UapProjectEnvironment;
@@ -15,10 +15,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class EjbConfCopyUtil {
 
@@ -27,24 +32,26 @@ public class EjbConfCopyUtil {
      *
      * @param filePath filePath
      */
-    private Set<String> getFileUrl(String filePath) {
-        Set<String> fileUrlSet = new HashSet<>();
-        File file = new File(filePath);
-        if (file.isDirectory()) {
-            File[] childrenFile = file.listFiles();
-            if (childrenFile == null) {
-                return fileUrlSet;
-            }
-            for (File childFile : childrenFile) {
-                fileUrlSet.addAll(getFileUrl(childFile.getPath()));
-            }
-        } else {
-            if ((filePath.endsWith(".rest") || filePath.endsWith(".upm")) && new File(
-                    filePath).getParent().endsWith("META-INF")) {
-                fileUrlSet.add(filePath);
-            }
+    private Set<String> getFileUrl(String filePath, ProgressIndicator indicator)
+            throws IOException {
+        Path source = Path.of(filePath).toAbsolutePath().normalize();
+        if (!Files.exists(source)) {
+            return Set.of();
         }
-        return fileUrlSet;
+        try (Stream<Path> paths = Files.isDirectory(source)
+                ? Files.walk(source) : Stream.of(source)) {
+            return paths.peek(path -> checkCanceled(indicator))
+                    .filter(Files::isRegularFile)
+                    .filter(path -> {
+                        String name = path.getFileName().toString();
+                        Path parent = path.getParent();
+                        return (name.endsWith(".rest") || name.endsWith(".upm"))
+                                && parent != null
+                                && "META-INF".equals(parent.getFileName().toString());
+                    })
+                    .map(Path::toString)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        }
     }
 
     /**
@@ -66,18 +73,41 @@ public class EjbConfCopyUtil {
         if (selected == null) {
             throw new IllegalArgumentException("请选择 UPM/REST 文件或目录");
         }
-        // 目标路径，但是缺少文件名字
-        String toPath =
-                homePath + File.separator + "modules" + File.separator + ncModuleName + File.separator
-                        + "META-INF" + File.separator;
-        Set<String> fileUrls = getFileUrl(selected.getPath());
+        return copy(homePath, ncModuleName, selected.getPath(), null);
+    }
+
+    int copy(String homePath, String ncModuleName, String selectedPath,
+             ProgressIndicator indicator) throws Exception {
+        if (homePath == null || homePath.isBlank()) {
+            throw new IllegalArgumentException("Not set NC Home");
+        }
+        if (ncModuleName == null || ncModuleName.isBlank()) {
+            throw new IllegalArgumentException("Can't determine NC module name");
+        }
+        if (selectedPath == null || selectedPath.isBlank()) {
+            throw new IllegalArgumentException("请选择 UPM/REST 文件或目录");
+        }
+        Path moduleSegment = Path.of(ncModuleName);
+        if (moduleSegment.isAbsolute() || moduleSegment.getNameCount() != 1
+                || ".".equals(ncModuleName) || "..".equals(ncModuleName)) {
+            throw new IllegalArgumentException("非法 NC 模块名称: " + ncModuleName);
+        }
+        Path modulesRoot = Path.of(homePath, "modules").toAbsolutePath().normalize();
+        Path targetRoot = modulesRoot.resolve(moduleSegment).resolve("META-INF").normalize();
+        if (!targetRoot.startsWith(modulesRoot)) {
+            throw new IllegalArgumentException("非法 NC 模块名称: " + ncModuleName);
+        }
+        Files.createDirectories(targetRoot);
+        Set<String> fileUrls = getFileUrl(selectedPath, indicator);
         List<String> errorList = new ArrayList<>();
         int copied = 0;
         for (String fileUrl : fileUrls) {
+            checkCanceled(indicator);
             File file = new File(fileUrl);
             try {
                 // 逐个拷贝到home
-                FileUtil.copy(file, new File(toPath + file.getName()));
+                Files.copy(file.toPath(), targetRoot.resolve(file.getName()),
+                        StandardCopyOption.REPLACE_EXISTING);
                 copied++;
             } catch (IOException ignored) {
                 errorList.add(file.getName());
@@ -89,13 +119,19 @@ public class EjbConfCopyUtil {
         return copied;
     }
 
+    private void checkCanceled(ProgressIndicator indicator) {
+        if (indicator != null) {
+            indicator.checkCanceled();
+        }
+    }
+
     /**
      * 获取nc模块名称
      *
      * @param module
      * @return
      */
-    private String getNCModuleName(Module module) {
+    String getNCModuleName(Module module) {
         String ncModuleName = null;
         VirtualFile virtualFile = module.getModuleFile();
         if (virtualFile == null) {

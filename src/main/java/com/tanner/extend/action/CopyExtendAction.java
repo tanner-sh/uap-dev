@@ -2,27 +2,60 @@ package com.tanner.extend.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.abs.AbstractAnAction;
+import com.tanner.base.UapProjectEnvironment;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.nio.file.Path;
 
 public class CopyExtendAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        try {
-            int copied = ExtendCopyUtil.copyToNCHome(event);
-            if (copied == 0) {
-                Messages.showWarningDialog("未找到可复制的鉴权 XML 文件", "Tips");
-            } else {
-                Messages.showInfoMessage("Copied " + copied + " file(s)", "Tips");
-            }
-        } catch (Exception exception) {
-            Messages.showErrorDialog(exception.getMessage(), "Error");
+        Project project = event.getProject();
+        VirtualFile selected = getSelectFile(event);
+        UapProjectEnvironment environment = UapProjectEnvironment.getInstance(project);
+        if (environment == null) {
+            return;
         }
+        String homePath = environment.getUapHomePath();
+        Path source = selected == null ? null : Path.of(selected.getPath());
+        Task.Backgroundable task = new Task.Backgroundable(project,
+                "Copying authorization files...", true) {
+            private int copied;
+            private Exception failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    copied = ExtendCopyUtil.copyToNCHome(homePath, source, indicator);
+                } catch (ProcessCanceledException exception) {
+                    throw exception;
+                } catch (Exception exception) {
+                    failure = exception;
+                }
+            }
+
+            @Override
+            public void onSuccess() {
+                if (failure != null) {
+                    Messages.showErrorDialog(failure.getMessage(), "Error");
+                } else if (copied == 0) {
+                    Messages.showWarningDialog("未找到可复制的鉴权 XML 文件", "Tips");
+                } else {
+                    Messages.showInfoMessage("Copied " + copied + " file(s)", "Tips");
+                }
+            }
+        };
+        ProgressManager.getInstance().run(task);
     }
 
     @Override
