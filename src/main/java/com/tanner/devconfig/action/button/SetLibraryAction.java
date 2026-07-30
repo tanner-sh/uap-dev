@@ -20,7 +20,7 @@ public class SetLibraryAction extends AbstractButtonAction {
     public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
         String homePath = dialog.getComponent(JTextField.class, "homeText").getText();
-        LibrariesUtil.setLibraries(dialog.getProjectContext(), homePath);
+        LibrariesUtil.setLibrariesWithProgress(dialog.getProjectContext(), homePath);
         Messages.showInfoMessage("Set done！", "提示");
         dialog.setLibFlag(true);
     }

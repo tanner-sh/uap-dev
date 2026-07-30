@@ -49,11 +49,16 @@ public class OracleEngine implements IEngine {
         return tableInfoList;
     }
 
-    private String getTableCommentsFromMD(Connection connection, String tableName) throws BusinessException {
-        String querySql = "select DISPLAYNAME from MD_CLASS where UPPER(DEFAULTTABLENAME) = ? ";
-        List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql, Collections.singletonList(tableName));
-        return CollectionUtils.isEmpty(queryResult) ? ""
-                : Objects.toString(queryResult.get(0).get("DISPLAYNAME"), "");
+    private String getTableCommentsFromMD(Connection connection, String tableName) {
+        try {
+            String querySql = "select DISPLAYNAME from MD_CLASS where UPPER(DEFAULTTABLENAME) = ? ";
+            List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql,
+                    Collections.singletonList(tableName.toUpperCase()));
+            return CollectionUtils.isEmpty(queryResult) ? ""
+                    : Objects.toString(queryResult.get(0).get("DISPLAYNAME"), "");
+        } catch (BusinessException ignored) {
+            return "";
+        }
     }
 
     @Override
@@ -80,8 +85,7 @@ public class OracleEngine implements IEngine {
             columnInfoList.addAll(filteredList);
         }
         // 先从元数据中获取字段备注信息
-        querySql = new StringBuilder("SELECT NAME,DISPLAYNAME FROM MD_COLUMN WHERE UPPER(TABLEID) = ?");
-        queryResult = DbUtil.executeQuery(connection, querySql.toString(), Collections.singletonList(tableName));
+        queryResult = getColumnCommentsFromMD(connection, tableName);
         if (CollectionUtils.isNotEmpty(queryResult)) {
             for (Map<String, Object> rowMap : queryResult) {
                 String name = (String) rowMap.get("NAME");
@@ -110,7 +114,18 @@ public class OracleEngine implements IEngine {
         return columnInfoList;
     }
 
-    private String getEnumValueFromMD(Connection connection, String tableName, String columnName) throws BusinessException {
+    private List<Map<String, Object>> getColumnCommentsFromMD(Connection connection,
+                                                              String tableName) {
+        try {
+            return DbUtil.executeQuery(connection,
+                    "SELECT NAME,DISPLAYNAME FROM MD_COLUMN WHERE UPPER(TABLEID) = ?",
+                    Collections.singletonList(tableName.toUpperCase()));
+        } catch (BusinessException ignored) {
+            return Collections.emptyList();
+        }
+    }
+
+    private String getEnumValueFromMD(Connection connection, String tableName, String columnName) {
         //TODO 这个sql有点问题 元数据字段不一定是和数据库字段名一致的
         StringBuilder enumValue = new StringBuilder();
         StringBuilder querySql = new StringBuilder("select VALUE, NAME from MD_ENUMVALUE");
@@ -118,17 +133,23 @@ public class OracleEngine implements IEngine {
         querySql.append(" where upper(name) = ?");
         querySql.append(" and CLASSID = (select id from md_class where upper(DEFAULTTABLENAME) = ?))");
         querySql.append(" order by VALUE");
-        List<Map<String, Object>> queryResult = DbUtil.executeQuery(
-                connection,
-                querySql.toString(),
-                Stream.of(columnName.toUpperCase(), tableName.toUpperCase()).collect(Collectors.toList()));
-        for (Map<String, Object> rowMap : queryResult) {
-            String value = Objects.toString(rowMap.get("VALUE"), "");
-            String name = Objects.toString(rowMap.get("NAME"), "");
-            enumValue.append(value).append("=").append(name).append(";");
-            if (queryResult.indexOf(rowMap) != queryResult.size() - 1) {
-                enumValue.append("\n");
+        try {
+            List<Map<String, Object>> queryResult = DbUtil.executeQuery(
+                    connection,
+                    querySql.toString(),
+                    Stream.of(columnName.toUpperCase(), tableName.toUpperCase())
+                            .collect(Collectors.toList()));
+            for (int i = 0; i < queryResult.size(); i++) {
+                Map<String, Object> rowMap = queryResult.get(i);
+                String value = Objects.toString(rowMap.get("VALUE"), "");
+                String name = Objects.toString(rowMap.get("NAME"), "");
+                enumValue.append(value).append("=").append(name).append(";");
+                if (i != queryResult.size() - 1) {
+                    enumValue.append("\n");
+                }
             }
+        } catch (BusinessException ignored) {
+            return "";
         }
         return enumValue.toString();
     }

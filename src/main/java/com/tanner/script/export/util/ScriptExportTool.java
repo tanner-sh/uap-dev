@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -88,16 +89,84 @@ public class ScriptExportTool {
     private List<String> buildDeleteSqls(List<Map<String, String>> configList, String parma) throws Exception {
         List<String> exportSqls = new ArrayList<>();
         for (Map<String, String> stringStringMap : configList) {
-            String deleteSql = stringStringMap.get("sql");
-            deleteSql = deleteSql.replace("?", "'" + parma.replace("'", "''") + "'");
-            deleteSql = "delete " + deleteSql.substring(deleteSql.indexOf("from"));
-            deleteSql += ";";
-            if (spiltGo) {
-                deleteSql += "\ngo\n";
-            }
-            exportSqls.add(deleteSql);
+            exportSqls.add(buildDeleteStatement(stringStringMap.get("sql"), parma, spiltGo));
         }
         return exportSqls;
+    }
+
+    static String buildDeleteStatement(String querySql, String parameter, boolean splitGo)
+            throws Exception {
+        if (StringUtils.isBlank(querySql)) {
+            throw new IllegalArgumentException("导出配置中的 SQL 不能为空");
+        }
+        int fromIndex = findSqlKeyword(querySql, "from");
+        if (fromIndex < 0) {
+            throw new IllegalArgumentException("导出配置 SQL 缺少 FROM: " + querySql);
+        }
+        String escapedParameter = "'" + Objects.toString(parameter, "")
+                .replace("'", "''") + "'";
+        String deleteSql = "delete " + replaceSqlPlaceholders(
+                querySql.substring(fromIndex), escapedParameter) + ";";
+        return splitGo ? deleteSql + "\ngo\n" : deleteSql;
+    }
+
+    private static String replaceSqlPlaceholders(String sql, String replacement) {
+        StringBuilder result = new StringBuilder(sql.length());
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        for (int i = 0; i < sql.length(); i++) {
+            char current = sql.charAt(i);
+            if (current == '\'' && !inDoubleQuote) {
+                result.append(current);
+                if (inSingleQuote && i + 1 < sql.length() && sql.charAt(i + 1) == '\'') {
+                    result.append(sql.charAt(++i));
+                } else {
+                    inSingleQuote = !inSingleQuote;
+                }
+            } else if (current == '"' && !inSingleQuote) {
+                result.append(current);
+                inDoubleQuote = !inDoubleQuote;
+            } else if (current == '?' && !inSingleQuote && !inDoubleQuote) {
+                result.append(replacement);
+            } else {
+                result.append(current);
+            }
+        }
+        return result.toString();
+    }
+
+    private static int findSqlKeyword(String sql, String keyword) {
+        String normalizedKeyword = keyword.toLowerCase(Locale.ROOT);
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+        for (int i = 0; i <= sql.length() - keyword.length(); i++) {
+            char current = sql.charAt(i);
+            if (current == '\'' && !inDoubleQuote) {
+                if (inSingleQuote && i + 1 < sql.length() && sql.charAt(i + 1) == '\'') {
+                    i++;
+                    continue;
+                }
+                inSingleQuote = !inSingleQuote;
+                continue;
+            }
+            if (current == '"' && !inSingleQuote) {
+                inDoubleQuote = !inDoubleQuote;
+                continue;
+            }
+            if (inSingleQuote || inDoubleQuote) {
+                continue;
+            }
+            int end = i + keyword.length();
+            boolean startsAtBoundary = i == 0 || !Character.isJavaIdentifierPart(sql.charAt(i - 1));
+            boolean endsAtBoundary = end == sql.length()
+                    || !Character.isJavaIdentifierPart(sql.charAt(end));
+            if (startsAtBoundary && endsAtBoundary
+                    && sql.substring(i, end).toLowerCase(Locale.ROOT)
+                    .equals(normalizedKeyword)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private List<String> buildInsertSqls(List<Map<String, String>> configList, String parma) throws Exception {

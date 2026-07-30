@@ -10,6 +10,8 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
+import javax.sql.rowset.serial.SerialBlob;
+import javax.sql.rowset.serial.SerialClob;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -43,6 +45,14 @@ public class DbUtilTest {
         assertEquals("X'012a'", DbUtil.getColumnValue(Types.VARBINARY,
                 new byte[]{0x01, 0x2a}));
         assertEquals("42", DbUtil.getColumnValue(Types.INTEGER, 42));
+    }
+
+    @Test
+    public void readsLobContentsInsteadOfJdbcObjectNames() throws Exception {
+        assertEquals("'大字段''内容'", DbUtil.getColumnValue(Types.CLOB,
+                new SerialClob("大字段'内容".toCharArray())));
+        assertEquals("X'012a'", DbUtil.getColumnValue(Types.BLOB,
+                new SerialBlob(new byte[]{0x01, 0x2a})));
     }
 
     private Connection connectionFor(String productName) {

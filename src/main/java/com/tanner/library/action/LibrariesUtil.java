@@ -1,6 +1,8 @@
 package com.tanner.library.action;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.OrderRootType;
 import com.intellij.openapi.roots.libraries.Library;
@@ -20,12 +22,14 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -43,20 +47,8 @@ public class LibrariesUtil {
         if (!homeFile.exists()) {
             throw new BusinessException("home不存在，请检查");
         }
-        //首先创建库
-        LibraryTable.ModifiableModel model = LibraryTablesRegistrar.getInstance()
-                .getLibraryTable(project).getModifiableModel();
-        Map<String, Library> libraryMap = new HashMap<>();
-        for (String libraryName : ncLibraries) {
-            //根据库名获取库
-            Library library = model.getLibraryByName(libraryName);
-            // 库不存在创建新的
-            if (library == null) {
-                library = model.createLibrary(libraryName);
-            }
-            libraryMap.put(libraryName, library);
-        }
         /*扫描 nc home */
+        ProgressManager.checkCanceled();
         //设置ant
         String antPath = homePath + File.separator + "ant";
         List<String> antUrl = scanJarAndClasses(antPath, true, false);
@@ -89,29 +81,73 @@ public class LibrariesUtil {
         //扫描modules
         String modulesPath = homePath + File.separator + "modules";
         Map<String, List<String>> moduleMap = scanModules(modulesPath);
-        if (!moduleMap.isEmpty()) {
-            for (String key : moduleMap.keySet()) {
-                setLibrary(moduleMap.get(key), project, libraryMap.get(key).getModifiableModel());
-            }
+        Map<String, List<String>> libraryPaths = new HashMap<>(moduleMap);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_ANT, antUrl);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_FRAMEWORK, frameworkList);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_MIDDLEWARE, middlewareList);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_LANG, langList);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_PRODUCT, productList);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_EJB, ejbList);
+        libraryPaths.put(ClassPathConstantUtil.PATH_NAME_RESOURCES, resourcesList);
+        ProgressManager.checkCanceled();
+        applyLibraries(project, ncLibraries, libraryPaths);
+    }
+
+    public static void setLibrariesWithProgress(Project project, String homePath)
+            throws BusinessException {
+        AtomicReference<BusinessException> failure = new AtomicReference<>();
+        boolean completed = ProgressManager.getInstance().runProcessWithProgressSynchronously(
+                () -> {
+                    try {
+                        setLibraries(project, homePath);
+                    } catch (BusinessException exception) {
+                        failure.set(exception);
+                    }
+                }, "Setting UAP libraries...", false, project);
+        if (!completed) {
+            throw new BusinessException("设置 UAP 类库已取消");
         }
-        //设置类路径
-        setLibrary(antUrl, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_ANT).getModifiableModel());
-        setLibrary(frameworkList, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_FRAMEWORK).getModifiableModel());
-        setLibrary(middlewareList, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_MIDDLEWARE).getModifiableModel());
-        setLibrary(langList, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_LANG).getModifiableModel());
-        setLibrary(productList, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_PRODUCT).getModifiableModel());
-        setLibrary(ejbList, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_EJB).getModifiableModel());
-        //        setLibrary(nccloudList, project, libraryMap.get(ClassPathConstantUtil.PATH_NAME_NCCLOUD).getModifiableModel());
-        setLibrary(resourcesList, project,
-                libraryMap.get(ClassPathConstantUtil.PATH_NAME_RESOURCES).getModifiableModel());
-        WriteCommandAction.runWriteCommandAction(project, model::commit);
-        ProjectManager.getInstance().setAllModuleLibrary(project);
+        if (failure.get() != null) {
+            throw failure.get();
+        }
+    }
+
+    private static void applyLibraries(Project project, List<String> libraryNames,
+                                       Map<String, List<String>> libraryPaths)
+            throws BusinessException {
+        AtomicReference<BusinessException> failure = new AtomicReference<>();
+        Runnable applyTask = () -> {
+            try {
+                LibraryTable.ModifiableModel model = LibraryTablesRegistrar.getInstance()
+                        .getLibraryTable(project).getModifiableModel();
+                Map<String, Library> libraryMap = new HashMap<>();
+                for (String libraryName : libraryNames) {
+                    Library library = model.getLibraryByName(libraryName);
+                    if (library == null) {
+                        library = model.createLibrary(libraryName);
+                    }
+                    libraryMap.put(libraryName, library);
+                }
+                for (Map.Entry<String, List<String>> entry : libraryPaths.entrySet()) {
+                    Library library = libraryMap.get(entry.getKey());
+                    if (library != null) {
+                        setLibrary(entry.getValue(), project, library.getModifiableModel());
+                    }
+                }
+                WriteCommandAction.runWriteCommandAction(project, model::commit);
+                ProjectManager.getInstance().setAllModuleLibrary(project);
+            } catch (BusinessException exception) {
+                failure.set(exception);
+            }
+        };
+        if (ApplicationManager.getApplication().isDispatchThread()) {
+            applyTask.run();
+        } else {
+            ApplicationManager.getApplication().invokeAndWait(applyTask);
+        }
+        if (failure.get() != null) {
+            throw failure.get();
+        }
     }
 
     /**
@@ -134,6 +170,7 @@ public class LibrariesUtil {
         }
         //添加库依赖
         for (String url : urlSet) {
+            ProgressManager.checkCanceled();
             File file = new File(url);
             if (file.exists()) {
                 if (!file.getName().endsWith("classes") && !file.getName()
@@ -203,6 +240,7 @@ public class LibrariesUtil {
                                        String... webServers) {
         String hotwebsPath = homePath + File.separator + "hotwebs";
         for (String server : webServers) {
+            ProgressManager.checkCanceled();
             File hotwebFile = new File(
                     hotwebsPath + File.separator + server + File.separator + "WEB-INF" + File.separator
                             + "lib");
@@ -217,6 +255,7 @@ public class LibrariesUtil {
             boolean isNCCloudFlag = server.equals("nccloud") || server.equals("fbip");
             StringBuilder jarBuffer = new StringBuilder();
             for (File file : files) {
+                ProgressManager.checkCanceled();
                 try {
                     //nccloud的jar需要解压提取鉴权文件
                     if (file.getName().endsWith("jar") && !file.getName().contains("_src")) {
@@ -271,37 +310,46 @@ public class LibrariesUtil {
      * @param jarFile jarFile
      */
     private static void unZip(String homePath, String server, File jarFile) throws IOException {
-        String outPath =
-                homePath + File.separator + "hotwebs" + File.separator + server + File.separator
-                        + "WEB-INF" + File.separator + "extend";
-        JarFile jar = new JarFile(jarFile.getPath());
-        Enumeration<JarEntry> entries = jar.entries();
-        while (entries.hasMoreElements()) {
-            JarEntry entry = entries.nextElement();
-            if (entry.isDirectory()) {
-                continue;
-            }
-            String name = entry.getName();
-            if (isConfigResource(name)) {
-                System.out.println(name);
-                InputStream inputStream = jar.getInputStream(entry);
-                BufferedInputStream in = new BufferedInputStream(inputStream);
-                File file = new File(outPath + File.separator + name);
-                if (!file.exists()) {
-                    file.getParentFile().mkdirs();
-                    file.createNewFile();
+        Path outputRoot = Path.of(homePath, "hotwebs", server, "WEB-INF", "extend")
+                .toAbsolutePath().normalize();
+        try (JarFile jar = new JarFile(jarFile.getPath())) {
+            Enumeration<JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                if (entry.isDirectory()) {
+                    continue;
                 }
-                BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file.getPath()));
-                int len = -1;
-                byte[] b = new byte[1024];
-                while ((len = in.read(b)) != -1) {
-                    out.write(b, 0, len);
+                String name = entry.getName();
+                if (isConfigResource(name)) {
+                    File file = resolveExtractionTarget(outputRoot, name).toFile();
+                    if (!file.exists()) {
+                        File parent = file.getParentFile();
+                        if (parent == null || (!parent.mkdirs() && !parent.isDirectory())) {
+                            throw new IOException("无法创建解压目录: " + parent);
+                        }
+                    }
+                    try (InputStream inputStream = jar.getInputStream(entry);
+                         BufferedInputStream in = new BufferedInputStream(inputStream);
+                         BufferedOutputStream out =
+                                 new BufferedOutputStream(new FileOutputStream(file))) {
+                        byte[] buffer = new byte[8192];
+                        int length;
+                        while ((length = in.read(buffer)) != -1) {
+                            out.write(buffer, 0, length);
+                        }
+                    }
                 }
-                in.close();
-                out.close();
             }
         }
-        jar.close();
+    }
+
+    static Path resolveExtractionTarget(Path outputRoot, String entryName) throws IOException {
+        Path normalizedRoot = outputRoot.toAbsolutePath().normalize();
+        Path target = normalizedRoot.resolve(entryName.replace('\\', '/')).normalize();
+        if (!target.startsWith(normalizedRoot)) {
+            throw new IOException("JAR 条目越出目标目录: " + entryName);
+        }
+        return target;
     }
 
     /**
@@ -321,6 +369,7 @@ public class LibrariesUtil {
         List<String> privateLibrarySet = new ArrayList<>();
         List<String> clientLibrarySet = new ArrayList<>();
         for (File module : modules) {
+            ProgressManager.checkCanceled();
             String modulePath = module.getPath();
             String clientPath = modulePath + File.separator + "client";
             String privatePath = modulePath + File.separator + "META-INF";

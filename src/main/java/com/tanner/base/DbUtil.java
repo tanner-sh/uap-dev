@@ -4,6 +4,11 @@ import com.tanner.datadictionary.engine.IEngine;
 import com.tanner.datadictionary.engine.MySqlEngine;
 import com.tanner.datadictionary.engine.OracleEngine;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Driver;
@@ -89,6 +94,8 @@ public class DbUtil {
             return exportSqls;
         } catch (SQLException e) {
             throw new BusinessException("查询失败:" + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException("生成插入脚本失败:" + e.getMessage());
         } finally {
             closeResource(null, preparedStatement, resultSet);
         }
@@ -101,19 +108,49 @@ public class DbUtil {
         return switch (columnType) {
             case Types.VARCHAR, Types.CHAR, Types.LONGVARCHAR,
                     Types.NVARCHAR, Types.NCHAR, Types.LONGNVARCHAR,
-                    Types.CLOB, Types.NCLOB,
                     Types.DATE, Types.TIME, Types.TIMESTAMP,
                     Types.TIME_WITH_TIMEZONE, Types.TIMESTAMP_WITH_TIMEZONE ->
                     quoteSqlValue(columnValue.toString());
+            case Types.CLOB, Types.NCLOB -> quoteSqlValue(readTextValue(columnValue));
             case Types.BOOLEAN, Types.BIT ->
                     columnValue instanceof Boolean value ? (value ? "1" : "0")
                             : columnValue.toString();
             case Types.BINARY, Types.VARBINARY, Types.LONGVARBINARY, Types.BLOB ->
-                    columnValue instanceof byte[] bytes
-                            ? "X'" + HexFormat.of().formatHex(bytes) + "'"
-                            : quoteSqlValue(columnValue.toString());
+                    "X'" + HexFormat.of().formatHex(readBinaryValue(columnValue)) + "'";
             default -> columnValue.toString();
         };
+    }
+
+    private static String readTextValue(Object value) {
+        if (!(value instanceof Clob clob)) {
+            return value.toString();
+        }
+        try (Reader reader = clob.getCharacterStream()) {
+            StringBuilder content = new StringBuilder();
+            char[] buffer = new char[4096];
+            int length;
+            while ((length = reader.read(buffer)) != -1) {
+                content.append(buffer, 0, length);
+            }
+            return content.toString();
+        } catch (SQLException | IOException e) {
+            throw new IllegalArgumentException("读取 CLOB 字段失败", e);
+        }
+    }
+
+    private static byte[] readBinaryValue(Object value) {
+        if (value instanceof byte[] bytes) {
+            return bytes;
+        }
+        if (value instanceof Blob blob) {
+            try (InputStream input = blob.getBinaryStream()) {
+                return input.readAllBytes();
+            } catch (SQLException | IOException e) {
+                throw new IllegalArgumentException("读取 BLOB 字段失败", e);
+            }
+        }
+        throw new IllegalArgumentException("不支持的二进制字段类型: "
+                + value.getClass().getName());
     }
 
     private static String quoteSqlValue(String value) {

@@ -66,7 +66,7 @@ public class OKAction extends AbstractButtonAction {
         int opt = Messages.showYesNoDialog("Update library ？", "询问", Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             try {
-                LibrariesUtil.setLibraries(getDialog().getProjectContext(), homePath);
+                LibrariesUtil.setLibrariesWithProgress(getDialog().getProjectContext(), homePath);
             } catch (BusinessException e) {
                 Messages.showErrorDialog(e.getMessage(), "出错了");
             }

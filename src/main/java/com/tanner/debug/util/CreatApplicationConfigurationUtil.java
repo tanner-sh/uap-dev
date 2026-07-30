@@ -155,12 +155,12 @@ public class CreatApplicationConfigurationUtil {
         StringBuilder parameters = new StringBuilder();
         parameters.append("-Dnc.exclude.modules=").append(exModules).append("\n");
         parameters.append("-Dnc.runMode=develop\n");
-        parameters.append("-Dnc.server.location=").append(homePath).append("\n");
-        parameters.append("-DEJBConfigDir=").append(homePath).append("/ejbXMLs\n");
-        parameters.append("-DExtServiceConfigDir=").append(homePath).append("/ejbXMLs\n");
+        appendVmProperty(parameters, "nc.server.location", homePath);
+        appendVmProperty(parameters, "EJBConfigDir", homePath + "/ejbXMLs");
+        appendVmProperty(parameters, "ExtServiceConfigDir", homePath + "/ejbXMLs");
         parameters.append("-Duap.hotwebs=").append("nccloud,fs,fbip").append("\n");
         parameters.append("-Duap.disable.codescan=false\n");
-        parameters.append("-Dorg.owasp.esapi.resources=").append(homePath).append("/ierp/bin/esapi\n");
+        appendVmProperty(parameters, "org.owasp.esapi.resources", homePath + "/ierp/bin/esapi");
         parameters.append("-Dfile.encoding=").append("GB2312").append("\n"); // 默认编码
         parameters.append("-Duser.timezone=").append("GMT+8").append("\n");// 默认时区
         if (feature >= 8) {//jdk8以上
@@ -173,6 +173,12 @@ public class CreatApplicationConfigurationUtil {
             parameters.append("-XX:MaxPermSize=128m\n");
         }
         return parameters.toString();
+    }
+
+    static void appendVmProperty(StringBuilder parameters, String name, String value) {
+        parameters.append("-D").append(name).append("=\"")
+                .append(StringUtils.defaultString(value).replace("\"", "\\\""))
+                .append("\"\n");
     }
 
     private static String getDefalutsClientVMParameters(int feature, String clientIp,
