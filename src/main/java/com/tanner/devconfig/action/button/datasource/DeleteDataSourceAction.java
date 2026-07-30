@@ -22,6 +22,7 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
+        DataSourceUtil.ensureDataSourceLoaded(dialog);
         if (dialog.getCurrMeta() == null) {
             throw new BusinessException("请选择数据源");
         }

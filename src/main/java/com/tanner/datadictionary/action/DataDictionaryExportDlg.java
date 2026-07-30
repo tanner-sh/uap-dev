@@ -1,131 +1,147 @@
 package com.tanner.datadictionary.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.ui.SearchTextField;
+import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBScrollPane;
+import com.intellij.ui.table.JBTable;
+import com.intellij.ui.TitledSeparator;
+import com.intellij.util.ui.JBUI;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.devconfig.action.button.datasource.TestConnectionAction;
 import com.tanner.devconfig.action.item.DBBoxListener;
 import com.tanner.devconfig.action.item.DBTypeBoxListener;
 import com.tanner.devconfig.action.item.DriverBoxListener;
+import com.tanner.devconfig.ui.DataSourcePanel;
 import com.tanner.devconfig.util.DataSourceUtil;
+import com.tanner.ui.BulkTableModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.Set;
 
 public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
 
-    private JPanel contentPane;
-    private JPanel dsTab;
-    private JComboBox<?> dbBox;
-    private JButton testBtn;
-    private JComboBox<?> dbTypeBox;
-    private JComboBox<?> driverBox;
-    private JTextField hostText;
-    private JTextField portText;
-    private JTextField dbNameText;
-    private JTextField oidText;
-    private JTextField userText;
-    private JTextField pwdText;
-    private JButton loadBtn;
-    private JButton exportBtn;
-    private JTable dbTable;
-    private JButton selectAllBtn;
-    private JButton deSelectAllBtn;
-    private JTextField filterTextField;
-    private JComboBox<?> exportAsBox;
-    private JCheckBox needFilterDefField;
-    private JPanel logPanel;
-    private JProgressBar progressBar;
+    private final JPanel contentPane = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+    private final DataSourcePanel dataSourcePanel;
+    private final JButton testBtn = new JButton("测试连接");
+    private final JButton loadBtn = new JButton("加载表");
+    private final JButton exportBtn = new JButton("导出");
+    private final JButton selectAllBtn = new JButton("全选");
+    private final JButton deSelectAllBtn = new JButton("取消全选");
+    private final SearchTextField filterField = new SearchTextField(false);
+    private final JComboBox<String> exportAsBox = new JComboBox<>(
+            new String[]{"pdf", "markdown", "html"});
+    private final JCheckBox needFilterDefField = new JCheckBox("过滤自定义项目字段");
+    private final JBTable dbTable = new JBTable(new BulkTableModel(
+            new String[]{"序号", "选中", "表名", "表备注"},
+            new Class<?>[]{Integer.class, Boolean.class, String.class, String.class},
+            Set.of(1)));
+    private final JPanel logPanel = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+    private final JProgressBar progressBar = new JProgressBar();
+    private final JBLabel statusLabel = new JBLabel("尚未加载数据表");
 
     public DataDictionaryExportDlg(AnActionEvent event) {
         super(event.getProject());
+        dataSourcePanel = new DataSourcePanel(this, false);
+        buildUi();
+        registerComponents();
+        setTitle("导出数据字典");
+        setResizable(true);
         init();
-        initUI();
-        initListener();
-        initData();
+        initListeners();
+        DataSourceUtil.initDataSourceAsync(this);
     }
 
-    private void initUI() {
-        //获取显示屏尺寸，使界面居中
-        int width = Toolkit.getDefaultToolkit().getScreenSize().width;
-        int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        setLocation((width - 800) / 2, (height - 600) / 2);
-        setSize(580, 560);
-        progressBar.setPreferredSize(new Dimension(580, 30)); // 宽度 580px, 高度 30px
-        //JComponent 集合
-        addComponent("dbBox", dbBox);
-        addComponent("dbTypeBox", dbTypeBox);
-        addComponent("driverBox", driverBox);
-        addComponent("hostText", hostText);
-        addComponent("portText", portText);
-        addComponent("dbNameText", dbNameText);
-        addComponent("oidText", oidText);
-        addComponent("userText", userText);
-        addComponent("pwdText", pwdText);
-        addComponent("dsTab", dsTab);
+    private void buildUi() {
+        contentPane.setBorder(JBUI.Borders.empty(12));
+        contentPane.setPreferredSize(JBUI.size(820, 620));
+        dataSourcePanel.getDataSourceActions().add(testBtn);
+
+        filterField.getTextEditor().getEmptyText().setText("表名过滤，多个条件使用分号分隔");
+        JPanel queryBar = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+        queryBar.add(filterField, BorderLayout.CENTER);
+        JPanel queryButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, JBUI.scale(6), 0));
+        queryButtons.add(loadBtn);
+        queryButtons.add(selectAllBtn);
+        queryButtons.add(deSelectAllBtn);
+        queryBar.add(queryButtons, BorderLayout.EAST);
+        queryBar.setBorder(JBUI.Borders.empty(4, 8));
+
+        dbTable.setStriped(true);
+        dbTable.setShowVerticalLines(false);
+        dbTable.setFillsViewportHeight(true);
+        dbTable.setAutoCreateRowSorter(true);
+        dbTable.getEmptyText().setText("加载后将在此显示数据表");
+        dbTable.getColumnModel().getColumn(0).setPreferredWidth(JBUI.scale(55));
+        dbTable.getColumnModel().getColumn(1).setPreferredWidth(JBUI.scale(55));
+        dbTable.getColumnModel().getColumn(2).setPreferredWidth(JBUI.scale(260));
+        dbTable.getColumnModel().getColumn(3).setPreferredWidth(JBUI.scale(320));
+
+        JPanel center = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+        center.add(createSection("表过滤", queryBar), BorderLayout.NORTH);
+        center.add(new JBScrollPane(dbTable), BorderLayout.CENTER);
+
+        JPanel exportOptions = new JPanel(new FlowLayout(FlowLayout.RIGHT, JBUI.scale(8), 0));
+        exportOptions.add(new JBLabel("格式："));
+        exportOptions.add(exportAsBox);
+        exportOptions.add(needFilterDefField);
+        exportOptions.add(exportBtn);
+        logPanel.add(statusLabel, BorderLayout.WEST);
+        logPanel.add(progressBar, BorderLayout.CENTER);
+        logPanel.add(exportOptions, BorderLayout.EAST);
+        progressBar.setPreferredSize(JBUI.size(160, 18));
+
+        contentPane.add(createSection("数据库连接", dataSourcePanel.getPanel()),
+                BorderLayout.NORTH);
+        contentPane.add(center, BorderLayout.CENTER);
+        contentPane.add(logPanel, BorderLayout.SOUTH);
+    }
+
+    private static JPanel createSection(String title, JComponent component) {
+        JPanel panel = new JPanel(new BorderLayout(0, JBUI.scale(4)));
+        panel.add(new TitledSeparator(title), BorderLayout.NORTH);
+        panel.add(component, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void registerComponents() {
         addComponent("testBtn", testBtn);
         addComponent("loadBtn", loadBtn);
         addComponent("exportBtn", exportBtn);
         addComponent("dbTable", dbTable);
         addComponent("selectAllBtn", selectAllBtn);
         addComponent("deSelectAllBtn", deSelectAllBtn);
-        addComponent("filterTextField", filterTextField);
+        addComponent("filterTextField", filterField.getTextEditor());
         addComponent("exportAsBox", exportAsBox);
         addComponent("needFilterDefField", needFilterDefField);
         addComponent("logPanel", logPanel);
         addComponent("progressBar", progressBar);
+        addComponent("statusLabel", statusLabel);
     }
 
-    private void initListener() {
-        //数据源相关按钮
+    private void initListeners() {
         testBtn.addActionListener(new TestConnectionAction(this));
-        //数据源相关下拉
-        dbBox.addItemListener(new DBBoxListener(this));
-        dbTypeBox.addItemListener(new DBTypeBoxListener(this));
-        driverBox.addItemListener(new DriverBoxListener(this));
+        dataSourcePanel.getDbBox().addItemListener(new DBBoxListener(this));
+        dataSourcePanel.getDbTypeBox().addItemListener(new DBTypeBoxListener(this));
+        dataSourcePanel.getDriverBox().addItemListener(new DriverBoxListener(this));
         loadBtn.addActionListener(new LoadAction(this));
         exportBtn.addActionListener(new ExportAction(this));
         selectAllBtn.addActionListener(new SelectAllAction(this));
         deSelectAllBtn.addActionListener(new DeSelectAllAction(this));
+        filterField.getTextEditor().addActionListener(new LoadAction(this));
     }
 
-    private void initData() {
-        //初始化数据源
-        DataSourceUtil.initDataSource(this);
-        //初始化表格
-        initDbTable();
-        //初始化导出设置
-        initExportBox();
+    @Override
+    protected String getDimensionServiceKey() {
+        return "uap.data.dictionary.dialog.v2";
     }
 
-    private void initExportBox() {
-        String[] exports = {"pdf", "markdown", "html"};
-        exportAsBox.setModel(new DefaultComboBoxModel(exports));
-        exportAsBox.getModel().setSelectedItem(exports[0]);
-    }
-
-    private void initDbTable() {
-        DefaultTableModel tableModel = new DefaultTableModel(null,
-                new String[]{"序号", "选中", "表名", "表备注"}) {
-
-            @Override
-            public Class<?> getColumnClass(int c) {
-                return switch (c) {
-                    case 0 -> Integer.class;
-                    case 1 -> Boolean.class;
-                    default -> String.class;
-                };
-            }
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 1;
-            }
-
-        };
-        dbTable.setModel(tableModel);
+    @Override
+    public JComponent getPreferredFocusedComponent() {
+        return filterField;
     }
 
     @Override
@@ -137,5 +153,4 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     protected Action @NotNull [] createActions() {
         return new Action[0];
     }
-
 }

@@ -21,6 +21,9 @@ public class ToolUtilsTest {
                 "jdbc:oracle:thin:@old:1521:orcl",
                 "jdbc:oracle:thin:@new-host:3307:newdb");
         assertJdbcRoundTrip(
+                "jdbc:oracle:thin:@old:1521/orclpdb",
+                "jdbc:oracle:thin:@new-host:3307/newdb");
+        assertJdbcRoundTrip(
                 "jdbc:oracle:thin:@//old:1521/orclpdb",
                 "jdbc:oracle:thin:@//new-host:3307/newdb");
     }

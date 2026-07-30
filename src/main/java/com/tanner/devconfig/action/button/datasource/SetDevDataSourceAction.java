@@ -24,6 +24,7 @@ public class SetDevDataSourceAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
+        DataSourceUtil.ensureDataSourceLoaded(dialog);
         String dsname = (String) dialog.getComponent(JComboBox.class, "dbBox").getSelectedItem();
         int index = dialog.getComponent(JComboBox.class, "dbBox").getSelectedIndex();
         if (index < 0 || "design".equals(dsname)) {

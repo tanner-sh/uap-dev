@@ -7,11 +7,13 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractDialog extends DialogWrapper {
 
     private final Map<String, JComponent> componentMap = new HashMap<>();
     private final Project project;
+    private final AtomicBoolean disposed = new AtomicBoolean();
 
     protected AbstractDialog(@Nullable Project project) {
         super(project);
@@ -28,5 +30,15 @@ public abstract class AbstractDialog extends DialogWrapper {
 
     public @Nullable Project getProjectContext() {
         return project;
+    }
+
+    public boolean isDialogDisposed() {
+        return disposed.get();
+    }
+
+    @Override
+    protected void dispose() {
+        disposed.set(true);
+        super.dispose();
     }
 }

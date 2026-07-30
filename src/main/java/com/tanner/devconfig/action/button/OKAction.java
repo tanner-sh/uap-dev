@@ -27,6 +27,7 @@ public class OKAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
+        DataSourceUtil.ensureDataSourceLoaded((DevConfigDialog) getDialog());
         boolean homeChanged = false;
         String homePath = getDialog().getComponent(JTextField.class, "homeText").getText();
         if (StringUtils.isBlank(homePath)) {
@@ -48,6 +49,10 @@ public class OKAction extends AbstractButtonAction {
      * 保存启动module
      */
     private void saveModuleConfig() throws BusinessException {
+        if (getDialog() instanceof DevConfigDialog dialog
+                && !dialog.isModulesInitialized()) {
+            return;
+        }
         TableModelUtil.saveModuleConfig(getDialog());
     }
 
@@ -63,12 +68,14 @@ public class OKAction extends AbstractButtonAction {
         }
         String homePath = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext()).getUapHomePath();
-        int opt = Messages.showYesNoDialog("Update library ？", "询问", Messages.getQuestionIcon());
+        int opt = Messages.showYesNoDialog(
+                "NC Home 已变化，是否同步更新项目类路径？", "更新类路径",
+                Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             try {
                 LibrariesUtil.setLibrariesWithProgress(getDialog().getProjectContext(), homePath);
             } catch (BusinessException e) {
-                Messages.showErrorDialog(e.getMessage(), "出错了");
+                Messages.showErrorDialog(e.getMessage(), "错误");
             }
         }
         //更新application上的home路径

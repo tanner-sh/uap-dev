@@ -21,6 +21,7 @@ import com.tanner.base.UapProjectEnvironment;
 import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.datadictionary.tool.DataDictionaryExportTool;
 import com.tanner.dbdriver.entity.DriverInfo;
+import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +44,7 @@ public class ExportAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
         AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+        DataSourceUtil.ensureDataSourceLoaded(dlg);
         JTable dbTable = getDialog().getComponent(JTable.class, "dbTable");
         List<TableInfo> selectedTables = new ArrayList<>();
         for (int row = 0; row < dbTable.getModel().getRowCount(); row++) {
@@ -54,7 +56,7 @@ public class ExportAction extends AbstractButtonAction {
             }
         }
         if (selectedTables.isEmpty()) {
-            Messages.showInfoMessage("You must select one or more!", "提示");
+            Messages.showInfoMessage("请至少选择一张数据表", "提示");
             return;
         }
         File desktopPath = new File(System.getProperty("user.home") + File.separator + "Desktop");
@@ -92,10 +94,14 @@ public class ExportAction extends AbstractButtonAction {
         JProgressBar progressBar = dlg.getComponent(JProgressBar.class, "progressBar");
         progressBar.setIndeterminate(true);
         JButton exportButton = getDialog().getComponent(JButton.class, "exportBtn");
+        JLabel statusLabel = getDialog().getComponent(JLabel.class, "statusLabel");
         exportButton.setEnabled(false);
+        if (statusLabel != null) {
+            statusLabel.setText("正在导出数据字典…");
+        }
         Project project = getDialog().getProjectContext();
         String finalJdbcUrl = jdbcUrl;
-        Task.Backgroundable task = new Task.Backgroundable(project, "Exporting data dictionary...",
+        Task.Backgroundable task = new Task.Backgroundable(project, "正在导出数据字典…",
                 true) {
             private Exception failure;
 
@@ -120,10 +126,16 @@ public class ExportAction extends AbstractButtonAction {
                 progressBar.setIndeterminate(false);
                 exportButton.setEnabled(true);
                 if (failure != null) {
+                    if (statusLabel != null) {
+                        statusLabel.setText("导出失败");
+                    }
                     Messages.showWarningDialog("导出过程异常\n" + failure.getMessage(), "错误");
                 } else {
                     progressBar.setValue(100);
-                    Messages.showInfoMessage("Success", "提示");
+                    if (statusLabel != null) {
+                        statusLabel.setText("导出完成");
+                    }
+                    Messages.showInfoMessage("数据字典导出完成", "完成");
                 }
             }
 
@@ -131,6 +143,9 @@ public class ExportAction extends AbstractButtonAction {
             public void onCancel() {
                 progressBar.setIndeterminate(false);
                 exportButton.setEnabled(true);
+                if (statusLabel != null) {
+                    statusLabel.setText("已取消导出");
+                }
             }
         };
         ProgressManager.getInstance().run(task);

@@ -10,7 +10,6 @@ import com.tanner.actionsearch.entity.Action;
 import com.tanner.actionsearch.entity.Actions;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.base.XmlUtil;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AndFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -26,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
     private List<NccActionItem> cachedItems;
@@ -48,11 +46,11 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
             @NotNull Processor<Object> consumer) {
         String normalizedPattern = pattern.toLowerCase(Locale.ROOT);
         if (cachedItems == null) {
-            cachedItems = getAllNccActionItems(base.getProject());
+            cachedItems = getAllNccActionItems(base.getProject(), cancelled);
         }
         List<NccActionItem> nccActionItems = cachedItems.stream()
                 .filter(nccActionItem -> matches(nccActionItem, normalizedPattern))
-                .collect(Collectors.toList());
+                .toList();
         cancelled.checkCanceled();
         return com.intellij.util.containers.ContainerUtil.process(nccActionItems, consumer);
     }
@@ -67,7 +65,8 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
         return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedPattern);
     }
 
-    private List<NccActionItem> getAllNccActionItems(Project project) {
+    private List<NccActionItem> getAllNccActionItems(
+            Project project, ProgressIndicator indicator) {
         List<NccActionItem> returnList = new ArrayList<>();
         if (project == null) {
             return returnList;
@@ -100,14 +99,23 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
                     }
                 }
         );
-        List<File> actionFiles = xmlFiles.stream().filter(filter::accept).toList();
         List<Action> actionList = new ArrayList<>();
-        for (File actionFile : actionFiles) {
+        JAXBContext jaxbContext;
+        try {
+            jaxbContext = JAXBContext.newInstance(Actions.class);
+        } catch (Exception exception) {
+            return returnList;
+        }
+        for (File actionFile : xmlFiles) {
+            indicator.checkCanceled();
+            if (!filter.accept(actionFile)) {
+                continue;
+            }
             try {
-                JAXBContext jaxbContext = JAXBContext.newInstance(Actions.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
                 Actions actions = (Actions) unmarshaller.unmarshal(XmlUtil.parse(actionFile));
-                if (actions != null && CollectionUtils.isNotEmpty(actions.getActions())) {
+                if (actions != null && actions.getActions() != null
+                        && !actions.getActions().isEmpty()) {
                     actionList.addAll(actions.getActions());
                 }
             } catch (Exception ignored) {

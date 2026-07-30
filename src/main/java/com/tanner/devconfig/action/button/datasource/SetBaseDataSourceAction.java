@@ -25,6 +25,7 @@ public class SetBaseDataSourceAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
+        DataSourceUtil.ensureDataSourceLoaded(dialog);
         Map<String, DataSourceMeta> map = dialog.getDataSourceMetaMap();
         DataSourceMeta currMeta = dialog.getCurrMeta();
         if (currMeta == null) {

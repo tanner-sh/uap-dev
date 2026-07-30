@@ -57,11 +57,11 @@ public class ToolUtils {
         if (matcher.matches()) {
             return parts(matcher.group(2), matcher.group(3), matcher.group(4));
         }
-        matcher = ORACLE_SID_URL.matcher(url);
+        matcher = ORACLE_SERVICE_URL.matcher(url);
         if (matcher.matches()) {
             return parts(matcher.group(2), matcher.group(3), matcher.group(4));
         }
-        matcher = ORACLE_SERVICE_URL.matcher(url);
+        matcher = ORACLE_SID_URL.matcher(url);
         if (matcher.matches()) {
             return parts(matcher.group(2), matcher.group(3), matcher.group(4));
         }
@@ -94,15 +94,15 @@ public class ToolUtils {
             return matcher.group(1) + host + portPart(port, matcher.group(3))
                     + "/" + database + matcher.group(5);
         }
-        matcher = ORACLE_SID_URL.matcher(example);
-        if (matcher.matches()) {
-            return matcher.group(1) + host + portPart(port, matcher.group(3))
-                    + ":" + database + matcher.group(5);
-        }
         matcher = ORACLE_SERVICE_URL.matcher(example);
         if (matcher.matches()) {
             return matcher.group(1) + host + portPart(port, matcher.group(3))
                     + "/" + database + matcher.group(5);
+        }
+        matcher = ORACLE_SID_URL.matcher(example);
+        if (matcher.matches()) {
+            return matcher.group(1) + host + portPart(port, matcher.group(3))
+                    + ":" + database + matcher.group(5);
         }
         if (DESCRIPTION_HOST.matcher(example).find()
                 && DESCRIPTION_PORT.matcher(example).find()

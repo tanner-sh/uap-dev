@@ -7,6 +7,7 @@ import org.junit.rules.TemporaryFolder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,5 +36,16 @@ public class LogWatcherServiceTest {
         } finally {
             watcher.dispose();
         }
+    }
+
+    @Test
+    public void drainsLogMessagesInOrderAndHonorsBatchLimit() {
+        ConcurrentLinkedQueue<String> messages = new ConcurrentLinkedQueue<>();
+        messages.add("one");
+        messages.add("two");
+        messages.add("three");
+
+        assertEquals("one\ntwo\n", LogWatcherService.drainMessages(messages, 2));
+        assertEquals("three\n", LogWatcherService.drainMessages(messages, 2));
     }
 }

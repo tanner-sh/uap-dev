@@ -6,12 +6,13 @@ import com.tanner.base.ModuleFileUtil;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.base.XmlUtil;
 import com.tanner.debug.util.CreatApplicationConfigurationUtil;
+import com.tanner.ui.BulkTableModel;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -21,7 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
+import java.util.Objects;
 
 public class TableModelUtil {
 
@@ -35,57 +36,28 @@ public class TableModelUtil {
      **/
     public final static int MODULE_TYPE_SEL = 1;
 
-    public static DefaultTableModel getMustModel(AbstractDialog dialog) {
-        DefaultTableModel mustModel = new DefaultTableModel(null,
-                new String[]{"NO.", "Checked", "moduleName"}) {
-            public Class getColumnClass(int c) {
-                switch (c) {
-                    case 0:
-                        return Integer.class;
-                    case 1:
-                        return Boolean.class;
-                    default:
-                        return String.class;
-                }
-            }
-
-            //第二列不允许编辑
+    public static BulkTableModel getMustModel(AbstractDialog dialog) {
+        return new BulkTableModel(
+                new String[]{"序号", "选中", "模块名称"},
+                new Class<?>[]{Integer.class, Boolean.class, String.class},
+                Set.of(1)) {
+            @Override
             public boolean isCellEditable(int row, int column) {
-                boolean flag = false;
-                Object obj = dialog.getComponent(JTable.class, "mustTable").getValueAt(row, 2);
-                if (column == 1 && !ModuleFileUtil.getMustMoudleSet().contains(obj)) {
-                    flag = true;
-                }
-                return flag;
+                Object moduleName = getValueAt(row, 2);
+                return column == 1 && !ModuleFileUtil.getMustMoudleSet().contains(moduleName);
             }
         };
-        return mustModel;
     }
 
-    public static DefaultTableModel getSelModel(AbstractDialog dialog) {
-        DefaultTableModel model = new DefaultTableModel(null,
-                new String[]{"NO.", "Checked", "moduleName"}) {
-            public Class getColumnClass(int c) {
-                switch (c) {
-                    case 0:
-                        return Integer.class;
-                    case 1:
-                        return Boolean.class;
-                    default:
-                        return String.class;
-                }
-            }
-
-            //第二列不允许编辑
-            public boolean isCellEditable(int row, int column) {
-                return column == 1;
-            }
-        };
-        return model;
+    public static BulkTableModel getSelModel(AbstractDialog dialog) {
+        return new BulkTableModel(
+                new String[]{"序号", "启动", "模块名称"},
+                new Class<?>[]{Integer.class, Boolean.class, String.class},
+                Set.of(1));
     }
 
-    public static void modelHandle(AbstractDialog dialog, DefaultTableModel mustModel,
-                                   DefaultTableModel selModel) {
+    public static void modelHandle(AbstractDialog dialog, BulkTableModel mustModel,
+                                   BulkTableModel selModel) {
         UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
                 dialog.getProjectContext());
         String homePath = environment.getUapHomePath();
@@ -95,7 +67,14 @@ public class TableModelUtil {
         if (StringUtils.isBlank(homePath)) {
             return;
         }
-        //扫描所有module
+        ModuleTableData data = loadModuleData(homePath, environment.getMust_modules(),
+                environment.getEx_modules());
+        mustModel.replaceRows(data.mustRows());
+        selModel.replaceRows(data.selectedRows());
+    }
+
+    public static ModuleTableData loadModuleData(String homePath, String mustModuleStr,
+                                                 String selModuleStr) {
         File moduleFile = new File(homePath + File.separator + "modules");
         List<String> moduleList = new ArrayList<>();
         if (moduleFile.exists()) {
@@ -112,8 +91,6 @@ public class TableModelUtil {
         //排序
         Collections.sort(moduleList);
         //获取模块配置
-        String mustModuleStr = environment.getMust_modules();
-        String selModuleStr = environment.getEx_modules();
         Set<String> mustModuleSet = new HashSet<>();
         Set<String> exModuleSet = new HashSet<>();
         if (StringUtils.isBlank(mustModuleStr)) {
@@ -126,24 +103,20 @@ public class TableModelUtil {
             String[] strings = selModuleStr.split(",");
             exModuleSet.addAll(Arrays.asList(strings));
         }
+        List<Object[]> mustRows = new ArrayList<>(moduleList.size());
+        List<Object[]> selectedRows = new ArrayList<>(moduleList.size());
         int i = 1;
         for (String str : moduleList) {
-            //处理必选模块
             boolean checked = mustModuleSet.contains(str);
-            Vector vm = new Vector();
-            vm.add(i);
-            vm.add(checked);
-            vm.add(str);
-            mustModel.addRow(vm);
-            //处理上次选择的启动模块
+            mustRows.add(new Object[]{i, checked, str});
             checked = exModuleSet.contains(str);
-            Vector vs = new Vector();
-            vs.add(i);
-            vs.add(!checked);//这里要取反，因为保存的是不启动的模块
-            vs.add(str);
-            selModel.addRow(vs);
+            selectedRows.add(new Object[]{i, !checked, str});
             i++;
         }
+        return new ModuleTableData(mustRows, selectedRows);
+    }
+
+    public record ModuleTableData(List<Object[]> mustRows, List<Object[]> selectedRows) {
     }
 
     /**
@@ -173,6 +146,10 @@ public class TableModelUtil {
     }
 
     public static void setAllCheckState(JTable table, boolean checked) {
+        if (table.getModel() instanceof BulkTableModel bulkTableModel) {
+            bulkTableModel.setBooleanColumn(1, checked);
+            return;
+        }
         int rowCount = table.getRowCount();
         for (int i = 0; i < rowCount; i++) {
             table.getModel().setValueAt(checked, i, 1);
@@ -192,33 +169,40 @@ public class TableModelUtil {
         String oldEx = environment.getEx_modules();
         JTable selTable = dialog.getComponent(JTable.class, "selTable");
         JTable mustTable = dialog.getComponent(JTable.class, "mustTable");
-        int rowCount = selTable.getRowCount();
-        StringBuilder mustModuleStr = new StringBuilder();
-        StringBuilder exModuleStr = new StringBuilder();
-        for (int i = 0; i < rowCount; i++) {
-            boolean mustFlag = (boolean) mustTable.getValueAt(i, 1);
-            boolean selFlag = (boolean) selTable.getValueAt(i, 1);
-            if (mustFlag) {
-                String name = mustTable.getValueAt(i, 2).toString();
-                mustModuleStr.append(",").append(name);
-            }
-            if (!selFlag && !mustFlag) {//把没有选择启动的模块以及非必选的模块放在这里
-                String name = selTable.getValueAt(i, 2).toString();
-                exModuleStr.append(",").append(name);
-            }
+        ModuleSelection selection = collectModuleSelection(
+                mustTable.getModel(), selTable.getModel());
+        if (!Objects.equals(Objects.toString(oldMust, ""), selection.mustModules())) {
+            environment.setMust_modules(selection.mustModules());
         }
-        if (mustModuleStr.length() > 1) {
-            mustModuleStr = new StringBuilder(mustModuleStr.substring(1));
-        }
-        if (exModuleStr.length() > 1) {
-            exModuleStr = new StringBuilder(exModuleStr.substring(1));
-        }
-        if (!oldMust.contentEquals(mustModuleStr)) {
-            environment.setMust_modules(mustModuleStr.toString());
-        }
-        if (!oldEx.contentEquals(exModuleStr)) {
-            environment.setEx_modules(exModuleStr.toString());
+        if (!Objects.equals(Objects.toString(oldEx, ""), selection.excludedModules())) {
+            environment.setEx_modules(selection.excludedModules());
             CreatApplicationConfigurationUtil.update(dialog.getProjectContext());
         }
+    }
+
+    static ModuleSelection collectModuleSelection(TableModel mustModel,
+                                                   TableModel selectedModel) {
+        Set<String> mustNames = new HashSet<>();
+        List<String> mustModules = new ArrayList<>();
+        for (int row = 0; row < mustModel.getRowCount(); row++) {
+            if (Boolean.TRUE.equals(mustModel.getValueAt(row, 1))) {
+                String moduleName = String.valueOf(mustModel.getValueAt(row, 2));
+                mustNames.add(moduleName);
+                mustModules.add(moduleName);
+            }
+        }
+        List<String> excludedModules = new ArrayList<>();
+        for (int row = 0; row < selectedModel.getRowCount(); row++) {
+            String moduleName = String.valueOf(selectedModel.getValueAt(row, 2));
+            boolean selected = Boolean.TRUE.equals(selectedModel.getValueAt(row, 1));
+            if (!selected && !mustNames.contains(moduleName)) {
+                excludedModules.add(moduleName);
+            }
+        }
+        return new ModuleSelection(String.join(",", mustModules),
+                String.join(",", excludedModules));
+    }
+
+    record ModuleSelection(String mustModules, String excludedModules) {
     }
 }

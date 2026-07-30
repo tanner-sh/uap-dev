@@ -19,12 +19,12 @@ public class OpenUapHomeAction extends AbstractAnAction {
     public void doAction(AnActionEvent event) {
         String ncHomePath = UapProjectEnvironment.getInstance(event.getProject()).getUapHomePath();
         if (StringUtils.isBlank(ncHomePath)) {
-            Messages.showErrorDialog("Not set uap home , please check!", "错误");
+            Messages.showErrorDialog("请先配置 NC Home", "错误");
             return;
         }
         boolean exists = new File(ncHomePath).exists();
         if (!exists) {
-            Messages.showErrorDialog("uap home设置错误，请检查!\n" + ncHomePath, "错误");
+            Messages.showErrorDialog("NC Home 设置错误，请检查：\n" + ncHomePath, "错误");
             return;
         }
         try {

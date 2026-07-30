@@ -4,7 +4,6 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
 import com.tanner.base.UapUtil;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
@@ -334,7 +333,7 @@ public class ScriptExportTool {
     private boolean isModuleId(String code) throws Exception {
         String sql = "select 1 from DAP_DAPSYSTEM where MODULEID = ?";
         List<Map<String, Object>> list = DbUtil.executeQuery(connection, sql, Collections.singletonList(code));
-        return CollectionUtils.isNotEmpty(list);
+        return !list.isEmpty();
     }
 
     private void exportLightNodeCode(String exportPath, String lightNodeCode) throws Exception {

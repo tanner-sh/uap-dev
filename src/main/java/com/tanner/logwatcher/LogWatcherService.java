@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,13 +36,22 @@ public class LogWatcherService implements Disposable {
     private final Charset charset = Charset.forName("GB2312");
     private final List<Tailer> tailers = new CopyOnWriteArrayList<>();
     private final Set<Path> watchedFiles = ConcurrentHashMap.newKeySet();
+    private final ConcurrentLinkedQueue<String> pendingOutput = new ConcurrentLinkedQueue<>();
     private final ScheduledExecutorService scanner = Executors.newSingleThreadScheduledExecutor(
             runnable -> {
                 Thread thread = new Thread(runnable, "uap-log-watcher-scanner");
                 thread.setDaemon(true);
                 return thread;
             });
+    private final ScheduledExecutorService outputDispatcher =
+            Executors.newSingleThreadScheduledExecutor(runnable -> {
+                Thread thread = new Thread(runnable, "uap-log-watcher-output");
+                thread.setDaemon(true);
+                return thread;
+            });
     private volatile ScheduledFuture<?> scanTask;
+    private final ScheduledFuture<?> outputTask = outputDispatcher.scheduleAtFixedRate(
+            this::flushPendingOutput, 100, 100, TimeUnit.MILLISECONDS);
 
     public void setConsoleView(ConsoleView consoleView) {
         this.consoleView = consoleView;
@@ -132,18 +143,40 @@ public class LogWatcherService implements Disposable {
     }
 
     public void appendLog(String message) {
+        if (message == null || disposed.get()) {
+            return;
+        }
+        pendingOutput.offer(message);
+    }
+
+    private void flushPendingOutput() {
         ConsoleView currentConsole = consoleView;
-        if (currentConsole == null || disposed.get()) {
+        if (currentConsole == null || disposed.get() || pendingOutput.isEmpty()) {
+            return;
+        }
+        String text = drainMessages(pendingOutput, 500);
+        if (text.isEmpty()) {
             return;
         }
         ApplicationManager.getApplication().invokeLater(
                 () -> {
                     if (!disposed.get()) {
-                        currentConsole.print(message + "\n",
+                        currentConsole.print(text,
                                 ConsoleViewContentType.NORMAL_OUTPUT);
                     }
                 }
         );
+    }
+
+    static String drainMessages(Queue<String> messages, int limit) {
+        StringBuilder batch = new StringBuilder();
+        int count = 0;
+        String message;
+        while (count < limit && (message = messages.poll()) != null) {
+            batch.append(message).append('\n');
+            count++;
+        }
+        return batch.toString();
     }
 
     int watchedFileCount() {
@@ -158,7 +191,10 @@ public class LogWatcherService implements Disposable {
     public void dispose() {
         disposed.set(true);
         stopWatching();
+        outputTask.cancel(false);
         scanner.shutdownNow();
+        outputDispatcher.shutdownNow();
+        pendingOutput.clear();
         consoleView = null;
     }
 

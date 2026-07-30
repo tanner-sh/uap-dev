@@ -1,115 +1,115 @@
 package com.tanner.langsearch;
 
+import com.intellij.ide.actions.RevealFileAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.ui.SearchTextField;
+import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBScrollPane;
+import com.intellij.ui.table.JBTable;
+import com.intellij.util.ui.JBUI;
 import com.tanner.abs.AbstractDataSourceDialog;
+import com.tanner.ui.BulkTableModel;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableColumnModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
-import java.io.IOException;
+import java.util.Set;
 
 public class LangSearchDlg extends AbstractDataSourceDialog {
 
-    private JPanel contentPane;
-    private JTextField searchTextField;
-    private JButton searchBtn;
-    private JTable searchResultTable;
+    private final JPanel contentPane = new JPanel(new BorderLayout(0, JBUI.scale(8)));
+    private final SearchTextField searchField = new SearchTextField(true);
+    private final JButton searchBtn = new JButton("搜索");
+    private final JBLabel statusLabel = new JBLabel("输入关键字后开始搜索");
+    private final JBTable searchResultTable = new JBTable(new BulkTableModel(
+            new String[]{"序号", "行号", "语言", "内容", "文件位置", "内部路径"},
+            new Class<?>[]{Integer.class, Integer.class, String.class, String.class,
+                    String.class, String.class},
+            Set.of()));
 
     public LangSearchDlg(AnActionEvent event) {
         super(event.getProject());
+        buildUi();
+        registerComponents();
+        setTitle("多语搜索");
+        setResizable(true);
         init();
-        initUI();
-        initListener();
-        initData();
+        initListeners();
     }
 
-    private void initUI() {
-        //获取显示屏尺寸，使界面居中
-        int width = Toolkit.getDefaultToolkit().getScreenSize().width;
-        int height = Toolkit.getDefaultToolkit().getScreenSize().height;
-        setLocation((width - 800) / 2, (height - 600) / 2);
-        setSize(1200, 480);
-        //JComponent 集合
-        addComponent("searchTextField", searchTextField);
+    private void buildUi() {
+        contentPane.setBorder(JBUI.Borders.empty(12));
+        contentPane.setPreferredSize(JBUI.size(1000, 520));
+        searchField.getTextEditor().getEmptyText().setText("搜索语言包中的键或文本");
+
+        JPanel searchBar = new JPanel(new BorderLayout(JBUI.scale(8), 0));
+        searchBar.add(searchField, BorderLayout.CENTER);
+        searchBar.add(searchBtn, BorderLayout.EAST);
+
+        searchResultTable.setStriped(true);
+        searchResultTable.setShowVerticalLines(false);
+        searchResultTable.setFillsViewportHeight(true);
+        searchResultTable.setAutoCreateRowSorter(true);
+        searchResultTable.getEmptyText().setText("暂无搜索结果");
+        searchResultTable.getColumnModel().getColumn(0).setPreferredWidth(JBUI.scale(50));
+        searchResultTable.getColumnModel().getColumn(1).setPreferredWidth(JBUI.scale(50));
+        searchResultTable.getColumnModel().getColumn(2).setPreferredWidth(JBUI.scale(80));
+        searchResultTable.getColumnModel().getColumn(3).setPreferredWidth(JBUI.scale(320));
+        searchResultTable.getColumnModel().getColumn(4).setPreferredWidth(JBUI.scale(360));
+        searchResultTable.getColumnModel().getColumn(5).setPreferredWidth(JBUI.scale(240));
+
+        contentPane.add(searchBar, BorderLayout.NORTH);
+        contentPane.add(new JBScrollPane(searchResultTable), BorderLayout.CENTER);
+        contentPane.add(statusLabel, BorderLayout.SOUTH);
+    }
+
+    private void registerComponents() {
+        addComponent("searchTextField", searchField.getTextEditor());
         addComponent("searchBtn", searchBtn);
         addComponent("searchResultTable", searchResultTable);
+        addComponent("statusLabel", statusLabel);
+    }
+
+    private void initListeners() {
+        SearchAction searchAction = new SearchAction(this);
+        searchBtn.addActionListener(searchAction);
+        searchField.getTextEditor().addActionListener(searchAction);
         searchResultTable.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = searchResultTable.getSelectedRow();
-                    if (row >= 0) {
-                        String filePath = (String) searchResultTable.getValueAt(row, 4);
-                        File file = new File(filePath);
-                        if (!file.exists()) {
-                            Messages.showInfoMessage("文件不存在: " + filePath, "提示");
-                            return;
-                        }
-                        String osName = System.getProperty("os.name");
-                        try {
-                            if (osName.startsWith("Windows")) {
-                                new ProcessBuilder("explorer.exe", "/select,", filePath).start();
-                            } else if (osName.startsWith("Mac")) {
-                                new ProcessBuilder("open", "-R", filePath).start();
-                            } else if (osName.startsWith("Linux")) {
-                                new ProcessBuilder("xdg-open", file.getParent()).start();
-                            }
-                        } catch (IOException ex) {
-                            Messages.showInfoMessage("打开文件出错!: " + filePath, "提示");
-                        }
-                    }
+            public void mouseClicked(MouseEvent event) {
+                if (event.getClickCount() != 2) {
+                    return;
                 }
+                int viewRow = searchResultTable.getSelectedRow();
+                if (viewRow < 0) {
+                    return;
+                }
+                int modelRow = searchResultTable.convertRowIndexToModel(viewRow);
+                String filePath = String.valueOf(
+                        searchResultTable.getModel().getValueAt(modelRow, 4));
+                File file = new File(filePath);
+                if (!file.exists()) {
+                    Messages.showInfoMessage("文件不存在：" + filePath, "提示");
+                    return;
+                }
+                RevealFileAction.openFile(file);
             }
         });
     }
 
-    private void initListener() {
-        //数据源相关按钮
-        searchBtn.addActionListener(new SearchAction(this));
-        searchTextField.addActionListener(new SearchAction(this));
+    @Override
+    protected String getDimensionServiceKey() {
+        return "uap.language.search.dialog.v2";
     }
 
-    private void initData() {
-        //初始化表格
-        initTable();
-    }
-
-    private void initTable() {
-        // 设置列名
-        DefaultTableModel tableModel = new DefaultTableModel(null,
-                new String[]{"序号", "行号", "语言", "内容", "文件位置", "内部路径"}) {
-
-            @Override
-            public Class<?> getColumnClass(int c) {
-                if (c == 0 || c == 1) {
-                    return Integer.class;
-                } else {
-                    return String.class;
-                }
-            }
-
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-
-        };
-        searchResultTable.setModel(tableModel);
-        // 设置每列的宽度
-        TableColumnModel columnModel = searchResultTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(40);
-        columnModel.getColumn(1).setPreferredWidth(40);
-        columnModel.getColumn(2).setPreferredWidth(60);
-        columnModel.getColumn(3).setPreferredWidth(300);
-        columnModel.getColumn(4).setPreferredWidth(480);
-        columnModel.getColumn(5).setPreferredWidth(280);
+    @Override
+    public JComponent getPreferredFocusedComponent() {
+        return searchField;
     }
 
     @Override
@@ -121,5 +121,4 @@ public class LangSearchDlg extends AbstractDataSourceDialog {
     protected Action @NotNull [] createActions() {
         return new Action[0];
     }
-
 }

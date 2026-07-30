@@ -11,6 +11,7 @@ import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.BusinessException;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.ui.BulkTableModel;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -34,7 +35,6 @@ import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Vector;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -51,19 +51,32 @@ public class SearchAction extends AbstractButtonAction {
         JTextField searchTextField = getDialog().getComponent(JTextField.class, "searchTextField");
         String searchText = searchTextField.getText();
         if (StringUtils.isBlank(searchText)) {
-            Messages.showInfoMessage("Text can not be null!", "提示");
+            Messages.showInfoMessage("请输入搜索内容", "提示");
+            return;
+        }
+        JButton searchButton = getDialog().getComponent(JButton.class, "searchBtn");
+        if (!searchButton.isEnabled()) {
             return;
         }
         JTable searchResultTable = getDialog().getComponent(JTable.class, "searchResultTable");
-        for (int rowCount = searchResultTable.getModel().getRowCount(); rowCount > 0; rowCount--) {
-            ((DefaultTableModel) searchResultTable.getModel()).removeRow(rowCount - 1);
+        if (searchResultTable.getModel() instanceof BulkTableModel model) {
+            model.clearRows();
+        } else {
+            ((DefaultTableModel) searchResultTable.getModel()).setRowCount(0);
         }
         String homePath = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext()).getUapHomePath();
         Project project = getDialog().getProjectContext();
-        JButton searchButton = getDialog().getComponent(JButton.class, "searchBtn");
+        JLabel statusLabel = getDialog().getComponent(JLabel.class, "statusLabel");
         searchButton.setEnabled(false);
-        Task.Backgroundable task = new Task.Backgroundable(project, "Searching language files...",
+        searchTextField.setEnabled(false);
+        if (statusLabel != null) {
+            statusLabel.setText("正在扫描语言包…");
+        }
+        if (searchResultTable instanceof com.intellij.ui.table.JBTable jbTable) {
+            jbTable.setPaintBusy(true);
+        }
+        Task.Backgroundable task = new Task.Backgroundable(project, "正在搜索多语文件…",
                 true) {
             private List<LangInfo> result = List.of();
             private final List<String> warnings = new ArrayList<>();
@@ -84,20 +97,33 @@ public class SearchAction extends AbstractButtonAction {
             @Override
             public void onSuccess() {
                 searchButton.setEnabled(true);
+                searchTextField.setEnabled(true);
+                if (searchResultTable instanceof com.intellij.ui.table.JBTable jbTable) {
+                    jbTable.setPaintBusy(false);
+                }
                 if (failure != null) {
+                    if (statusLabel != null) {
+                        statusLabel.setText("搜索失败");
+                    }
                     Messages.showErrorDialog(failure.getMessage(), "错误");
                     return;
                 }
+                List<Object[]> rows = new ArrayList<>(result.size());
                 for (int i = 0; i < result.size(); i++) {
                     LangInfo langInfo = result.get(i);
-                    Vector<Object> rowData = new Vector<>();
-                    rowData.add(i + 1);
-                    rowData.add(langInfo.getLineNumber());
-                    rowData.add(langInfo.getLanguage());
-                    rowData.add(langInfo.getText());
-                    rowData.add(langInfo.getPath());
-                    rowData.add(langInfo.getInternalPath());
-                    ((DefaultTableModel) searchResultTable.getModel()).addRow(rowData);
+                    rows.add(new Object[]{i + 1, langInfo.getLineNumber(),
+                            langInfo.getLanguage(), langInfo.getText(), langInfo.getPath(),
+                            langInfo.getInternalPath()});
+                }
+                if (searchResultTable.getModel() instanceof BulkTableModel model) {
+                    model.replaceRows(rows);
+                } else {
+                    for (Object[] row : rows) {
+                        ((DefaultTableModel) searchResultTable.getModel()).addRow(row);
+                    }
+                }
+                if (statusLabel != null) {
+                    statusLabel.setText("找到 " + result.size() + " 条结果");
                 }
                 if (!warnings.isEmpty()) {
                     String details = String.join("\n", warnings.subList(0,
@@ -112,6 +138,13 @@ public class SearchAction extends AbstractButtonAction {
             @Override
             public void onCancel() {
                 searchButton.setEnabled(true);
+                searchTextField.setEnabled(true);
+                if (searchResultTable instanceof com.intellij.ui.table.JBTable jbTable) {
+                    jbTable.setPaintBusy(false);
+                }
+                if (statusLabel != null) {
+                    statusLabel.setText("已取消搜索");
+                }
             }
         };
         ProgressManager.getInstance().run(task);

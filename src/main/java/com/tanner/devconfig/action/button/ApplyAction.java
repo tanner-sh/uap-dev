@@ -24,11 +24,15 @@ public class ApplyAction extends AbstractButtonAction {
 
         //数据源保存
         if (dialog.getTabIndex() == 0) {
+            DataSourceUtil.ensureDataSourceLoaded(dialog);
             DataSourceUtil.saveDesignDataSourceMeta(dialog);
         }
 
         //模块选择保存
         if (dialog.getTabIndex() == 1) {
+            if (!dialog.isModulesInitialized()) {
+                throw new BusinessException("模块尚未加载完成");
+            }
             TableModelUtil.saveModuleConfig(getDialog());
         }
     }

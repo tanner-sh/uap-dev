@@ -35,11 +35,11 @@ public class DataSourceCopyDlg extends AbstractDialog {
     protected void doOKAction() {
         String newName = newNameText.getText();
         if (StringUtils.isBlank(newName)) {
-            Messages.showErrorDialog("DataSource name can not be null!", "出错了");
+            Messages.showErrorDialog("请输入数据源名称", "错误");
             return;
         }
         if (parentDlg.getDataSourceMetaMap().containsKey(newName)) {
-            Messages.showErrorDialog("DataSource is existed!", "出错了");
+            Messages.showErrorDialog("数据源名称已存在", "错误");
             return;
         }
         try {
@@ -55,7 +55,7 @@ public class DataSourceCopyDlg extends AbstractDialog {
             parentDlg.setCurrMeta(newMeta);
             DataSourceUtil.saveDesignDataSourceMeta(parentDlg);
         } catch (Exception e) {
-            Messages.showErrorDialog(e.getMessage(), "出错了");
+            Messages.showErrorDialog(e.getMessage(), "错误");
             return;
         }
         int opt = Messages.showYesNoDialog("Copy success, do you want to exit?", "提示", Messages.getQuestionIcon());

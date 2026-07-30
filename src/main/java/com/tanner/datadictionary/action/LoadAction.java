@@ -17,6 +17,8 @@ import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
+import com.tanner.devconfig.util.DataSourceUtil;
+import com.tanner.ui.BulkTableModel;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +28,7 @@ import java.awt.event.ActionEvent;
 import java.sql.Connection;
 import java.net.URLClassLoader;
 import java.util.List;
-import java.util.Vector;
+import java.util.ArrayList;
 
 public class LoadAction extends AbstractButtonAction {
 
@@ -37,6 +39,11 @@ public class LoadAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
         AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+        DataSourceUtil.ensureDataSourceLoaded(dlg);
+        JButton loadButton = getDialog().getComponent(JButton.class, "loadBtn");
+        if (!loadButton.isEnabled()) {
+            return;
+        }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         if (info == null) {
@@ -51,10 +58,14 @@ public class LoadAction extends AbstractButtonAction {
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
         //加载表数据
         JTable dbTable = getDialog().getComponent(JTable.class, "dbTable");
-        String filterTest = getDialog().getComponent(JTextField.class, "filterTextField").getText();
+        JTextField filterTextField =
+                getDialog().getComponent(JTextField.class, "filterTextField");
+        String filterTest = filterTextField.getText();
         String[] tableNamePattern = StringUtils.split(filterTest, ";");
-        for (int rowCount = dbTable.getModel().getRowCount(); rowCount > 0; rowCount--) {
-            ((DefaultTableModel) dbTable.getModel()).removeRow(rowCount - 1);
+        if (dbTable.getModel() instanceof BulkTableModel model) {
+            model.clearRows();
+        } else {
+            ((DefaultTableModel) dbTable.getModel()).setRowCount(0);
         }
         String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
         DataSourceMeta dataSourceMeta = null;
@@ -68,12 +79,27 @@ public class LoadAction extends AbstractButtonAction {
         }
         String finalJdbcUrl = jdbcUrl;
         Project project = getDialog().getProjectContext();
-        JButton loadButton = getDialog().getComponent(JButton.class, "loadBtn");
+        JLabel statusLabel = getDialog().getComponent(JLabel.class, "statusLabel");
         loadButton.setEnabled(false);
-        Task.Backgroundable task = new Task.Backgroundable(project, "Loading database tables...",
+        filterTextField.setEnabled(false);
+        if (statusLabel != null) {
+            statusLabel.setText("正在加载数据表…");
+        }
+        if (dbTable instanceof com.intellij.ui.table.JBTable jbTable) {
+            jbTable.setPaintBusy(true);
+        }
+        Task.Backgroundable task = new Task.Backgroundable(project, "正在加载数据表…",
                 true) {
             private List<TableInfo> result;
             private Exception failure;
+
+            private void restoreUi() {
+                loadButton.setEnabled(true);
+                filterTextField.setEnabled(true);
+                if (dbTable instanceof com.intellij.ui.table.JBTable jbTable) {
+                    jbTable.setPaintBusy(false);
+                }
+            }
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -91,25 +117,48 @@ public class LoadAction extends AbstractButtonAction {
 
             @Override
             public void onSuccess() {
-                loadButton.setEnabled(true);
+                restoreUi();
                 if (failure != null) {
+                    if (statusLabel != null) {
+                        statusLabel.setText("加载失败");
+                    }
                     Messages.showErrorDialog(failure.getMessage(), "错误");
                     return;
                 }
+                List<Object[]> rows = new ArrayList<>(result.size());
                 for (int i = 0; i < result.size(); i++) {
-                    Vector<Object> rowData = new Vector<>();
-                    rowData.add(i + 1);
-                    rowData.add(true);
-                    rowData.add(result.get(i).getTableName());
-                    rowData.add(result.get(i).getComment());
-                    ((DefaultTableModel) dbTable.getModel()).addRow(rowData);
+                    rows.add(new Object[]{i + 1, true, result.get(i).getTableName(),
+                            result.get(i).getComment()});
                 }
-                Messages.showInfoMessage("Load success!", "提示");
+                if (dbTable.getModel() instanceof BulkTableModel model) {
+                    model.replaceRows(rows);
+                } else {
+                    for (Object[] row : rows) {
+                        ((DefaultTableModel) dbTable.getModel()).addRow(row);
+                    }
+                }
+                if (statusLabel != null) {
+                    statusLabel.setText("已加载 " + result.size() + " 张表");
+                }
             }
 
             @Override
             public void onCancel() {
-                loadButton.setEnabled(true);
+                restoreUi();
+                if (statusLabel != null) {
+                    statusLabel.setText("已取消加载");
+                }
+            }
+
+            @Override
+            public void onThrowable(@NotNull Throwable error) {
+                restoreUi();
+                if (statusLabel != null) {
+                    statusLabel.setText("加载失败");
+                }
+                String message = StringUtils.defaultIfBlank(
+                        error.getMessage(), error.getClass().getName());
+                Messages.showErrorDialog("加载数据表失败：\n" + message, "错误");
             }
         };
         ProgressManager.getInstance().run(task);

@@ -21,7 +21,7 @@ public class SetLibraryAction extends AbstractButtonAction {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
         String homePath = dialog.getComponent(JTextField.class, "homeText").getText();
         LibrariesUtil.setLibrariesWithProgress(dialog.getProjectContext(), homePath);
-        Messages.showInfoMessage("Set done！", "提示");
+        Messages.showInfoMessage("类路径设置完成", "完成");
         dialog.setLibFlag(true);
     }
 }

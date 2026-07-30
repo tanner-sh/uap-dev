@@ -49,6 +49,21 @@ public class OracleEngineFallbackTest {
         assertEquals(1, enumQueries.get());
     }
 
+    @Test
+    public void loadsTableMetadataCommentsWithOneQueryPerBatch() throws Exception {
+        AtomicInteger metadataQueries = new AtomicInteger();
+        OracleEngine engine = new OracleEngine();
+
+        List<TableInfo> tables = engine.getAllTableInfo(
+                connectionWithTableMetadata(metadataQueries), "DEMO", null);
+
+        assertEquals(3, tables.size());
+        assertEquals("元数据备注一", tables.get(0).getComment());
+        assertEquals("元数据备注二", tables.get(1).getComment());
+        assertEquals("标准备注三", tables.get(2).getComment());
+        assertEquals(1, metadataQueries.get());
+    }
+
     private Connection connectionWithoutMetadataTables() {
         return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(),
                 new Class[]{Connection.class}, (proxy, method, args) -> {
@@ -100,6 +115,42 @@ public class OracleEngineFallbackTest {
                                                     row("PROPERTY_NAME", "TYPE",
                                                             "ENUM_VALUE", "A",
                                                             "ENUM_NAME", "甲")));
+                                        }
+                                        return resultSet(List.of());
+                                    }
+                                    return defaultValue(statementMethod.getReturnType());
+                                });
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+    }
+
+    private Connection connectionWithTableMetadata(AtomicInteger metadataQueries) {
+        return (Connection) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[]{Connection.class}, (proxy, method, args) -> {
+                    if ("prepareStatement".equals(method.getName())) {
+                        String sql = (String) args[0];
+                        return (PreparedStatement) Proxy.newProxyInstance(
+                                getClass().getClassLoader(),
+                                new Class[]{PreparedStatement.class},
+                                (statement, statementMethod, statementArgs) -> {
+                                    if ("executeQuery".equals(statementMethod.getName())) {
+                                        if (sql.toUpperCase().contains("USER_TAB_COMMENTS")) {
+                                            return resultSet(List.of(
+                                                    row("TABLE_NAME", "TABLE_ONE",
+                                                            "COMMENTS", "标准备注一"),
+                                                    row("TABLE_NAME", "TABLE_TWO",
+                                                            "COMMENTS", "标准备注二"),
+                                                    row("TABLE_NAME", "TABLE_THREE",
+                                                            "COMMENTS", "标准备注三")));
+                                        }
+                                        if (sql.toUpperCase().contains("MD_CLASS")) {
+                                            metadataQueries.incrementAndGet();
+                                            return resultSet(List.of(
+                                                    row("TABLE_NAME", "TABLE_ONE",
+                                                            "DISPLAYNAME", "元数据备注一"),
+                                                    row("TABLE_NAME", "TABLE_TWO",
+                                                            "DISPLAYNAME", "元数据备注二")));
                                         }
                                         return resultSet(List.of());
                                     }

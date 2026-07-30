@@ -38,6 +38,11 @@ public class TestConnectionAction extends AbstractButtonAction {
     public void doAction(ActionEvent event) {
         Project project = getDialog().getProjectContext();
         AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+        if (dlg.isDataSourceLoading()) {
+            Notifications.Bus.notify(new Notification("Task Notification Group", "提示",
+                    "数据源配置正在加载，请稍候", NotificationType.WARNING), project);
+            return;
+        }
         String homePath;
         if (dlg instanceof DevConfigDialog) {
             homePath = dlg.getComponent(JTextField.class, "homeText").getText();
@@ -51,8 +56,8 @@ public class TestConnectionAction extends AbstractButtonAction {
                 .getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         if (info == null) {
-            Notifications.Bus.notify(new Notification("Task Notification Group", "Error",
-                    "Please select a database driver", NotificationType.ERROR), project);
+            Notifications.Bus.notify(new Notification("Task Notification Group", "错误",
+                    "请选择数据库驱动", NotificationType.ERROR), project);
             return;
         }
         String exampleUrl = info.getDriverUrl();
@@ -68,14 +73,18 @@ public class TestConnectionAction extends AbstractButtonAction {
         }
         String finalJdbcUrl = jdbcUrl;
         // 创建一个后台任务
-        Task.Backgroundable task = new Task.Backgroundable(project, "Testing datasource ...", true) {
+        Task.Backgroundable task = new Task.Backgroundable(project, "正在测试数据源连接…", true) {
             public void run(@NotNull ProgressIndicator indicator) {
                 // 设置初始进度
                 if (testConnection(homePath, info, finalJdbcUrl, userName, pwd)) {
-                    Notification notification = new Notification("Task Notification Group", "Done", "Test passed !", NotificationType.INFORMATION);
+                    Notification notification = new Notification(
+                            "Task Notification Group", "连接成功", "数据源连接测试通过",
+                            NotificationType.INFORMATION);
                     Notifications.Bus.notify(notification, project);
                 } else {
-                    Notification notification = new Notification("Task Notification Group", "Error", "Test connection error !", NotificationType.ERROR);
+                    Notification notification = new Notification(
+                            "Task Notification Group", "连接失败", "数据源连接测试失败",
+                            NotificationType.ERROR);
                     Notifications.Bus.notify(notification, project);
                 }
             }

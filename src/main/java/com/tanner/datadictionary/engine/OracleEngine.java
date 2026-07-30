@@ -4,7 +4,6 @@ import com.tanner.base.BusinessException;
 import com.tanner.base.DbUtil;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -20,6 +19,8 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class OracleEngine implements IEngine {
+
+    private static final int ORACLE_IN_CLAUSE_BATCH_SIZE = 900;
 
     @Override
     public List<TableInfo> getAllTableInfo(Connection connection, String userName, String[] tableNamePattern) throws BusinessException {
@@ -39,25 +40,52 @@ public class OracleEngine implements IEngine {
                 querySql.toString(), parameters);
         for (Map<String, Object> stringObjectMap : queryResult) {
             String tableName = (String) stringObjectMap.get("TABLE_NAME");
-            // 优先从元数据信息中获取
-            String comments = getTableCommentsFromMD(connection, tableName);
-            if (StringUtils.isEmpty(comments)) {
-                comments = (String) stringObjectMap.get("COMMENTS");
-            }
-            tableInfoList.add(new TableInfo(tableName, comments));
+            tableInfoList.add(new TableInfo(tableName,
+                    (String) stringObjectMap.get("COMMENTS")));
         }
+        applyTableCommentsFromMD(connection, tableInfoList);
         return tableInfoList;
     }
 
-    private String getTableCommentsFromMD(Connection connection, String tableName) {
-        try {
-            String querySql = "select DISPLAYNAME from MD_CLASS where UPPER(DEFAULTTABLENAME) = ? ";
-            List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql,
-                    Collections.singletonList(tableName.toUpperCase()));
-            return CollectionUtils.isEmpty(queryResult) ? ""
-                    : Objects.toString(queryResult.get(0).get("DISPLAYNAME"), "");
-        } catch (BusinessException ignored) {
-            return "";
+    private void applyTableCommentsFromMD(Connection connection,
+                                          List<TableInfo> tableInfoList) {
+        if (tableInfoList.isEmpty()) {
+            return;
+        }
+        Map<String, TableInfo> tablesByName = new HashMap<>();
+        for (TableInfo tableInfo : tableInfoList) {
+            tablesByName.put(tableInfo.getTableName().toUpperCase(Locale.ROOT), tableInfo);
+        }
+        for (int start = 0; start < tableInfoList.size();
+             start += ORACLE_IN_CLAUSE_BATCH_SIZE) {
+            int end = Math.min(start + ORACLE_IN_CLAUSE_BATCH_SIZE,
+                    tableInfoList.size());
+            List<Object> parameters = new ArrayList<>(end - start);
+            for (int index = start; index < end; index++) {
+                parameters.add(tableInfoList.get(index).getTableName()
+                        .toUpperCase(Locale.ROOT));
+            }
+            String placeholders = String.join(",",
+                    Collections.nCopies(parameters.size(), "?"));
+            String querySql = "SELECT UPPER(DEFAULTTABLENAME) AS TABLE_NAME, "
+                    + "MAX(DISPLAYNAME) AS DISPLAYNAME FROM MD_CLASS "
+                    + "WHERE UPPER(DEFAULTTABLENAME) IN (" + placeholders + ") "
+                    + "GROUP BY UPPER(DEFAULTTABLENAME)";
+            try {
+                for (Map<String, Object> row : DbUtil.executeQuery(
+                        connection, querySql, parameters)) {
+                    String tableName = Objects.toString(row.get("TABLE_NAME"), "");
+                    String displayName = Objects.toString(row.get("DISPLAYNAME"), "");
+                    TableInfo tableInfo = tablesByName.get(
+                            tableName.toUpperCase(Locale.ROOT));
+                    if (tableInfo != null && StringUtils.isNotEmpty(displayName)) {
+                        tableInfo.setComment(displayName);
+                    }
+                }
+            } catch (BusinessException ignored) {
+                // 部分项目没有 NC 元数据表，保留 USER_TAB_COMMENTS 中的标准备注。
+                return;
+            }
         }
     }
 
@@ -86,7 +114,7 @@ public class OracleEngine implements IEngine {
         }
         // 先从元数据中获取字段备注信息
         queryResult = getColumnCommentsFromMD(connection, tableName);
-        if (CollectionUtils.isNotEmpty(queryResult)) {
+        if (!queryResult.isEmpty()) {
             for (Map<String, Object> rowMap : queryResult) {
                 String name = (String) rowMap.get("NAME");
                 String displayname = (String) rowMap.get("DISPLAYNAME");
