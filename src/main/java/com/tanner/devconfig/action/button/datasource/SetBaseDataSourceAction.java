@@ -38,8 +38,8 @@ public class SetBaseDataSourceAction extends AbstractButtonAction {
         for (DataSourceMeta meta : map.values()) {
             meta.setBase(meta == currMeta);
         }
-        dialog.getComponent(JCheckBox.class, "baseChx").setSelected(true);
-        dialog.getComponent(JCheckBox.class, "devChx").setSelected(false);
+        dialog.baseDataSourceCheckBox().setSelected(true);
+        dialog.developmentDataSourceCheckBox().setSelected(false);
         DataSourceUtil.saveDesignDataSourceMeta(dialog);
     }
 }

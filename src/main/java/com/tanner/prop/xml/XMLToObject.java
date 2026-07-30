@@ -11,23 +11,25 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.text.MessageFormat;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 public class XMLToObject {
 
-    public static Class[] classA = {Boolean.class, Character.class, Integer.class, Long.class,
+    public static Class<?>[] classA = {Boolean.class, Character.class, Integer.class, Long.class,
             Double.class, Float.class, String.class, BigDecimal.class, int.class, char.class,
             boolean.class, long.class, double.class, float.class};
 
     private boolean m_AllowNoField = false;
 
-    public static Object getJavaObjectFromFile(File file, Class rootClass, boolean allowNoField)
+    public static Object getJavaObjectFromFile(File file, Class<?> rootClass,
+                                               boolean allowNoField)
             throws Exception {
         Document doc = com.tanner.base.XmlUtil.parse(file);
         return getJavaObjectFromDocument(doc, rootClass, allowNoField);
     }
 
-    public static Object getJavaObjectFromDocument(Document doc, Class rootClass,
+    public static Object getJavaObjectFromDocument(Document doc, Class<?> rootClass,
                                                    boolean allowNoField) throws Exception {
         XMLToObject xto = new XMLToObject();
         xto.setAllowNoField(allowNoField);
@@ -35,16 +37,17 @@ public class XMLToObject {
         return xto.revertDocument(node, rootClass, null);
     }
 
-    public static Object getJavaObjectFromFile(String fileName, Class rootClass, boolean allowNoField)
+    public static Object getJavaObjectFromFile(String fileName, Class<?> rootClass,
+                                               boolean allowNoField)
             throws Exception {
         return getJavaObjectFromFile(new File(fileName), rootClass, allowNoField);
     }
 
     private void fillFieldValue(Field f, Object o, String str) throws Exception {
-        Class itemClass = f.getType();
+        Class<?> itemClass = f.getType();
         String value = str.trim();
         boolean isObjectPrimitiveClass = false;
-        Class[] classA = {Boolean.class, Character.class, Integer.class, Long.class, String.class,
+        Class<?>[] classA = {Boolean.class, Character.class, Integer.class, Long.class, String.class,
                 Double.class, Float.class, BigDecimal.class};
         for (int i = 0; i < classA.length; i++) {
             if (classA[i] == itemClass) {
@@ -91,12 +94,12 @@ public class XMLToObject {
         }
     }
 
-    private Class getArrayItemClass(String className, ClassLoader loader) throws Exception {
+    private Class<?> getArrayItemClass(String className, ClassLoader loader) throws Exception {
         int key = className.indexOf("[L");
         if (key >= 0) {
             int lastLoc = className.indexOf(";");
             String classPureName = className.substring(key + 2, lastLoc);
-            Class pureClass = null;
+            Class<?> pureClass;
             if (loader != null) {
                 pureClass = loader.loadClass(classPureName);
             } else {
@@ -112,12 +115,12 @@ public class XMLToObject {
             return Array.newInstance(pureClass, arrayList).getClass();
         }
         String[] id = {"[B", "[C", "[S", "[I", "[J", "[F", "[D", "[Z"};
-        Class[] type = {byte.class, char.class, short.class, int.class, long.class,
+        Class<?>[] type = {byte.class, char.class, short.class, int.class, long.class,
                 float.class, double.class, boolean.class};
         for (int i = 0; i < id.length; i++) {
             key = className.indexOf(id[i]);
             if (key >= 0) {
-                Class pureClass = type[i];
+                Class<?> pureClass = type[i];
                 if (key == 0) {
                     return pureClass;
                 }
@@ -168,7 +171,7 @@ public class XMLToObject {
         return false;
     }
 
-    private boolean isPrimitive(Class cl) {
+    private boolean isPrimitive(Class<?> cl) {
         for (int i = 0; i < classA.length; i++) {
             if (classA[i] == cl) {
                 return true;
@@ -177,40 +180,42 @@ public class XMLToObject {
         return false;
     }
 
-    private Object revertArray(Node cNode, Class defautClass, String nodeName) throws Exception {
+    private Object revertArray(Node cNode, Class<?> defautClass, String nodeName)
+            throws Exception {
         String arrayName = defautClass.getName();
         ClassLoader loader = defautClass.getClassLoader();
         if (defautClass.isArray()) {
             loader = defautClass.getComponentType().getClassLoader();
         }
-        Class arrayItemClass = getArrayItemClass(arrayName, loader);
+        Class<?> arrayItemClass = getArrayItemClass(arrayName, loader);
         NodeList nl = cNode.getChildNodes();
-        Vector<Node> vNl = new Vector<Node>();
+        List<Node> matchingNodes = new ArrayList<>();
         for (int i = 0; i < nl.getLength(); i++) {
             if (nl.item(i).getNodeName().equals(nodeName)) {
-                vNl.addElement(nl.item(i));
+                matchingNodes.add(nl.item(i));
             }
         }
-        if (vNl.size() == 1 && isNullNodeArray(vNl.elementAt(0))) {
+        if (matchingNodes.size() == 1 && isNullNodeArray(matchingNodes.getFirst())) {
             return null;
         }
-        Object o = Array.newInstance(arrayItemClass, vNl.size());
+        Object o = Array.newInstance(arrayItemClass, matchingNodes.size());
         if (isPrimitive(arrayItemClass)) {
-            for (int i = 0; i < vNl.size(); i++) {
-                Node item = vNl.elementAt(i);
+            for (int i = 0; i < matchingNodes.size(); i++) {
+                Node item = matchingNodes.get(i);
                 String str = item.getChildNodes().item(0).getNodeValue().trim();
                 setArrayPrimitiveValue(o, i, arrayItemClass, str);
             }
         } else {
-            for (int i = 0; i < vNl.size(); i++) {
-                Node item = vNl.elementAt(i);
+            for (int i = 0; i < matchingNodes.size(); i++) {
+                Node item = matchingNodes.get(i);
                 Array.set(o, i, revertDocument(item, arrayItemClass, nodeName));
             }
         }
         return o;
     }
 
-    private Object revertDocument(Node item, Class defaultClass, String nodeName) throws Exception {
+    private Object revertDocument(Node item, Class<?> defaultClass, String nodeName)
+            throws Exception {
         if (isNullNode(item)) {
             return null;
         }
@@ -218,66 +223,78 @@ public class XMLToObject {
         if (isArrayClass(className)) {
             return revertArray(item, defaultClass, nodeName);
         }
-        Class classType = defaultClass.getClassLoader().loadClass(className);
+        ClassLoader loader = defaultClass.getClassLoader();
+        Class<?> classType = loader == null
+                ? Class.forName(className)
+                : loader.loadClass(className);
         Object o = newInstance(classType);
         if (isPrimitive(classType)) {
             throw new Exception("Parse Error");
         }
         NodeList nl = item.getChildNodes();
         Field[] fa = o.getClass().getDeclaredFields();
-        for (int i = 0; i < fa.length; i++) {
-            boolean isAccessible = fa[i].isAccessible();
-            fa[i].setAccessible(true);
-            if (!Modifier.isFinal(fa[i].getModifiers())) {
-                Class c = fa[i].getType();
+        for (Field field : fa) {
+            if (!Modifier.isFinal(field.getModifiers())) {
+                boolean wasAccessible = field.canAccess(o);
+                field.setAccessible(true);
+                try {
+                Class<?> c = field.getType();
                 Node cNode = null;
                 for (int j = 0; j < nl.getLength(); j++) {
-                    if (fa[i].getName().equals(nl.item(j).getNodeName())) {
+                    if (field.getName().equals(nl.item(j).getNodeName())) {
                         cNode = nl.item(j);
                         break;
                     }
                 }
-                if (cNode == null && !fa[i].getType().isArray()) {
+                if (cNode == null && !field.getType().isArray()) {
                     if (!isAllowNoField()) {
-                        String msg = MessageFormat.format("Description of {0} lost", fa[i].getName());
+                        String msg = MessageFormat.format("Description of {0} lost",
+                                field.getName());
                         throw new Exception(msg);
                     }
                 } else {
-                    if (fa[i].getType().isArray()) {
-                        Object oa = revertArray(item, fa[i].getType(), fa[i].getName());
-                        fa[i].set(o, oa);
+                    if (field.getType().isArray()) {
+                        Object oa = revertArray(item, field.getType(), field.getName());
+                        field.set(o, oa);
                     } else if (isNullNode(cNode)) {
-                        if (!fa[i].getType().isPrimitive()) {
-                            fa[i].set(o, null);
+                        if (!field.getType().isPrimitive()) {
+                            field.set(o, null);
                         }
                     } else if (isPrimitive(c)) {
                         NodeList nlc = cNode.getChildNodes();
                         if (nlc.item(0) == null) {
-                            fillFieldValue(fa[i], o, "");
+                            fillFieldValue(field, o, "");
                         } else {
-                            fillFieldValue(fa[i], o, nlc.item(0).getNodeValue());
+                            fillFieldValue(field, o, nlc.item(0).getNodeValue());
                         }
                     } else {
-                        Object os = revertDocument(cNode, fa[i].getType(), nodeName);
-                        fa[i].set(o, os);
+                        Object os = revertDocument(cNode, field.getType(), nodeName);
+                        field.set(o, os);
                     }
-                    fa[i].setAccessible(isAccessible);
+                }
+                } finally {
+                    field.setAccessible(wasAccessible);
                 }
             }
         }
         return o;
     }
 
-    private Object newInstance(Class clazz) throws Exception {
-        Constructor cnst = clazz.getDeclaredConstructor();
-        cnst.setAccessible(true);
-        return cnst.newInstance();
+    private <T> T newInstance(Class<T> type) throws Exception {
+        Constructor<T> constructor = type.getDeclaredConstructor();
+        boolean wasAccessible = constructor.canAccess(null);
+        constructor.setAccessible(true);
+        try {
+            return constructor.newInstance();
+        } finally {
+            constructor.setAccessible(wasAccessible);
+        }
     }
 
-    private void setArrayPrimitiveValue(Object arrayObject, int location, Class itemClass,
+    private void setArrayPrimitiveValue(Object arrayObject, int location, Class<?> itemClass,
                                         String value) throws Exception {
         boolean isObjectPrimitiveClass = false;
-        Class[] classA = {Boolean.class, Character.class, Integer.class, Long.class, String.class,
+        Class<?>[] classA = {Boolean.class, Character.class, Integer.class, Long.class, String.class,
                 Double.class, Float.class, BigDecimal.class};
         for (int i = 0; i < classA.length; i++) {
             if (classA[i] == itemClass) {

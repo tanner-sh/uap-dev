@@ -21,7 +21,15 @@ public abstract class AbstractDialog extends DialogWrapper {
     }
 
     public <T> T getComponent(Class<T> clazz, String key) {
-        return (T) componentMap.get(key);
+        JComponent component = componentMap.get(key);
+        if (component == null) {
+            return null;
+        }
+        if (!clazz.isInstance(component)) {
+            throw new IllegalStateException("对话框组件 " + key + " 的实际类型是 "
+                    + component.getClass().getName() + "，不是 " + clazz.getName());
+        }
+        return clazz.cast(component);
     }
 
     public void addComponent(String key, JComponent component) {

@@ -7,17 +7,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.util.Processor;
 import com.tanner.actionsearch.entity.Action;
-import com.tanner.actionsearch.entity.Actions;
 import com.tanner.base.UapProjectEnvironment;
-import com.tanner.base.XmlUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AndFileFilter;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.jetbrains.annotations.NotNull;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Unmarshaller;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -100,24 +96,13 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
                 }
         );
         List<Action> actionList = new ArrayList<>();
-        JAXBContext jaxbContext;
-        try {
-            jaxbContext = JAXBContext.newInstance(Actions.class);
-        } catch (Exception exception) {
-            return returnList;
-        }
         for (File actionFile : xmlFiles) {
             indicator.checkCanceled();
             if (!filter.accept(actionFile)) {
                 continue;
             }
             try {
-                Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-                Actions actions = (Actions) unmarshaller.unmarshal(XmlUtil.parse(actionFile));
-                if (actions != null && actions.getActions() != null
-                        && !actions.getActions().isEmpty()) {
-                    actionList.addAll(actions.getActions());
-                }
+                actionList.addAll(ActionXmlParser.parse(actionFile));
             } catch (Exception ignored) {
 
             }

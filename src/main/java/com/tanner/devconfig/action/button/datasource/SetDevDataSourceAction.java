@@ -25,8 +25,8 @@ public class SetDevDataSourceAction extends AbstractButtonAction {
     public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
         DataSourceUtil.ensureDataSourceLoaded(dialog);
-        String dsname = (String) dialog.getComponent(JComboBox.class, "dbBox").getSelectedItem();
-        int index = dialog.getComponent(JComboBox.class, "dbBox").getSelectedIndex();
+        String dsname = (String) dialog.databaseBox().getSelectedItem();
+        int index = dialog.databaseBox().getSelectedIndex();
         if (index < 0 || "design".equals(dsname)) {
             return;
         }
@@ -36,7 +36,7 @@ public class SetDevDataSourceAction extends AbstractButtonAction {
                 DataSourceMeta meta = (DataSourceMeta) dataSourceMetaMap.get(dsname).clone();
                 meta.setDataSourceName("design");
                 meta.setBase(false);
-                JComboBox dbBox = dialog.getComponent(JComboBox.class, "dbBox");
+                JComboBox<String> dbBox = dialog.databaseBox();
                 boolean hasDesign = dataSourceMetaMap.containsKey("design");
                 dataSourceMetaMap.put("design", meta);
                 if (!hasDesign) {

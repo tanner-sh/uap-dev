@@ -1,5 +1,7 @@
 package com.tanner;
 
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.tanner.base.BusinessException;
 import com.tanner.base.DbUtil;
 import com.tanner.datadictionary.engine.MySqlEngine;
@@ -10,6 +12,10 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.rowset.serial.SerialBlob;
 import javax.sql.rowset.serial.SerialClob;
 
@@ -53,6 +59,53 @@ public class DbUtilTest {
                 new SerialClob("大字段'内容".toCharArray())));
         assertEquals("X'012a'", DbUtil.getColumnValue(Types.BLOB,
                 new SerialBlob(new byte[]{0x01, 0x2a})));
+    }
+
+    @Test
+    public void appliesQueryTimeoutAndPreservesSqlCause() {
+        AtomicInteger timeout = new AtomicInteger();
+        SQLException sqlFailure = new SQLException("database unavailable");
+        PreparedStatement statement = (PreparedStatement) Proxy.newProxyInstance(
+                getClass().getClassLoader(), new Class[]{PreparedStatement.class},
+                (proxy, method, args) -> {
+                    if ("setQueryTimeout".equals(method.getName())) {
+                        timeout.set((Integer) args[0]);
+                        return null;
+                    }
+                    if ("executeQuery".equals(method.getName())) {
+                        throw sqlFailure;
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+        Connection connection = (Connection) Proxy.newProxyInstance(
+                getClass().getClassLoader(), new Class[]{Connection.class},
+                (proxy, method, args) -> {
+                    if ("prepareStatement".equals(method.getName())) {
+                        return statement;
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+
+        try {
+            DbUtil.executeQuery(connection, "select 1", List.of());
+            fail("SQL failure should be propagated");
+        } catch (BusinessException expected) {
+            assertEquals(DbUtil.QUERY_TIMEOUT_SECONDS, timeout.get());
+            assertEquals(sqlFailure, expected.getCause());
+        }
+    }
+
+    @Test(expected = ProcessCanceledException.class)
+    public void rejectsCanceledQueryBeforePreparingStatement() throws Exception {
+        ProgressIndicator indicator = (ProgressIndicator) Proxy.newProxyInstance(
+                getClass().getClassLoader(), new Class[]{ProgressIndicator.class},
+                (proxy, method, args) -> {
+                    if ("checkCanceled".equals(method.getName())) {
+                        throw new ProcessCanceledException();
+                    }
+                    return defaultValue(method.getReturnType());
+                });
+        DbUtil.executeQuery(connectionFor("MySQL"), "select 1", List.of(), indicator);
     }
 
     private Connection connectionFor(String productName) {

@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertNull;
 
 public class PropXmlSafetyTest {
 
@@ -98,7 +99,7 @@ public class PropXmlSafetyTest {
         NullableBean loaded = (NullableBean) XMLToObject.getJavaObjectFromFile(
                 beanFile, NullableBean.class, true);
         assertEquals(null, loaded.value);
-        assertEquals(null, loaded.values);
+        assertNull(loaded.values);
         assertEquals(null, loaded.nested);
     }
 

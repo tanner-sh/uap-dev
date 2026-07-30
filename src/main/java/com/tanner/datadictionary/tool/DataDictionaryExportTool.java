@@ -47,7 +47,9 @@ public class DataDictionaryExportTool {
                     "正在查询数据字典(" + currentIndex + "/" + selectedTables.size() + ")");
             AggTable aggTable = new AggTable();
             aggTable.setTableInfo(selectedTable);
-            List<ColumnInfo> columnInfoList = engine.getAllColumnInfo(connection, selectedTable.getTableName(), needFilterDefField);
+            List<ColumnInfo> columnInfoList = engine.getAllColumnInfo(
+                    connection, selectedTable.getTableName(), needFilterDefField,
+                    progressIndicator);
             aggTable.setColumnInfoList(columnInfoList);
             aggTableList.add(aggTable);
             progressIndicator.setFraction((double) currentIndex / selectedTables.size());

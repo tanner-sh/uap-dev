@@ -3,6 +3,7 @@ package com.tanner.datadictionary.action;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.tanner.abs.AbstractButtonAction;
@@ -20,6 +21,7 @@ import com.tanner.prop.entity.ToolUtils;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.ui.BulkTableModel;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -38,28 +40,27 @@ public class LoadAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
-        AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+        DataDictionaryExportDlg dlg = (DataDictionaryExportDlg) getDialog();
         DataSourceUtil.ensureDataSourceLoaded(dlg);
-        JButton loadButton = getDialog().getComponent(JButton.class, "loadBtn");
+        JButton loadButton = dlg.loadButton();
         if (!loadButton.isEnabled()) {
             return;
         }
-        String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
+        String driverName = (String) dlg.driverBox().getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         if (info == null) {
             throw new BusinessException("请选择数据库驱动");
         }
         String exampleUrl = info.getDriverUrl();
-        String host = dlg.getComponent(JTextField.class, "hostText").getText();
-        String port = dlg.getComponent(JTextField.class, "portText").getText();
-        String userName = dlg.getComponent(JTextField.class, "userText").getText();
-        String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
-        String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
+        String host = dlg.hostField().getText();
+        String port = dlg.portField().getText();
+        String userName = dlg.userField().getText();
+        String pwd = dlg.passwordField().getText();
+        String dbName = dlg.databaseNameField().getText();
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
         //加载表数据
-        JTable dbTable = getDialog().getComponent(JTable.class, "dbTable");
-        JTextField filterTextField =
-                getDialog().getComponent(JTextField.class, "filterTextField");
+        JTable dbTable = dlg.table();
+        JTextField filterTextField = dlg.filterField();
         String filterTest = filterTextField.getText();
         String[] tableNamePattern = StringUtils.split(filterTest, ";");
         if (dbTable.getModel() instanceof BulkTableModel model) {
@@ -67,19 +68,19 @@ public class LoadAction extends AbstractButtonAction {
         } else {
             ((DefaultTableModel) dbTable.getModel()).setRowCount(0);
         }
-        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        String dsname = (String) dlg.databaseBox().getSelectedItem();
         DataSourceMeta dataSourceMeta = null;
         if (StringUtils.isNotBlank(dsname)) {
-            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
+            dataSourceMeta = dlg.getDataSourceMetaMap().get(dsname);
         }
         String homePath = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext()).getUapHomePath();
-        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+        if (Strings.CI.contains(exampleUrl, "oceanbase") && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
         String finalJdbcUrl = jdbcUrl;
         Project project = getDialog().getProjectContext();
-        JLabel statusLabel = getDialog().getComponent(JLabel.class, "statusLabel");
+        JLabel statusLabel = dlg.statusLabel();
         loadButton.setEnabled(false);
         filterTextField.setEnabled(false);
         if (statusLabel != null) {
@@ -93,7 +94,14 @@ public class LoadAction extends AbstractButtonAction {
             private List<TableInfo> result;
             private Exception failure;
 
+            private boolean isUnavailable() {
+                return dlg.isDialogDisposed() || project != null && project.isDisposed();
+            }
+
             private void restoreUi() {
+                if (isUnavailable()) {
+                    return;
+                }
                 loadButton.setEnabled(true);
                 filterTextField.setEnabled(true);
                 if (dbTable instanceof com.intellij.ui.table.JBTable jbTable) {
@@ -109,7 +117,10 @@ public class LoadAction extends AbstractButtonAction {
                              info.getDriverClass(), finalJdbcUrl, userName, pwd)) {
                     indicator.setIndeterminate(true);
                     IEngine engine = DbUtil.getEngine(connection);
-                    result = engine.getAllTableInfo(connection, userName, tableNamePattern);
+                    result = engine.getAllTableInfo(
+                            connection, userName, tableNamePattern, indicator);
+                } catch (ProcessCanceledException exception) {
+                    throw exception;
                 } catch (Exception exception) {
                     failure = exception;
                 }
@@ -117,6 +128,9 @@ public class LoadAction extends AbstractButtonAction {
 
             @Override
             public void onSuccess() {
+                if (isUnavailable()) {
+                    return;
+                }
                 restoreUi();
                 if (failure != null) {
                     if (statusLabel != null) {
@@ -144,6 +158,9 @@ public class LoadAction extends AbstractButtonAction {
 
             @Override
             public void onCancel() {
+                if (isUnavailable()) {
+                    return;
+                }
                 restoreUi();
                 if (statusLabel != null) {
                     statusLabel.setText("已取消加载");
@@ -152,6 +169,9 @@ public class LoadAction extends AbstractButtonAction {
 
             @Override
             public void onThrowable(@NotNull Throwable error) {
+                if (isUnavailable()) {
+                    return;
+                }
                 restoreUi();
                 if (statusLabel != null) {
                     statusLabel.setText("加载失败");

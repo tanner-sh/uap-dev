@@ -99,7 +99,7 @@ public class ProjectManager {
         Module[] modules = getAllModule(project);
         Library[] libraries = getProjectLibraries(project);
         for (Module module : modules) {
-            if (module.getModuleFile() == null) {
+            if (ModuleRootUtil.findPrimaryContentRoot(module) == null) {
                 continue;
             }
             for (Library library : libraries) {

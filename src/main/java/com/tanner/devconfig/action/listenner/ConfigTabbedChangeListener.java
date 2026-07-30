@@ -6,6 +6,7 @@ import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractTabListener;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.TableModelUtil;
 import com.tanner.ui.BulkTableModel;
 
@@ -25,13 +26,14 @@ public class ConfigTabbedChangeListener extends AbstractTabListener {
     private final AtomicLong loadVersion = new AtomicLong();
     private volatile boolean initialized;
 
-    public ConfigTabbedChangeListener(AbstractDialog dlg) {
+    public ConfigTabbedChangeListener(DevConfigDialog dlg) {
         super(dlg);
     }
 
     @Override
     protected void afterChange(ChangeEvent event, AbstractDialog dlg) {
-        JTabbedPane tabbedPane = dlg.getComponent(JTabbedPane.class, "tabbedPane");
+        DevConfigDialog view = (DevConfigDialog) dlg;
+        JTabbedPane tabbedPane = view.tabs();
         int index = tabbedPane.getSelectedIndex();
         if (index == 1) {
             loadModules(false);
@@ -61,9 +63,9 @@ public class ConfigTabbedChangeListener extends AbstractTabListener {
             return;
         }
         long version = loadVersion.incrementAndGet();
-        AbstractDialog dialog = getDlg();
-        JTable mustTable = dialog.getComponent(JTable.class, "mustTable");
-        JTable selectedTable = dialog.getComponent(JTable.class, "selTable");
+        DevConfigDialog dialog = (DevConfigDialog) getDlg();
+        JTable mustTable = dialog.requiredModulesTable();
+        JTable selectedTable = dialog.selectedModulesTable();
         setBusy(mustTable, true);
         setBusy(selectedTable, true);
         UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
@@ -74,7 +76,7 @@ public class ConfigTabbedChangeListener extends AbstractTabListener {
             setBusy(selectedTable, false);
             return;
         }
-        String homePath = dialog.getComponent(JTextField.class, "homeText").getText();
+        String homePath = dialog.homeField().getText();
         if (homePath == null || homePath.isBlank()) {
             homePath = environment.getUapHomePath();
         }

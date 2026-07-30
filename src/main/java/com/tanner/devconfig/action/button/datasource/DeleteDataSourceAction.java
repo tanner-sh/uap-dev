@@ -31,7 +31,7 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
             Messages.showWarningDialog("design 数据源不能删除", "提示");
             return;
         }
-        JComboBox box = dialog.getComponent(JComboBox.class, "dbBox");
+        JComboBox<String> box = dialog.databaseBox();
         int index = box.getSelectedIndex();
         int count = box.getItemCount();
         if (count == 1) {

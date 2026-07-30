@@ -28,12 +28,12 @@
 ## 注意事项
 
 - 支持NC65、NCC项目的开发
-- 请保证你的IDEA版本 >= 2022.2
+- 2.0 起最低支持 IntelliJ IDEA 2024.2，不设置兼容上限；自动验证覆盖至 2026.2
 
 ## 项目运行环境
 
-- JDK17
-- Gradle
+- JDK 21
+- Gradle 9.6.1（请使用仓库内的 Gradle Wrapper）
 
 ## TODO
 
@@ -42,4 +42,3 @@
 ## 许可证
 
 MIT License 请查看LICENSE文件获取具体信息
-

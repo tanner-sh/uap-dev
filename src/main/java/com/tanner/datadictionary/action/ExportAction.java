@@ -25,6 +25,7 @@ import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -43,9 +44,9 @@ public class ExportAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
-        AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+        DataDictionaryExportDlg dlg = (DataDictionaryExportDlg) getDialog();
         DataSourceUtil.ensureDataSourceLoaded(dlg);
-        JTable dbTable = getDialog().getComponent(JTable.class, "dbTable");
+        JTable dbTable = dlg.table();
         List<TableInfo> selectedTables = new ArrayList<>();
         for (int row = 0; row < dbTable.getModel().getRowCount(); row++) {
             boolean selected = (boolean) dbTable.getModel().getValueAt(row, 1);
@@ -67,34 +68,34 @@ public class ExportAction extends AbstractButtonAction {
         if (virtualFile == null) {
             return;
         }
-        String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
+        String driverName = (String) dlg.driverBox().getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         if (info == null) {
             throw new BusinessException("请选择数据库驱动");
         }
         String exampleUrl = info.getDriverUrl();
-        String host = dlg.getComponent(JTextField.class, "hostText").getText();
-        String port = dlg.getComponent(JTextField.class, "portText").getText();
-        String userName = dlg.getComponent(JTextField.class, "userText").getText();
-        String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
-        String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
+        String host = dlg.hostField().getText();
+        String port = dlg.portField().getText();
+        String userName = dlg.userField().getText();
+        String pwd = dlg.passwordField().getText();
+        String dbName = dlg.databaseNameField().getText();
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
         String homePath = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext()).getUapHomePath();
-        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        String dsname = (String) dlg.databaseBox().getSelectedItem();
         DataSourceMeta dataSourceMeta = null;
         if (StringUtils.isNotBlank(dsname)) {
-            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
+            dataSourceMeta = dlg.getDataSourceMetaMap().get(dsname);
         }
-        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+        if (Strings.CI.contains(exampleUrl, "oceanbase") && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
-        String exportAs = (String) dlg.getComponent(JComboBox.class, "exportAsBox").getSelectedItem();
-        boolean needFilterDefField = dlg.getComponent(JCheckBox.class, "needFilterDefField").isSelected();
-        JProgressBar progressBar = dlg.getComponent(JProgressBar.class, "progressBar");
+        String exportAs = (String) dlg.exportFormatBox().getSelectedItem();
+        boolean needFilterDefField = dlg.filterDefaultFieldsCheckBox().isSelected();
+        JProgressBar progressBar = dlg.progressBar();
         progressBar.setIndeterminate(true);
-        JButton exportButton = getDialog().getComponent(JButton.class, "exportBtn");
-        JLabel statusLabel = getDialog().getComponent(JLabel.class, "statusLabel");
+        JButton exportButton = dlg.exportButton();
+        JLabel statusLabel = dlg.statusLabel();
         exportButton.setEnabled(false);
         if (statusLabel != null) {
             statusLabel.setText("正在导出数据字典…");
@@ -104,6 +105,18 @@ public class ExportAction extends AbstractButtonAction {
         Task.Backgroundable task = new Task.Backgroundable(project, "正在导出数据字典…",
                 true) {
             private Exception failure;
+
+            private boolean isUnavailable() {
+                return dlg.isDialogDisposed() || project != null && project.isDisposed();
+            }
+
+            private void restoreUi() {
+                if (isUnavailable()) {
+                    return;
+                }
+                progressBar.setIndeterminate(false);
+                exportButton.setEnabled(true);
+            }
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -123,8 +136,10 @@ public class ExportAction extends AbstractButtonAction {
 
             @Override
             public void onSuccess() {
-                progressBar.setIndeterminate(false);
-                exportButton.setEnabled(true);
+                if (isUnavailable()) {
+                    return;
+                }
+                restoreUi();
                 if (failure != null) {
                     if (statusLabel != null) {
                         statusLabel.setText("导出失败");
@@ -141,11 +156,27 @@ public class ExportAction extends AbstractButtonAction {
 
             @Override
             public void onCancel() {
-                progressBar.setIndeterminate(false);
-                exportButton.setEnabled(true);
+                if (isUnavailable()) {
+                    return;
+                }
+                restoreUi();
                 if (statusLabel != null) {
                     statusLabel.setText("已取消导出");
                 }
+            }
+
+            @Override
+            public void onThrowable(@NotNull Throwable error) {
+                if (isUnavailable()) {
+                    return;
+                }
+                restoreUi();
+                if (statusLabel != null) {
+                    statusLabel.setText("导出失败");
+                }
+                String message = StringUtils.defaultIfBlank(
+                        error.getMessage(), error.getClass().getName());
+                Messages.showErrorDialog("导出数据字典失败：\n" + message, "错误");
             }
         };
         ProgressManager.getInstance().run(task);

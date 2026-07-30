@@ -1,7 +1,5 @@
 package com.tanner.devconfig.util;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -11,7 +9,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.Security;
 import java.util.Properties;
 
 /**
@@ -66,16 +63,9 @@ public final class AESEncode {
     }
 
     private static byte[] crypt(int mode, byte[] input, String key) throws Exception {
-        ensureProvider();
         Cipher cipher = Cipher.getInstance(TRANSFORMATION);
         cipher.init(mode, new SecretKeySpec(parseHexStr2Byte(key), "AES"), IV);
         return cipher.doFinal(input);
-    }
-
-    private static void ensureProvider() {
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
     }
 
     public static String parseByte2HexStr(byte[] bytes) {

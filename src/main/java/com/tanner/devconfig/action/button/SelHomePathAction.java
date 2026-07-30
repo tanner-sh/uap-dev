@@ -39,7 +39,7 @@ public class SelHomePathAction extends AbstractButtonAction {
             return;
         }
         //设置文本框显示
-        getDialog().getComponent(JTextField.class, "homeText").setText(virtualFile.getPath());
+        ((DevConfigDialog) getDialog()).homeField().setText(virtualFile.getPath());
         ((DevConfigDialog) getDialog()).invalidateModules();
         //根据最新路径重新加载数据源
         DataSourceUtil.initDataSourceAsync((DevConfigDialog) getDialog());

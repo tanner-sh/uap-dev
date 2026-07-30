@@ -1,9 +1,9 @@
 package com.tanner.datadictionary.tool;
 
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.pdf.PdfPageEventHelper;
-import com.itextpdf.text.pdf.PdfWriter;
+import org.openpdf.text.Document;
+import org.openpdf.text.Paragraph;
+import org.openpdf.text.pdf.PdfPageEventHelper;
+import org.openpdf.text.pdf.PdfWriter;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

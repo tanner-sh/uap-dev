@@ -29,7 +29,7 @@ public class OKAction extends AbstractButtonAction {
     public void doAction(ActionEvent event) throws BusinessException {
         DataSourceUtil.ensureDataSourceLoaded((DevConfigDialog) getDialog());
         boolean homeChanged = false;
-        String homePath = getDialog().getComponent(JTextField.class, "homeText").getText();
+        String homePath = ((DevConfigDialog) getDialog()).homeField().getText();
         if (StringUtils.isBlank(homePath)) {
             return;
         }
@@ -95,7 +95,7 @@ public class OKAction extends AbstractButtonAction {
      * 保存home
      */
     private void setServiceConfig() {
-        String homePath = getDialog().getComponent(JTextField.class, "homeText").getText();
+        String homePath = ((DevConfigDialog) getDialog()).homeField().getText();
         UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext());
         environment.setUapHomePath(homePath);

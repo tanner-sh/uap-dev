@@ -19,7 +19,7 @@ import java.nio.file.Path;
 public class ObjectToXML {
 
     public static final String DOC_TYPE = "(Java lang)Middleware depoly parameter";
-    public static Class[] classA = {Boolean.class, Character.class, Integer.class, Long.class,
+    public static Class<?>[] classA = {Boolean.class, Character.class, Integer.class, Long.class,
             Double.class, Float.class, String.class, java.math.BigDecimal.class, int.class, char.class,
             boolean.class, long.class, double.class, float.class};
 
@@ -27,7 +27,7 @@ public class ObjectToXML {
         saveAsXmlFile(fileName, o, Object.class);
     }
 
-    private static void saveAsXmlFile(String fileName, Object o, Class defaultClass)
+    private static void saveAsXmlFile(String fileName, Object o, Class<?> defaultClass)
             throws Exception {
         Document doc = com.tanner.base.XmlUtil.newDocumentBuilder().newDocument();
         Element nod = doc.createElement("root");
@@ -55,7 +55,7 @@ public class ObjectToXML {
         }
     }
 
-    private Class getArrayItemClass(Class arrayClass) throws Exception {
+    private Class<?> getArrayItemClass(Class<?> arrayClass) throws Exception {
         if (arrayClass == null) {
             return null;
         }
@@ -64,7 +64,8 @@ public class ObjectToXML {
         if (key >= 0) {
             int lastLoc = className.indexOf(";");
             String classPureName = className.substring(key + 2, lastLoc);
-            Class pureClass = Class.forName(classPureName, false, arrayClass.getClassLoader());
+            Class<?> pureClass = Class.forName(classPureName, false,
+                    arrayClass.getClassLoader());
             if (key == 0) {
                 return pureClass;
             }
@@ -75,12 +76,12 @@ public class ObjectToXML {
             return Array.newInstance(pureClass, arrayList).getClass();
         }
         String[] id = {"[B", "[C", "[S", "[I", "[J", "[F", "[D", "[Z"};
-        Class[] type = {byte.class, char.class, short.class, int.class, long.class,
+        Class<?>[] type = {byte.class, char.class, short.class, int.class, long.class,
                 float.class, double.class, boolean.class};
         for (int i = 0; i < id.length; i++) {
             key = className.indexOf(id[i]);
             if (key >= 0) {
-                Class pureClass = type[i];
+                Class<?> pureClass = type[i];
                 if (key == 0) {
                     return pureClass;
                 }
@@ -94,7 +95,8 @@ public class ObjectToXML {
         return Class.forName(className);
     }
 
-    private Node getDocument(Document doc, Element nod, Object o, int deepSet, Class defaultClass,
+    private Node getDocument(Document doc, Element nod, Object o, int deepSet,
+                             Class<?> defaultClass,
                              String arrayName) throws Exception {
         int deep = deepSet + 1;
         if (o == null) {
@@ -111,7 +113,7 @@ public class ObjectToXML {
         }
         if (o.getClass().isArray()) {
             int length = Array.getLength(o);
-            Class itemType = getArrayItemClass(defaultClass);
+            Class<?> itemType = getArrayItemClass(defaultClass);
             for (int j = 0; j < length; j++) {
                 if (arrayName == null) {
                     arrayName = "NODE";
@@ -127,35 +129,41 @@ public class ObjectToXML {
                 }
             }
             Field[] fa = o.getClass().getDeclaredFields();
-            for (int i = 0; i < fa.length; i++) {
-                boolean isAccessible = fa[i].isAccessible();
-                fa[i].setAccessible(true);
-                if (!Modifier.isFinal(fa[i].getModifiers())) {
-                    Element child = doc.createElement(fa[i].getName());
-                    Object oc = fa[i].get(o);
-                    if (oc != null && oc.getClass() != fa[i].getType() && !isPrimitive(oc.getClass())) {
-                        child.setAttribute("ClassType", fa[i].getType().getName());
+            for (Field field : fa) {
+                if (!Modifier.isFinal(field.getModifiers())) {
+                    boolean wasAccessible = field.canAccess(o);
+                    field.setAccessible(true);
+                    try {
+                    Element child = doc.createElement(field.getName());
+                    Object oc = field.get(o);
+                    if (oc != null && oc.getClass() != field.getType()
+                            && !isPrimitive(oc.getClass())) {
+                        child.setAttribute("ClassType", field.getType().getName());
                     }
                     if (oc == null) {
-                        getDocument(doc, child, null, deep, fa[i].getType(), fa[i].getName());
+                        getDocument(doc, child, null, deep, field.getType(),
+                                field.getName());
                         appendChild(doc, nod, child);
                     } else if (isPrimitive(oc.getClass())) {
                         child.appendChild(doc.createTextNode(oc.toString()));
                         appendChild(doc, nod, child);
                     } else if (oc.getClass().isArray()) {
-                        getDocument(doc, nod, oc, deep, fa[i].getType(), fa[i].getName());
+                        getDocument(doc, nod, oc, deep, field.getType(),
+                                field.getName());
                     } else {
-                        getDocument(doc, child, oc, deep, fa[i].getType(), null);
+                        getDocument(doc, child, oc, deep, field.getType(), null);
                         appendChild(doc, nod, child);
                     }
-                    fa[i].setAccessible(isAccessible);
+                    } finally {
+                        field.setAccessible(wasAccessible);
+                    }
                 }
             }
         }
         return nod;
     }
 
-    private boolean isPrimitive(Class cl) {
+    private boolean isPrimitive(Class<?> cl) {
         for (int i = 0; i < classA.length; i++) {
             if (classA[i] == cl) {
                 return true;

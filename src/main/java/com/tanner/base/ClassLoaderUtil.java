@@ -31,7 +31,7 @@ public class ClassLoaderUtil {
             URL[] urls = FileUtils.toURLs(libJarsMap.values().toArray(new File[0]));
             return new URLClassLoader(urls, ClassLoader.getSystemClassLoader());
         } catch (IOException e) {
-            throw new BusinessException("读取驱动失败!" + e.getMessage());
+            throw new BusinessException("读取驱动失败!" + e.getMessage(), e);
         }
     }
 

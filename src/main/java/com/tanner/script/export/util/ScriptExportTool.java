@@ -7,6 +7,8 @@ import com.tanner.base.UapUtil;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.File;
 import java.io.InputStream;
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -284,13 +287,37 @@ public class ScriptExportTool {
     }
 
     private List<Map<String, String>> readExportConfig(String yamlName) throws Exception {
-        Yaml yaml = new Yaml();
+        LoaderOptions loaderOptions = new LoaderOptions();
+        loaderOptions.setAllowDuplicateKeys(false);
+        loaderOptions.setMaxAliasesForCollections(20);
+        loaderOptions.setCodePointLimit(1_000_000);
+        Yaml yaml = new Yaml(new SafeConstructor(loaderOptions));
         String yamlPath = "../../../../../config/" + yamlName;
         try (InputStream resourceAsStream = this.getClass().getResourceAsStream(yamlPath)) {
             if (resourceAsStream == null) {
                 throw new IllegalArgumentException("找不到导出配置: " + yamlName);
             }
-            return yaml.load(resourceAsStream);
+            Object loaded = yaml.load(resourceAsStream);
+            if (!(loaded instanceof List<?> rows)) {
+                throw new IllegalArgumentException("导出配置根节点必须是列表: " + yamlName);
+            }
+            List<Map<String, String>> result = new ArrayList<>(rows.size());
+            for (Object row : rows) {
+                if (!(row instanceof Map<?, ?> values)) {
+                    throw new IllegalArgumentException("导出配置项必须是映射: " + yamlName);
+                }
+                Map<String, String> converted = new LinkedHashMap<>();
+                for (Map.Entry<?, ?> entry : values.entrySet()) {
+                    if (!(entry.getKey() instanceof String key)
+                            || !(entry.getValue() instanceof String value)) {
+                        throw new IllegalArgumentException(
+                                "导出配置键和值必须是字符串: " + yamlName);
+                    }
+                    converted.put(key, value);
+                }
+                result.add(converted);
+            }
+            return result;
         }
     }
 

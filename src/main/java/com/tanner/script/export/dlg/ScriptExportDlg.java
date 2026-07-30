@@ -22,10 +22,10 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
     private JTextField exportPathText;
     private JButton pathSelBtn;
     private JPanel dsTab;
-    private JComboBox<?> dbBox;
+    private JComboBox<String> dbBox;
     private JButton testBtn;
-    private JComboBox<?> dbTypeBox;
-    private JComboBox<?> driverBox;
+    private JComboBox<String> dbTypeBox;
+    private JComboBox<String> driverBox;
     private JTextField hostText;
     private JTextField portText;
     private JTextField dbNameText;
@@ -38,7 +38,7 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
     private JTextField mdNameText;
     private JTextField mdModuleText;
     private JCheckBox spiltGoCheckBox;
-    private JComboBox<?> exportModeComboBox;
+    private JComboBox<String> exportModeComboBox;
 
     public ScriptExportDlg(AnActionEvent event) {
         super(event.getProject());
@@ -100,7 +100,7 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
 
     private void initExportModeBox() {
         String[] exportModes = {"先删除后导入", "仅插入", "仅删除"};
-        exportModeComboBox.setModel(new DefaultComboBoxModel(exportModes));
+        exportModeComboBox.setModel(new DefaultComboBoxModel<>(exportModes));
         exportModeComboBox.getModel().setSelectedItem(exportModes[0]);
     }
 
@@ -114,4 +114,35 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         return new Action[0];
     }
 
+    public JTextField exportPathField() {
+        return exportPathText;
+    }
+
+    public JTextField heavyNodeCodeField() {
+        return heavyNodeCodeText;
+    }
+
+    public JTextField lightNodeCodeField() {
+        return lightNodeCodeText;
+    }
+
+    public JTextField metadataNameField() {
+        return mdNameText;
+    }
+
+    public JTextField metadataModuleField() {
+        return mdModuleText;
+    }
+
+    public JComboBox<String> exportModeBox() {
+        return exportModeComboBox;
+    }
+
+    public JCheckBox splitGoCheckBox() {
+        return spiltGoCheckBox;
+    }
+
+    public JButton exportButton() {
+        return exportBtn;
+    }
 }

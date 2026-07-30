@@ -13,6 +13,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -107,7 +108,12 @@ public class LogWatcherService implements Disposable {
             displayName = file.getName();
         }
         String logName = displayName;
-        Tailer tailer = new Tailer(file, charset, new TailerListenerAdapter() {
+        Tailer tailer;
+        try {
+            tailer = Tailer.builder()
+                    .setFile(file)
+                    .setCharset(charset)
+                    .setTailerListener(new TailerListenerAdapter() {
             @Override
             public void handle(String line) {
                 appendLog("[" + logName + "] " + line);
@@ -117,7 +123,19 @@ public class LogWatcherService implements Disposable {
             public void handle(Exception exception) {
                 appendLog("[" + logName + "] " + exception.getMessage());
             }
-        }, 1000, startAtEnd, false, 8192);
+                    })
+                    .setDelayDuration(Duration.ofSeconds(1))
+                    .setTailFromEnd(startAtEnd)
+                    .setReOpen(false)
+                    .setBufferSize(8192)
+                    .setStartThread(false)
+                    .get();
+        } catch (Exception exception) {
+            watchedFiles.remove(filePath);
+            appendLog("Failed to watch log file " + filePath + ": "
+                    + exception.getMessage());
+            return;
+        }
         Thread thread = new Thread(tailer, "log-watcher-" + filePath.hashCode());
         thread.setDaemon(true);
         tailers.add(tailer);
@@ -135,7 +153,7 @@ public class LogWatcherService implements Disposable {
             currentScanTask.cancel(false);
         }
         for (Tailer tailer : new ArrayList<>(tailers)) {
-            tailer.stop();
+            tailer.close();
         }
         tailers.clear();
         watchedFiles.clear();

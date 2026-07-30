@@ -48,17 +48,18 @@ public class SearchAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
-        JTextField searchTextField = getDialog().getComponent(JTextField.class, "searchTextField");
+        LangSearchDlg view = (LangSearchDlg) getDialog();
+        JTextField searchTextField = view.searchTextField();
         String searchText = searchTextField.getText();
         if (StringUtils.isBlank(searchText)) {
             Messages.showInfoMessage("请输入搜索内容", "提示");
             return;
         }
-        JButton searchButton = getDialog().getComponent(JButton.class, "searchBtn");
+        JButton searchButton = view.searchButton();
         if (!searchButton.isEnabled()) {
             return;
         }
-        JTable searchResultTable = getDialog().getComponent(JTable.class, "searchResultTable");
+        JTable searchResultTable = view.resultTable();
         if (searchResultTable.getModel() instanceof BulkTableModel model) {
             model.clearRows();
         } else {
@@ -67,7 +68,7 @@ public class SearchAction extends AbstractButtonAction {
         String homePath = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext()).getUapHomePath();
         Project project = getDialog().getProjectContext();
-        JLabel statusLabel = getDialog().getComponent(JLabel.class, "statusLabel");
+        JLabel statusLabel = view.statusLabel();
         searchButton.setEnabled(false);
         searchTextField.setEnabled(false);
         if (statusLabel != null) {
@@ -81,6 +82,21 @@ public class SearchAction extends AbstractButtonAction {
             private List<LangInfo> result = List.of();
             private final List<String> warnings = new ArrayList<>();
             private Exception failure;
+
+            private boolean isUnavailable() {
+                return view.isDialogDisposed() || project != null && project.isDisposed();
+            }
+
+            private void restoreUi() {
+                if (isUnavailable()) {
+                    return;
+                }
+                searchButton.setEnabled(true);
+                searchTextField.setEnabled(true);
+                if (searchResultTable instanceof com.intellij.ui.table.JBTable jbTable) {
+                    jbTable.setPaintBusy(false);
+                }
+            }
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -96,11 +112,10 @@ public class SearchAction extends AbstractButtonAction {
 
             @Override
             public void onSuccess() {
-                searchButton.setEnabled(true);
-                searchTextField.setEnabled(true);
-                if (searchResultTable instanceof com.intellij.ui.table.JBTable jbTable) {
-                    jbTable.setPaintBusy(false);
+                if (isUnavailable()) {
+                    return;
                 }
+                restoreUi();
                 if (failure != null) {
                     if (statusLabel != null) {
                         statusLabel.setText("搜索失败");
@@ -137,14 +152,27 @@ public class SearchAction extends AbstractButtonAction {
 
             @Override
             public void onCancel() {
-                searchButton.setEnabled(true);
-                searchTextField.setEnabled(true);
-                if (searchResultTable instanceof com.intellij.ui.table.JBTable jbTable) {
-                    jbTable.setPaintBusy(false);
+                if (isUnavailable()) {
+                    return;
                 }
+                restoreUi();
                 if (statusLabel != null) {
                     statusLabel.setText("已取消搜索");
                 }
+            }
+
+            @Override
+            public void onThrowable(@NotNull Throwable error) {
+                if (isUnavailable()) {
+                    return;
+                }
+                restoreUi();
+                if (statusLabel != null) {
+                    statusLabel.setText("搜索失败");
+                }
+                String message = StringUtils.defaultIfBlank(
+                        error.getMessage(), error.getClass().getName());
+                Messages.showErrorDialog("搜索多语文件失败：\n" + message, "错误");
             }
         };
         ProgressManager.getInstance().run(task);

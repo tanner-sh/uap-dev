@@ -23,13 +23,11 @@ public class DriverBoxListener extends AbstractItemListener {
     @Override
     public void afterSelect(ItemEvent e) {
         AbstractDataSourceDialog dialog = (AbstractDataSourceDialog) getDialog();
-        String selected = (String) dialog.getComponent(JComboBox.class, "driverBox").getSelectedItem();
+        String selected = (String) dialog.driverBox().getSelectedItem();
         if (StringUtils.isNotBlank(selected)) {
             DriverInfo info = dialog.getDriverInfoMap().get(selected);
-            dialog.getComponent(JTextField.class, "hostText")
-                    .setEnabled(ToolUtils.isJDBCUrl(info.getDriverUrl()));
-            dialog.getComponent(JTextField.class, "portText")
-                    .setEnabled(ToolUtils.isJDBCUrl(info.getDriverUrl()));
+            dialog.hostField().setEnabled(ToolUtils.isJDBCUrl(info.getDriverUrl()));
+            dialog.portField().setEnabled(ToolUtils.isJDBCUrl(info.getDriverUrl()));
             DataSourceUtil.fillDBConnByInfo(dialog, info.getDriverUrl());
         }
     }

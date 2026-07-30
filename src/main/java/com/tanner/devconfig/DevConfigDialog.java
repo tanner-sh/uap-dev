@@ -238,6 +238,22 @@ public class DevConfigDialog extends AbstractDataSourceDialog {
         return tabbedPane.getSelectedIndex();
     }
 
+    public JTextField homeField() {
+        return homeText;
+    }
+
+    public JTable requiredModulesTable() {
+        return mustTable;
+    }
+
+    public JTable selectedModulesTable() {
+        return selTable;
+    }
+
+    public JTabbedPane tabs() {
+        return tabbedPane;
+    }
+
     public boolean isLibFlag() {
         return libFlag;
     }

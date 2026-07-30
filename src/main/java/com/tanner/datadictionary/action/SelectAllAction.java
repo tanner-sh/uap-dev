@@ -16,7 +16,7 @@ public class SelectAllAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
-        JTable dbTable = getDialog().getComponent(JTable.class, "dbTable");
+        JTable dbTable = ((DataDictionaryExportDlg) getDialog()).table();
         if (dbTable.getModel() instanceof BulkTableModel model) {
             model.setBooleanColumn(1, true);
             return;

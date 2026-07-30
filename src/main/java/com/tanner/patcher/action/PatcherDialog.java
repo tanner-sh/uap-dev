@@ -315,6 +315,10 @@ public class PatcherDialog extends AbstractDialog {
             private ExportPatcherUtil util;
             private Exception failure;
 
+            private boolean isUnavailable() {
+                return isDialogDisposed() || project != null && project.isDisposed();
+            }
+
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
@@ -336,6 +340,9 @@ public class PatcherDialog extends AbstractDialog {
 
             @Override
             public void onSuccess() {
+                if (isUnavailable()) {
+                    return;
+                }
                 progressBar.setIndeterminate(false);
                 setOKActionEnabled(true);
                 if (failure != null) {
@@ -357,6 +364,9 @@ public class PatcherDialog extends AbstractDialog {
 
             @Override
             public void onCancel() {
+                if (isUnavailable()) {
+                    return;
+                }
                 progressBar.setIndeterminate(false);
                 statusLabel.setText("已取消导出");
                 setOKActionEnabled(true);

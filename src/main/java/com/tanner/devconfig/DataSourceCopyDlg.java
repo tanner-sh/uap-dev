@@ -46,9 +46,10 @@ public class DataSourceCopyDlg extends AbstractDialog {
             DataSourceMeta newMeta = (DataSourceMeta) parentDlg.getCurrMeta().clone();
             newMeta.setBase(false);
             newMeta.setDataSourceName(newName);
-            parentDlg.getComponent(JCheckBox.class, "devChx").setSelected("design".equals(newName));
-            parentDlg.getComponent(JCheckBox.class, "baseChx").setSelected(false);
-            JComboBox box = parentDlg.getComponent(JComboBox.class, "dbBox");
+            parentDlg.developmentDataSourceCheckBox()
+                    .setSelected("design".equals(newName));
+            parentDlg.baseDataSourceCheckBox().setSelected(false);
+            JComboBox<String> box = parentDlg.databaseBox();
             box.addItem(newName);
             box.setSelectedItem(newName);
             parentDlg.getDataSourceMetaMap().put(newName, newMeta);

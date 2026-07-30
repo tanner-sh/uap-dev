@@ -121,4 +121,20 @@ public class LangSearchDlg extends AbstractDataSourceDialog {
     protected Action @NotNull [] createActions() {
         return new Action[0];
     }
+
+    public JTextField searchTextField() {
+        return searchField.getTextEditor();
+    }
+
+    public JButton searchButton() {
+        return searchBtn;
+    }
+
+    public JTable resultTable() {
+        return searchResultTable;
+    }
+
+    public JLabel statusLabel() {
+        return statusLabel;
+    }
 }

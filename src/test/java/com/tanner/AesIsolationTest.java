@@ -35,4 +35,17 @@ public class AesIsolationTest {
         assertEquals("密码-one", AESEncode.decrypt(firstCipher, first.getPath()));
         assertEquals("密码-two", AESEncode.decrypt(secondCipher, second.getPath()));
     }
+
+    @Test
+    public void decryptsLegacyCipherVectorWithJdkProvider() throws Exception {
+        File home = temporaryFolder.newFolder("legacy-home");
+        AESEncode.insert("00112233445566778899AABBCCDDEEFF"
+                + "00112233445566778899AABBCCDDEEFF", home.getPath());
+
+        assertEquals("#6428E4280F5552B91E23FE22A47C1BCE",
+                AESEncode.encrypt("legacy-password", home.getPath()));
+        assertEquals("legacy-password",
+                AESEncode.decrypt("#6428E4280F5552B91E23FE22A47C1BCE",
+                        home.getPath()));
+    }
 }

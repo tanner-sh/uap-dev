@@ -2,6 +2,7 @@ package com.tanner.devconfig.action.button.module;
 
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
+import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.TableModelUtil;
 
 import javax.swing.*;
@@ -23,9 +24,9 @@ public class SelAllAction extends AbstractButtonAction {
     public void doAction(ActionEvent event) {
         JTable table = null;
         if (type == TableModelUtil.MODULE_TYPE_MUST) {
-            table = getDialog().getComponent(JTable.class, "mustTable");
+            table = ((DevConfigDialog) getDialog()).requiredModulesTable();
         } else if (type == TableModelUtil.MODULE_TYPE_SEL) {
-            table = getDialog().getComponent(JTable.class, "selTable");
+            table = ((DevConfigDialog) getDialog()).selectedModulesTable();
         }
         if (table != null) {
             TableModelUtil.setAllCheckState(table, true);

@@ -6,6 +6,7 @@ import com.tanner.base.ModuleFileUtil;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.base.XmlUtil;
 import com.tanner.debug.util.CreatApplicationConfigurationUtil;
+import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.ui.BulkTableModel;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
@@ -61,8 +62,8 @@ public class TableModelUtil {
         UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
                 dialog.getProjectContext());
         String homePath = environment.getUapHomePath();
-        if (StringUtils.isBlank(homePath)) {
-            homePath = dialog.getComponent(JTextField.class, "homeText").getText();
+        if (StringUtils.isBlank(homePath) && dialog instanceof DevConfigDialog view) {
+            homePath = view.homeField().getText();
         }
         if (StringUtils.isBlank(homePath)) {
             return;
@@ -167,8 +168,9 @@ public class TableModelUtil {
                 dialog.getProjectContext());
         String oldMust = environment.getMust_modules();
         String oldEx = environment.getEx_modules();
-        JTable selTable = dialog.getComponent(JTable.class, "selTable");
-        JTable mustTable = dialog.getComponent(JTable.class, "mustTable");
+        DevConfigDialog view = (DevConfigDialog) dialog;
+        JTable selTable = view.selectedModulesTable();
+        JTable mustTable = view.requiredModulesTable();
         ModuleSelection selection = collectModuleSelection(
                 mustTable.getModel(), selTable.getModel());
         if (!Objects.equals(Objects.toString(oldMust, ""), selection.mustModules())) {

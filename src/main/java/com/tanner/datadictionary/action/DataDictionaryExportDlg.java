@@ -153,4 +153,36 @@ public class DataDictionaryExportDlg extends AbstractDataSourceDialog {
     protected Action @NotNull [] createActions() {
         return new Action[0];
     }
+
+    public JButton loadButton() {
+        return loadBtn;
+    }
+
+    public JButton exportButton() {
+        return exportBtn;
+    }
+
+    public JTable table() {
+        return dbTable;
+    }
+
+    public JTextField filterField() {
+        return filterField.getTextEditor();
+    }
+
+    public JComboBox<String> exportFormatBox() {
+        return exportAsBox;
+    }
+
+    public JCheckBox filterDefaultFieldsCheckBox() {
+        return needFilterDefField;
+    }
+
+    public JProgressBar progressBar() {
+        return progressBar;
+    }
+
+    public JLabel statusLabel() {
+        return statusLabel;
+    }
 }

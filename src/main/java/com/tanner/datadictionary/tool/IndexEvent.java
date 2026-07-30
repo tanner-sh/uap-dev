@@ -1,12 +1,12 @@
 package com.tanner.datadictionary.tool;
 
-import com.itextpdf.text.Anchor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.pdf.ColumnText;
-import com.itextpdf.text.pdf.PdfPageEventHelper;
-import com.itextpdf.text.pdf.PdfWriter;
+import org.openpdf.text.Anchor;
+import org.openpdf.text.Document;
+import org.openpdf.text.Element;
+import org.openpdf.text.Phrase;
+import org.openpdf.text.pdf.ColumnText;
+import org.openpdf.text.pdf.PdfPageEventHelper;
+import org.openpdf.text.pdf.PdfWriter;
 
 public class IndexEvent extends PdfPageEventHelper {
 

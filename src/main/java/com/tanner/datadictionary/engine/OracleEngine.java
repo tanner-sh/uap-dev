@@ -1,11 +1,13 @@
 package com.tanner.datadictionary.engine;
 
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.tanner.base.BusinessException;
 import com.tanner.base.DbUtil;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -23,7 +25,10 @@ public class OracleEngine implements IEngine {
     private static final int ORACLE_IN_CLAUSE_BATCH_SIZE = 900;
 
     @Override
-    public List<TableInfo> getAllTableInfo(Connection connection, String userName, String[] tableNamePattern) throws BusinessException {
+    public List<TableInfo> getAllTableInfo(Connection connection, String userName,
+                                           String[] tableNamePattern,
+                                           @Nullable ProgressIndicator indicator)
+            throws BusinessException {
         List<TableInfo> tableInfoList = new ArrayList<>();
         StringBuilder querySql = new StringBuilder("select TABLE_NAME,COMMENTS from USER_TAB_COMMENTS WHERE 1=1");
         List<Object> parameters = new ArrayList<>();
@@ -37,18 +42,19 @@ public class OracleEngine implements IEngine {
         }
         querySql.append(" ORDER BY TABLE_NAME");
         List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection,
-                querySql.toString(), parameters);
+                querySql.toString(), parameters, indicator);
         for (Map<String, Object> stringObjectMap : queryResult) {
             String tableName = (String) stringObjectMap.get("TABLE_NAME");
             tableInfoList.add(new TableInfo(tableName,
                     (String) stringObjectMap.get("COMMENTS")));
         }
-        applyTableCommentsFromMD(connection, tableInfoList);
+        applyTableCommentsFromMD(connection, tableInfoList, indicator);
         return tableInfoList;
     }
 
     private void applyTableCommentsFromMD(Connection connection,
-                                          List<TableInfo> tableInfoList) {
+                                          List<TableInfo> tableInfoList,
+                                          @Nullable ProgressIndicator indicator) {
         if (tableInfoList.isEmpty()) {
             return;
         }
@@ -73,7 +79,7 @@ public class OracleEngine implements IEngine {
                     + "GROUP BY UPPER(DEFAULTTABLENAME)";
             try {
                 for (Map<String, Object> row : DbUtil.executeQuery(
-                        connection, querySql, parameters)) {
+                        connection, querySql, parameters, indicator)) {
                     String tableName = Objects.toString(row.get("TABLE_NAME"), "");
                     String displayName = Objects.toString(row.get("DISPLAYNAME"), "");
                     TableInfo tableInfo = tablesByName.get(
@@ -90,11 +96,15 @@ public class OracleEngine implements IEngine {
     }
 
     @Override
-    public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName, boolean needFilterDefField) throws BusinessException {
+    public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName,
+                                             boolean needFilterDefField,
+                                             @Nullable ProgressIndicator indicator)
+            throws BusinessException {
         List<ColumnInfo> columnInfoList = new ArrayList<>();
         StringBuilder querySql = new StringBuilder("select COLUMN_NAME, COLUMN_ID, DATA_TYPE, NULLABLE, DATA_DEFAULT");
         querySql.append(" from USER_TAB_COLUMNS where TABLE_NAME = ?");
-        List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql.toString(), Collections.singletonList(tableName));
+        List<Map<String, Object>> queryResult = DbUtil.executeQuery(
+                connection, querySql.toString(), Collections.singletonList(tableName), indicator);
         for (Map<String, Object> rowMap : queryResult) {
             ColumnInfo columnInfo = new ColumnInfo();
             columnInfo.setColumnId(((BigDecimal) rowMap.get("COLUMN_ID")).intValue());
@@ -113,7 +123,7 @@ public class OracleEngine implements IEngine {
             columnInfoList.addAll(filteredList);
         }
         // 先从元数据中获取字段备注信息
-        queryResult = getColumnCommentsFromMD(connection, tableName);
+        queryResult = getColumnCommentsFromMD(connection, tableName, indicator);
         if (!queryResult.isEmpty()) {
             for (Map<String, Object> rowMap : queryResult) {
                 String name = (String) rowMap.get("NAME");
@@ -125,7 +135,8 @@ public class OracleEngine implements IEngine {
         } else {
             querySql = new StringBuilder("SELECT COLUMN_NAME, COMMENTS FROM USER_COL_COMMENTS");
             querySql.append(" WHERE TABLE_NAME = ?");
-            queryResult = DbUtil.executeQuery(connection, querySql.toString(), Collections.singletonList(tableName));
+            queryResult = DbUtil.executeQuery(connection, querySql.toString(),
+                    Collections.singletonList(tableName), indicator);
             for (Map<String, Object> rowMap : queryResult) {
                 String column_name = (String) rowMap.get("COLUMN_NAME");
                 String comments = (String) rowMap.get("COMMENTS");
@@ -135,7 +146,8 @@ public class OracleEngine implements IEngine {
             }
         }
         // 从元数据中获取枚举信息
-        Map<String, String> enumValues = getEnumValuesFromMD(connection, tableName);
+        Map<String, String> enumValues = getEnumValuesFromMD(
+                connection, tableName, indicator);
         for (ColumnInfo columnInfo : columnInfoList) {
             columnInfo.setEnumValue(enumValues.getOrDefault(
                     columnInfo.getColumnName().toUpperCase(Locale.ROOT), ""));
@@ -144,17 +156,19 @@ public class OracleEngine implements IEngine {
     }
 
     private List<Map<String, Object>> getColumnCommentsFromMD(Connection connection,
-                                                              String tableName) {
+                                                              String tableName,
+                                                              @Nullable ProgressIndicator indicator) {
         try {
             return DbUtil.executeQuery(connection,
                     "SELECT NAME,DISPLAYNAME FROM MD_COLUMN WHERE UPPER(TABLEID) = ?",
-                    Collections.singletonList(tableName.toUpperCase()));
+                    Collections.singletonList(tableName.toUpperCase()), indicator);
         } catch (BusinessException ignored) {
             return Collections.emptyList();
         }
     }
 
-    private Map<String, String> getEnumValuesFromMD(Connection connection, String tableName) {
+    private Map<String, String> getEnumValuesFromMD(Connection connection, String tableName,
+                                                    @Nullable ProgressIndicator indicator) {
         //TODO 这个sql有点问题 元数据字段不一定是和数据库字段名一致的
         String querySql = "SELECT P.NAME AS PROPERTY_NAME, E.VALUE AS ENUM_VALUE, "
                 + "E.NAME AS ENUM_NAME FROM MD_PROPERTY P "
@@ -164,7 +178,7 @@ public class OracleEngine implements IEngine {
         try {
             Map<String, List<String>> valuesByColumn = new HashMap<>();
             for (Map<String, Object> row : DbUtil.executeQuery(connection, querySql,
-                    Collections.singletonList(tableName.toUpperCase(Locale.ROOT)))) {
+                    Collections.singletonList(tableName.toUpperCase(Locale.ROOT)), indicator)) {
                 String propertyName = Objects.toString(row.get("PROPERTY_NAME"), "");
                 if (propertyName.isBlank()) {
                     continue;

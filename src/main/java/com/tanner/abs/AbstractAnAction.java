@@ -9,6 +9,7 @@ import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.tanner.base.ModuleRootUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -86,11 +87,11 @@ public abstract class AbstractAnAction extends AnAction {
         if (module == null) {
             return false;
         }
-        VirtualFile moduleFile = module.getModuleFile();
-        if (moduleFile == null) {
+        VirtualFile moduleRoot = ModuleRootUtil.findPrimaryContentRoot(module);
+        if (moduleRoot == null) {
             return false;
         }
-        flag = new File(moduleFile.getParent().getPath() + File.separator + "META-INF" + File.separator
+        flag = new File(moduleRoot.getPath() + File.separator + "META-INF" + File.separator
                 + "module.xml").exists();
         return flag;
     }
@@ -108,11 +109,11 @@ public abstract class AbstractAnAction extends AnAction {
         if (module == null) {
             return false;
         }
-        VirtualFile moduleFile = module.getModuleFile();
-        if (moduleFile == null) {
+        VirtualFile moduleRoot = ModuleRootUtil.findPrimaryContentRoot(module);
+        if (moduleRoot == null) {
             return false;
         }
-        flag = new File(moduleFile.getParent().getPath() + File.separator + "pom.xml").exists();
+        flag = new File(moduleRoot.getPath() + File.separator + "pom.xml").exists();
         return flag;
     }
 

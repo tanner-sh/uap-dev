@@ -1,10 +1,12 @@
 package com.tanner.datadictionary.engine;
 
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.tanner.base.BusinessException;
 import com.tanner.base.DbUtil;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
 import org.apache.commons.lang3.ArrayUtils;
+import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -21,7 +23,8 @@ public class MySqlEngine implements IEngine {
 
     @Override
     public List<TableInfo> getAllTableInfo(Connection connection, String userName,
-                                           String[] tableNamePattern)
+                                           String[] tableNamePattern,
+                                           @Nullable ProgressIndicator indicator)
             throws BusinessException {
         String catalog = getCatalog(connection);
         StringBuilder sql = new StringBuilder(
@@ -42,9 +45,10 @@ public class MySqlEngine implements IEngine {
         sql.append(" ORDER BY TABLE_NAME");
 
         List<TableInfo> tables = new ArrayList<>();
-        for (Map<String, Object> row : DbUtil.executeQuery(connection, sql.toString(), parameters)) {
+        for (Map<String, Object> row : DbUtil.executeQuery(
+                connection, sql.toString(), parameters, indicator)) {
             String tableName = Objects.toString(row.get("TABLE_NAME"), "");
-            String comment = getMetadataTableComment(connection, tableName);
+            String comment = getMetadataTableComment(connection, tableName, indicator);
             if (comment.isEmpty()) {
                 comment = Objects.toString(row.get("TABLE_COMMENT"), "");
             }
@@ -55,7 +59,8 @@ public class MySqlEngine implements IEngine {
 
     @Override
     public List<ColumnInfo> getAllColumnInfo(Connection connection, String tableName,
-                                             boolean needFilterDefField)
+                                             boolean needFilterDefField,
+                                             @Nullable ProgressIndicator indicator)
             throws BusinessException {
         String sql = "SELECT COLUMN_NAME, ORDINAL_POSITION AS COLUMN_ID, "
                 + "COLUMN_TYPE AS DATA_TYPE, IS_NULLABLE AS NULLABLE, "
@@ -65,7 +70,8 @@ public class MySqlEngine implements IEngine {
         List<Object> parameters = List.of(getCatalog(connection), tableName);
         List<ColumnInfo> columns = new ArrayList<>();
         Pattern defaultFieldPattern = Pattern.compile("^def\\d+$", Pattern.CASE_INSENSITIVE);
-        for (Map<String, Object> row : DbUtil.executeQuery(connection, sql, parameters)) {
+        for (Map<String, Object> row : DbUtil.executeQuery(
+                connection, sql, parameters, indicator)) {
             String columnName = Objects.toString(row.get("COLUMN_NAME"), "");
             if (needFilterDefField && defaultFieldPattern.matcher(columnName).matches()) {
                 continue;
@@ -80,7 +86,8 @@ public class MySqlEngine implements IEngine {
             column.setComment(Objects.toString(row.get("COMMENTS"), ""));
             columns.add(column);
         }
-        Map<String, String> enumValues = getEnumValuesFromMetadata(connection, tableName);
+        Map<String, String> enumValues = getEnumValuesFromMetadata(
+                connection, tableName, indicator);
         for (ColumnInfo column : columns) {
             column.setEnumValue(enumValues.getOrDefault(
                     column.getColumnName().toUpperCase(Locale.ROOT), ""));
@@ -100,11 +107,12 @@ public class MySqlEngine implements IEngine {
         }
     }
 
-    private String getMetadataTableComment(Connection connection, String tableName) {
+    private String getMetadataTableComment(Connection connection, String tableName,
+                                           @Nullable ProgressIndicator indicator) {
         try {
             List<Map<String, Object>> rows = DbUtil.executeQuery(connection,
                     "SELECT DISPLAYNAME FROM MD_CLASS WHERE UPPER(DEFAULTTABLENAME) = ?",
-                    Collections.singletonList(tableName.toUpperCase()));
+                    Collections.singletonList(tableName.toUpperCase()), indicator);
             return rows.isEmpty() ? "" : Objects.toString(rows.get(0).get("DISPLAYNAME"), "");
         } catch (BusinessException ignored) {
             return "";
@@ -112,7 +120,8 @@ public class MySqlEngine implements IEngine {
     }
 
     private Map<String, String> getEnumValuesFromMetadata(Connection connection,
-                                                          String tableName) {
+                                                          String tableName,
+                                                          @Nullable ProgressIndicator indicator) {
         String sql = "SELECT P.NAME AS PROPERTY_NAME, E.VALUE AS ENUM_VALUE, "
                 + "E.NAME AS ENUM_NAME FROM MD_PROPERTY P "
                 + "JOIN MD_CLASS C ON C.ID = P.CLASSID "
@@ -120,7 +129,7 @@ public class MySqlEngine implements IEngine {
                 + "WHERE UPPER(C.DEFAULTTABLENAME) = ? ORDER BY P.NAME, E.VALUE";
         try {
             List<Map<String, Object>> rows = DbUtil.executeQuery(connection, sql,
-                    Collections.singletonList(tableName.toUpperCase(Locale.ROOT)));
+                    Collections.singletonList(tableName.toUpperCase(Locale.ROOT)), indicator);
             Map<String, List<String>> valuesByColumn = new HashMap<>();
             for (Map<String, Object> row : rows) {
                 String propertyName = Objects.toString(row.get("PROPERTY_NAME"), "");

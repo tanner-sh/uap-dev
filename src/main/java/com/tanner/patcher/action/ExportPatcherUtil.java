@@ -3,6 +3,7 @@ package com.tanner.patcher.action;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.LanguageLevelUtil;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
@@ -16,6 +17,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.pom.java.LanguageLevel;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
+import com.tanner.base.ModuleRootUtil;
 import com.tanner.base.XmlUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
@@ -51,6 +53,7 @@ import java.util.stream.Collectors;
  */
 public class ExportPatcherUtil {
 
+    private static final Logger LOG = Logger.getInstance(ExportPatcherUtil.class);
 
     /**
      * 路径常量
@@ -207,14 +210,12 @@ public class ExportPatcherUtil {
         Set<String> moduleSet = new HashSet<>();
         int count = 1;
         int moduleIndex = 1;
-        System.out.println(".............statr output , module count:" + modulePathMap.keySet().size()
-                + "............");
+        LOG.info("Start patch export, module count: " + modulePathMap.size());
         for (String moduleName : modulePathMap.keySet()) {
             Module module = moduleMap.get(moduleName);
             Set<String> fileUrlSet = modulePathMap.get(moduleName);
-            System.out.println(
-                    "......start the " + moduleIndex + "th module : " + moduleName + ",total : "
-                            + fileUrlSet.size() + "......");
+            LOG.info("Export module " + moduleIndex + ": " + moduleName
+                    + ", file count: " + fileUrlSet.size());
             CompilerModuleExtension instance = CompilerModuleExtension.getInstance(module);
             VirtualFile outPath = null;
             if (instance != null) {
@@ -265,11 +266,11 @@ public class ExportPatcherUtil {
                 if (allCount > 0) {
                     progressIndicator.setFraction((double) count / allCount);
                 }
-                System.out.println("count : " + fileUrlSet.size() + ",output :" + count + " " + fileUrl);
+                LOG.debug("Patch output " + count + "/" + allCount + ": " + fileUrl);
                 count++;
             }
-            System.out.println(
-                    "......finished,module: " + moduleName + " total:" + fileUrlSet.size() + "......");
+            LOG.info("Finished module " + moduleName + ", file count: "
+                    + fileUrlSet.size());
             moduleIndex++;
             //收集修改的module
             if (StringUtils.isNotBlank(ncModuleName)) {
@@ -278,8 +279,8 @@ public class ExportPatcherUtil {
         }
         moduleIndex = moduleIndex - 1;
         count = count - 1;
-        System.out.println("............finished all ,module count : " + moduleIndex + " total:" + count
-                + ".............");
+        LOG.info("Finished patch export, module count: " + moduleIndex
+                + ", file count: " + count);
         //创建ncm日志文件,只有ncccloud和ncchr的代码创建
         if (webServerName.endsWith("nccloud") || webServerName.endsWith("ncchr") || webServerName.endsWith("fbip")) {
             //修改模块包含对应的web服务
@@ -412,10 +413,11 @@ public class ExportPatcherUtil {
     private String getNCModuleName(Module module) {
         String ncModuleName = null;
         try {
-            VirtualFile moduleFile = module.getModuleFile();
-            String modulePath =
-                    moduleFile == null ? new File(module.getModuleFilePath()).getParentFile().getPath()
-                            : moduleFile.getParent().getPath();
+            VirtualFile moduleRoot = ModuleRootUtil.findPrimaryContentRoot(module);
+            if (moduleRoot == null) {
+                return null;
+            }
+            String modulePath = moduleRoot.getPath();
             File file = new File(modulePath + PATH_META_INF + File.separator + FILE_MODULE);
             if (file.exists()) {
             try (InputStream in = new FileInputStream(file)) {
@@ -727,8 +729,9 @@ public class ExportPatcherUtil {
             return fileList;
         }
         //如果什么都不是，则判断是不是模块下的文件或者目录
-        String modulePath = module.getModuleFilePath();
-        if (path.startsWith(new File(modulePath).getParentFile().getPath())) {
+        VirtualFile moduleRoot = ModuleRootUtil.findPrimaryContentRoot(module);
+        if (moduleRoot != null && Path.of(path).toAbsolutePath().normalize()
+                .startsWith(Path.of(moduleRoot.getPath()).toAbsolutePath().normalize())) {
             fileList.add(path);
         }
         return fileList;

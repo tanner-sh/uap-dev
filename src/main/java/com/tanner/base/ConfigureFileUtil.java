@@ -2,9 +2,6 @@ package com.tanner.base;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,11 +29,10 @@ public class ConfigureFileUtil {
      * @throws BusinessException BusinessException
      */
     public String readTemplate(File file) throws BusinessException {
-        try {
-            FileInputStream fileInputStream = new FileInputStream(file);
-            return readTemplate(fileInputStream);
-        } catch (FileNotFoundException e) {
-            throw new BusinessException(e.getMessage());
+        try (InputStream input = java.nio.file.Files.newInputStream(file.toPath())) {
+            return readTemplate(input);
+        } catch (IOException e) {
+            throw new BusinessException("读取模板文件失败: " + file, e);
         }
     }
 
@@ -54,7 +50,7 @@ public class ConfigureFileUtil {
                 tempBuilder.append("\r\n");
             }
         } catch (IOException e) {
-            throw new BusinessException(e.getMessage());
+            throw new BusinessException("读取模板内容失败", e);
         }
         return tempBuilder.toString();
     }
@@ -72,15 +68,17 @@ public class ConfigureFileUtil {
             if (parent != null && !parent.exists() && !parent.mkdirs()) {
                 throw new IOException("无法创建目录: " + parent.getPath());
             }
-            FileOutputStream fos = new FileOutputStream(file);
-            if (bomFlag) {
-                fos.write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
-            }
-            try (OutputStreamWriter writer = new OutputStreamWriter(fos, charset)) {
+            try (var output = java.nio.file.Files.newOutputStream(file.toPath())) {
+                if (bomFlag) {
+                    output.write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
+                }
+                OutputStreamWriter writer = new OutputStreamWriter(output, charset);
                 writer.write(content);
+                writer.flush();
             }
         } catch (IOException e) {
-            throw new BusinessException("写入文件失败: " + file.getPath() + "\n" + e.getMessage());
+            throw new BusinessException(
+                    "写入文件失败: " + file.getPath() + "\n" + e.getMessage(), e);
         }
     }
 }

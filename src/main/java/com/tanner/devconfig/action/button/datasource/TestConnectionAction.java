@@ -18,6 +18,7 @@ import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -44,16 +45,15 @@ public class TestConnectionAction extends AbstractButtonAction {
             return;
         }
         String homePath;
-        if (dlg instanceof DevConfigDialog) {
-            homePath = dlg.getComponent(JTextField.class, "homeText").getText();
+        if (dlg instanceof DevConfigDialog devConfigDialog) {
+            homePath = devConfigDialog.homeField().getText();
         } else {
             homePath = UapProjectEnvironment.getInstance(project).getUapHomePath();
         }
-        String dsname = (String) dlg.getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        String dsname = (String) dlg.databaseBox().getSelectedItem();
         DataSourceMeta dataSourceMeta = StringUtils.isBlank(dsname) ? null
                 : dlg.getDataSourceMetaMap().get(dsname);
-        String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox")
-                .getSelectedItem();
+        String driverName = (String) dlg.driverBox().getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         if (info == null) {
             Notifications.Bus.notify(new Notification("Task Notification Group", "错误",
@@ -61,13 +61,13 @@ public class TestConnectionAction extends AbstractButtonAction {
             return;
         }
         String exampleUrl = info.getDriverUrl();
-        String host = dlg.getComponent(JTextField.class, "hostText").getText();
-        String port = dlg.getComponent(JTextField.class, "portText").getText();
-        String userName = dlg.getComponent(JTextField.class, "userText").getText();
-        String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
-        String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
+        String host = dlg.hostField().getText();
+        String port = dlg.portField().getText();
+        String userName = dlg.userField().getText();
+        String pwd = dlg.passwordField().getText();
+        String dbName = dlg.databaseNameField().getText();
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
-        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase")
+        if (Strings.CI.contains(exampleUrl, "oceanbase")
                 && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }

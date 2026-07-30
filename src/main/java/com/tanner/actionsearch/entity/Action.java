@@ -1,9 +1,5 @@
 package com.tanner.actionsearch.entity;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-
-@XmlAccessorType(XmlAccessType.FIELD)
 public class Action {
 
     private String name;

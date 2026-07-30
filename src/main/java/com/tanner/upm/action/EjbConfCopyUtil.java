@@ -6,6 +6,7 @@ import com.intellij.openapi.module.Module;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BaseUtil;
+import com.tanner.base.ModuleRootUtil;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.base.XmlUtil;
 import org.w3c.dom.Document;
@@ -133,11 +134,11 @@ public class EjbConfCopyUtil {
      */
     String getNCModuleName(Module module) {
         String ncModuleName = null;
-        VirtualFile virtualFile = module.getModuleFile();
-        if (virtualFile == null) {
+        VirtualFile moduleRoot = ModuleRootUtil.findPrimaryContentRoot(module);
+        if (moduleRoot == null) {
             return null;
         }
-        String modulePath = virtualFile.getParent().getPath();
+        String modulePath = moduleRoot.getPath();
         try {
             File file = new File(
                     modulePath + File.separator + "META-INF" + File.separator + "module.xml");

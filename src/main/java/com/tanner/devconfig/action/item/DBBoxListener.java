@@ -20,9 +20,9 @@ public class DBBoxListener extends AbstractItemListener {
 
     @Override
     public void afterSelect(ItemEvent e) {
-        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        AbstractDataSourceDialog dialog = (AbstractDataSourceDialog) getDialog();
+        String dsname = (String) dialog.databaseBox().getSelectedItem();
         if (StringUtils.isNotBlank(dsname)) {
-            AbstractDataSourceDialog dialog = (AbstractDataSourceDialog) getDialog();
             dialog.setCurrMeta(dialog.getDataSourceMetaMap().get(dsname));
             DataSourceUtil.fillDataSourceMeta(dialog);
         }

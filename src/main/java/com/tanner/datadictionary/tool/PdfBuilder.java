@@ -1,51 +1,54 @@
 package com.tanner.datadictionary.tool;
 
-import com.itextpdf.text.Anchor;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Chapter;
-import com.itextpdf.text.Chunk;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
-import com.itextpdf.text.pdf.draw.DottedLineSeparator;
+import org.openpdf.text.Anchor;
+import org.openpdf.text.Chapter;
+import org.openpdf.text.Chunk;
+import org.openpdf.text.Document;
+import org.openpdf.text.Element;
+import org.openpdf.text.Font;
+import org.openpdf.text.PageSize;
+import org.openpdf.text.Paragraph;
+import org.openpdf.text.Phrase;
+import org.openpdf.text.Rectangle;
+import org.openpdf.text.pdf.BaseFont;
+import org.openpdf.text.pdf.PdfPCell;
+import org.openpdf.text.pdf.PdfPTable;
+import org.openpdf.text.pdf.PdfWriter;
+import org.openpdf.text.pdf.draw.DottedLineSeparator;
 import com.tanner.datadictionary.entity.AggTable;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.awt.Color;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class PdfBuilder implements IExportBuilder {
+
+    private static final String FONT_RESOURCE = "/fonts/NotoSansSC-VF.ttf";
 
     @Override
     public void build(List<AggTable> aggTableList, String exportDirPath) throws Exception {
         //输出文件地址
         String filePath = Path.of(exportDirPath, "datadictionary.pdf").toString();
-        BaseFont bfChinese = BaseFont.createFont("STSongStd-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
+        BaseFont bfChinese = loadChineseBaseFont();
         Font font = new Font(bfChinese, 12, Font.BOLDITALIC);
         // 设置类型，加粗
         font.setStyle(Font.NORMAL);
-        Font cnFont = getChineseFontAsStyle(16);
+        Font cnFont = getChineseFontAsStyle(bfChinese, 16);
         //页面大小
         Rectangle rect = new Rectangle(PageSize.A4).rotate();
         //页面背景色
-        rect.setBackgroundColor(new BaseColor(0xFF, 0xFF, 0xDE));
+        rect.setBackgroundColor(new Color(0xFF, 0xFF, 0xDE));
         //设置边框颜色
-        rect.setBorderColor(new BaseColor(0xFF, 0xFF, 0xDE));
+        rect.setBorderColor(new Color(0xFF, 0xFF, 0xDE));
         Document doc = new Document(rect);
         PdfWriter contentWriter = PdfWriter.getInstance(doc, new ByteArrayOutputStream());
         //设置事件
@@ -66,7 +69,8 @@ public class PdfBuilder implements IExportBuilder {
             Phrase point = new Paragraph("基本信息:", cnFont);
             Anchor tome = new Anchor(point);
             tome.setName(tableInfo.getTableName());
-            Phrase comment = new Phrase(" " + tableInfo.getComment() + "\n\n", getChineseFontAsStyle(16));
+            Phrase comment = new Phrase(" " + tableInfo.getComment() + "\n\n",
+                    getChineseFontAsStyle(bfChinese, 16));
             //组装基本数据
             Paragraph contentInfo = new Paragraph();
             contentInfo.add(tome);
@@ -76,7 +80,8 @@ public class PdfBuilder implements IExportBuilder {
             //组装表格
             Paragraph tableParagraph = new Paragraph();
             //设置表格
-            PdfPTable table = setTableHeader(tableHeader, getChineseFontAsStyle(16));
+            PdfPTable table = setTableHeader(tableHeader,
+                    getChineseFontAsStyle(bfChinese, 16));
             //设置列信息
             setTableColumn(table, aggTable, font);
             tableParagraph.add(table);
@@ -96,7 +101,8 @@ public class PdfBuilder implements IExportBuilder {
             writer.setPageEvent(indexEvent);
             document.open();
         //添加章节目录
-        Chapter indexChapter = new Chapter(new Paragraph("", getFontAsStyle()), 0);
+        Chapter indexChapter = new Chapter(
+                new Paragraph("", getFontAsStyle(bfChinese)), 0);
         indexChapter.setNumberDepth(-1);
         // 设置数字深度
         int i = 1;
@@ -111,7 +117,8 @@ public class PdfBuilder implements IExportBuilder {
             if (!StringUtils.isEmpty(aggTableList.get(i - 1).getTableInfo().getComment())) {
                 tempDescription += "(" + aggTableList.get(i - 1).getTableInfo().getComment() + ")";
             }
-            Paragraph jumpParagraph = new Paragraph(tempDescription, getChineseFontAsStyle(12));
+            Paragraph jumpParagraph = new Paragraph(tempDescription,
+                    getChineseFontAsStyle(bfChinese, 12));
             jumpParagraph.add(pointChunk);
             jumpParagraph.add(pageNoChunk);
             Anchor anchor = new Anchor(jumpParagraph);
@@ -137,22 +144,29 @@ public class PdfBuilder implements IExportBuilder {
         }
     }
 
-    private Font getChineseFontAsStyle(float size) {
-        try {
-            //中文字体
-            BaseFont bfChinese = BaseFont.createFont("STSongStd-Light", "UniGB-UCS2-H", BaseFont.NOT_EMBEDDED);
-            Font font = new Font(bfChinese, size, Font.NORMAL);
-            font.setColor(BaseColor.BLACK);
-            return font;
-        } catch (Exception e) {
-            return new Font();
+    private BaseFont loadChineseBaseFont() throws Exception {
+        try (InputStream input = PdfBuilder.class.getResourceAsStream(FONT_RESOURCE)) {
+            if (input == null) {
+                throw new IllegalStateException("找不到内置中文字体: " + FONT_RESOURCE);
+            }
+            BaseFont baseFont = BaseFont.createFont(
+                    "NotoSansSC-VF.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED,
+                    true, input.readAllBytes(), null);
+            baseFont.setSubset(true);
+            return baseFont;
         }
     }
 
-    private Font getFontAsStyle() {
-        Font font = new Font();
-        font.setColor(BaseColor.BLACK);
-        font.setSize((float) 18);
+    private Font getChineseFontAsStyle(BaseFont baseFont, float size) {
+        Font font = new Font(baseFont, size, Font.NORMAL);
+        font.setColor(Color.BLACK);
+        return font;
+    }
+
+    private Font getFontAsStyle(BaseFont baseFont) {
+        Font font = new Font(baseFont);
+        font.setColor(Color.BLACK);
+        font.setSize(18);
         return font;
     }
 
@@ -164,7 +178,7 @@ public class PdfBuilder implements IExportBuilder {
             PdfPCell pdfPCell = new PdfPCell(new Paragraph(s, font));
             pdfPCell.setVerticalAlignment(Element.ALIGN_CENTER);
             pdfPCell.setHorizontalAlignment(Element.ALIGN_LEFT);
-            pdfPCell.setBackgroundColor(BaseColor.LIGHT_GRAY);
+            pdfPCell.setBackgroundColor(Color.LIGHT_GRAY);
             table.addCell(pdfPCell);
         }
         return table;
@@ -186,7 +200,7 @@ public class PdfBuilder implements IExportBuilder {
     private void addCell(PdfPTable table, String value, Font font) {
         PdfPCell cell = new PdfPCell();
         cell.setVerticalAlignment(Element.ALIGN_CENTER);
-        cell.addElement(new Paragraph(ObjectUtils.toString(value, ""), font));
+        cell.addElement(new Paragraph(Objects.toString(value, ""), font));
         table.addCell(cell);
     }
 

@@ -10,6 +10,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.abs.AbstractAnAction;
+import com.tanner.base.ModuleRootUtil;
 import com.tanner.base.UapProjectEnvironment;
 import org.jetbrains.annotations.NotNull;
 
@@ -73,8 +74,10 @@ public class CopyExtendAction extends AbstractAnAction {
                 flag = isModuleChild(selectFile, e);
                 if (flag) {
                     Module module = getSelectModule(e);
-                    if (module != null && module.getModuleFile() != null) {
-                        if (selectFile.getParent().equals(module.getModuleFile().getParent())) {
+                    VirtualFile moduleRoot = module == null ? null
+                            : ModuleRootUtil.findPrimaryContentRoot(module);
+                    if (moduleRoot != null) {
+                        if (selectFile.getParent().equals(moduleRoot)) {
                             flag = new File(selectFile.getPath() + File.separator + "component.xml").exists();
                         }
                     }

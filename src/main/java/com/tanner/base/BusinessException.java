@@ -8,8 +8,13 @@ public class BusinessException extends Exception {
         super(msg);
     }
 
+    public BusinessException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
+
     public BusinessException(int status, String msg) {
         super(msg);
+        this.status = status;
     }
 
     public int getStatus() {
@@ -20,4 +25,3 @@ public class BusinessException extends Exception {
         this.status = status;
     }
 }
-

@@ -3,6 +3,7 @@ package com.tanner.devconfig.action.button.module;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.ModuleFileUtil;
+import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.TableModelUtil;
 
 import javax.swing.*;
@@ -26,7 +27,7 @@ public class DefaultModuleAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) {
         if (type == TableModelUtil.MODULE_TYPE_MUST) {
-            JTable table = getDialog().getComponent(JTable.class, "mustTable");
+            JTable table = ((DevConfigDialog) getDialog()).requiredModulesTable();
             Set<String> set = ModuleFileUtil.getMustMoudleSet();
             TableModel model = table.getModel();
             for (int i = 0; i < model.getRowCount(); i++) {
@@ -36,8 +37,9 @@ public class DefaultModuleAction extends AbstractButtonAction {
                 }
             }
         } else if (type == TableModelUtil.MODULE_TYPE_SEL) {
-            JTable table = getDialog().getComponent(JTable.class, "selTable");
-            JTable mustTable = getDialog().getComponent(JTable.class, "mustTable");
+            DevConfigDialog view = (DevConfigDialog) getDialog();
+            JTable table = view.selectedModulesTable();
+            JTable mustTable = view.requiredModulesTable();
             TableModel mustModel = mustTable.getModel();
             Set<String> mustNames = new HashSet<>();
             for (int i = 0; i < mustModel.getRowCount(); i++) {

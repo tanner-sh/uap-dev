@@ -22,10 +22,10 @@ public class DBTypeBoxListener extends AbstractItemListener {
     @Override
     public void afterSelect(ItemEvent e) {
         AbstractDataSourceDialog dialog = (AbstractDataSourceDialog) getDialog();
-        String selected = (String) dialog.getComponent(JComboBox.class, "dbTypeBox").getSelectedItem();
+        String selected = (String) dialog.databaseTypeBox().getSelectedItem();
         if (StringUtils.isNotBlank(selected)) {
             DriverInfo[] infos = dialog.getDatabaseDriverInfoMap().get(selected).getDatabase();
-            DataSourceUtil.fillCombo(dialog.getComponent(JComboBox.class, "driverBox"), infos, dialog);
+            DataSourceUtil.fillCombo(dialog.driverBox(), infos, dialog);
         }
     }
 }

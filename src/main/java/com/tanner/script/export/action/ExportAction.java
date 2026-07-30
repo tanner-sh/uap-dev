@@ -15,7 +15,9 @@ import com.tanner.base.BusinessException;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.script.export.util.ScriptExportTool;
+import com.tanner.script.export.dlg.ScriptExportDlg;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -30,47 +32,51 @@ public class ExportAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) throws BusinessException {
-        AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
-        String exportPath = dlg.getComponent(JTextField.class, "exportPathText").getText();
+        ScriptExportDlg dlg = (ScriptExportDlg) getDialog();
+        String exportPath = dlg.exportPathField().getText();
         if (StringUtils.isEmpty(exportPath)) {
             Messages.showWarningDialog("请选择导出路径", "提示");
             return;
         }
-        String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
+        String driverName = (String) dlg.driverBox().getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
         if (info == null) {
             throw new BusinessException("请选择数据库驱动");
         }
         String exampleUrl = info.getDriverUrl();
-        String host = dlg.getComponent(JTextField.class, "hostText").getText();
-        String port = dlg.getComponent(JTextField.class, "portText").getText();
-        String userName = dlg.getComponent(JTextField.class, "userText").getText();
-        String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
-        String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
+        String host = dlg.hostField().getText();
+        String port = dlg.portField().getText();
+        String userName = dlg.userField().getText();
+        String pwd = dlg.passwordField().getText();
+        String dbName = dlg.databaseNameField().getText();
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
-        String heavyNodeCode = getDialog().getComponent(JTextField.class, "heavyNodeCodeText").getText();
-        String lightNodeCode = getDialog().getComponent(JTextField.class, "lightNodeCodeText").getText();
-        String mdName = getDialog().getComponent(JTextField.class, "mdNameText").getText();
-        String mdModule = getDialog().getComponent(JTextField.class, "mdModuleText").getText();
-        int exportMode = getDialog().getComponent(JComboBox.class, "exportModeComboBox").getSelectedIndex();
-        boolean spiltGo = getDialog().getComponent(JCheckBox.class, "spiltGoCheckBox").isSelected();
-        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        String heavyNodeCode = dlg.heavyNodeCodeField().getText();
+        String lightNodeCode = dlg.lightNodeCodeField().getText();
+        String mdName = dlg.metadataNameField().getText();
+        String mdModule = dlg.metadataModuleField().getText();
+        int exportMode = dlg.exportModeBox().getSelectedIndex();
+        boolean spiltGo = dlg.splitGoCheckBox().isSelected();
+        String dsname = (String) dlg.databaseBox().getSelectedItem();
         DataSourceMeta dataSourceMeta = null;
         if (StringUtils.isNotBlank(dsname)) {
             dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
         }
-        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
+        if (Strings.CI.contains(exampleUrl, "oceanbase") && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
         String homePath = UapProjectEnvironment.getInstance(
                 getDialog().getProjectContext()).getUapHomePath();
         String finalJdbcUrl = jdbcUrl;
         Project project = getDialog().getProjectContext();
-        JButton exportButton = getDialog().getComponent(JButton.class, "exportBtn");
+        JButton exportButton = dlg.exportButton();
         exportButton.setEnabled(false);
         Task.Backgroundable task = new Task.Backgroundable(project, "Exporting SQL scripts...",
                 true) {
             private Exception failure;
+
+            private boolean isUnavailable() {
+                return dlg.isDialogDisposed() || project != null && project.isDisposed();
+            }
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
@@ -88,6 +94,9 @@ public class ExportAction extends AbstractButtonAction {
 
             @Override
             public void onSuccess() {
+                if (isUnavailable()) {
+                    return;
+                }
                 exportButton.setEnabled(true);
                 if (failure != null) {
                     Messages.showWarningDialog("导出脚本异常\n" + failure.getMessage(), "错误");
@@ -98,7 +107,21 @@ public class ExportAction extends AbstractButtonAction {
 
             @Override
             public void onCancel() {
+                if (isUnavailable()) {
+                    return;
+                }
                 exportButton.setEnabled(true);
+            }
+
+            @Override
+            public void onThrowable(@NotNull Throwable error) {
+                if (isUnavailable()) {
+                    return;
+                }
+                exportButton.setEnabled(true);
+                String message = StringUtils.defaultIfBlank(
+                        error.getMessage(), error.getClass().getName());
+                Messages.showErrorDialog("导出脚本异常\n" + message, "错误");
             }
         };
         ProgressManager.getInstance().run(task);
