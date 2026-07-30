@@ -16,7 +16,9 @@ public abstract class AbstractItemListener implements ItemListener {
 
     @Override
     public void itemStateChanged(ItemEvent e) {
-        afterSelect(e);
+        if (e.getStateChange() == ItemEvent.SELECTED) {
+            afterSelect(e);
+        }
     }
 
     public abstract void afterSelect(ItemEvent e);

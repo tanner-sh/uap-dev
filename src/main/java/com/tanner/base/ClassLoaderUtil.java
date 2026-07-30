@@ -13,12 +13,17 @@ import java.util.stream.Collectors;
 
 public class ClassLoaderUtil {
 
-    public static ClassLoader getUapJdbcClassLoader(String homePath) throws BusinessException {
+    public static URLClassLoader getUapJdbcClassLoader(String homePath) throws BusinessException {
         try {
+            if (homePath == null || homePath.isBlank()) {
+                throw new BusinessException("请先设置 NC Home");
+            }
             //加载home/lib以及driver下所有jar包
-            Collection<File> allJars = FileUtils.listFiles(new File(homePath, "driver"), null, true);
+            Collection<File> allJars = FileUtils.listFiles(new File(homePath, "driver"),
+                    new String[]{"jar"}, true);
             //oracle需要额外加载orai18n.jar，所以加载
-            Collection<File> otherJars = FileUtils.listFiles(new File(homePath, "lib"), null, true);
+            Collection<File> otherJars = FileUtils.listFiles(new File(homePath, "lib"),
+                    new String[]{"jar"}, true);
             otherJars = otherJars.stream().filter(otherJar -> otherJar.getName().startsWith("orai")).toList();
             allJars.addAll(otherJars);
             Map<String, File> libJarsMap = allJars.stream().collect(

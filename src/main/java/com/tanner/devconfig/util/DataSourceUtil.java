@@ -2,6 +2,7 @@ package com.tanner.devconfig.util;
 
 import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractDataSourceDialog;
+import com.tanner.base.BusinessException;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.dbdriver.entity.DatabaseDriverInfo;
 import com.tanner.dbdriver.entity.DriverInfo;
@@ -33,6 +34,16 @@ public class DataSourceUtil {
         DatabaseDriverInfo[] driverinfos = null;
         PropXml propXml = new PropXml();
         try {
+            dialog.getDatabaseDriverInfoMap().clear();
+            dialog.getDriverInfoMap().clear();
+            dialog.getDataSourceMetaMap().clear();
+            dialog.setCurrMeta(null);
+            dialog.getComponent(JComboBox.class, "dbTypeBox")
+                    .setModel(new DefaultComboBoxModel());
+            dialog.getComponent(JComboBox.class, "driverBox")
+                    .setModel(new DefaultComboBoxModel());
+            dialog.getComponent(JComboBox.class, "dbBox")
+                    .setModel(new DefaultComboBoxModel());
             //数据库类型
             driverinfos = propXml.getDriverSet(homePath).getDatabase();
             fillCombo(dialog.getComponent(JComboBox.class, "dbTypeBox"), driverinfos, dialog);
@@ -45,14 +56,24 @@ public class DataSourceUtil {
                 fillCombo(dialog.getComponent(JComboBox.class, "dbBox"), sourceMetas, dialog);
             }
             //做一次值切换，触发监听显示数据源详情
-            dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(-1);
-            dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(0);
+            JComboBox dbBox = dialog.getComponent(JComboBox.class, "dbBox");
+            dbBox.setSelectedIndex(-1);
+            if (dbBox.getItemCount() > 0) {
+                dbBox.setSelectedIndex(0);
+            }
         } catch (Exception exception) {
             Messages.showErrorDialog("加载数据源配置失败:\n" + exception.getMessage(), "错误");
         }
     }
 
     public static void fillCombo(JComboBox combo, Object[] objects, AbstractDataSourceDialog dlg) {
+        if (combo == dlg.getComponent(JComboBox.class, "dbBox")) {
+            dlg.getDataSourceMetaMap().clear();
+        } else if (combo == dlg.getComponent(JComboBox.class, "dbTypeBox")) {
+            dlg.getDatabaseDriverInfoMap().clear();
+        } else if (combo == dlg.getComponent(JComboBox.class, "driverBox")) {
+            dlg.getDriverInfoMap().clear();
+        }
         if (objects == null) {
             combo.setModel(new DefaultComboBoxModel());
             return;
@@ -77,9 +98,15 @@ public class DataSourceUtil {
      *
      * @param dlg
      */
-    public static void syncCurrDataSourceValue(DevConfigDialog dlg) {
+    public static void syncCurrDataSourceValue(DevConfigDialog dlg) throws BusinessException {
+        if (dlg.getCurrMeta() == null) {
+            throw new BusinessException("请选择数据源");
+        }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
+        if (info == null) {
+            throw new BusinessException("请选择数据库驱动");
+        }
         String exampleUrl = info.getDriverUrl();
         String host = dlg.getComponent(JTextField.class, "hostText").getText();
         String port = dlg.getComponent(JTextField.class, "portText").getText();
@@ -181,27 +208,42 @@ public class DataSourceUtil {
      *
      * @param dlg dlg
      */
-    public static void saveDesignDataSourceMeta(DevConfigDialog dlg) {
+    public static void saveDesignDataSourceMeta(DevConfigDialog dlg) throws BusinessException {
         try {
             UapProjectEnvironment service = UapProjectEnvironment.getInstance(
                     dlg.getProjectContext());
-            syncCurrDataSourceValue(dlg);
+            if (dlg.getCurrMeta() != null) {
+                syncCurrDataSourceValue(dlg);
+            }
             String nchome = service.getUapHomePath();
+            if (StringUtils.isBlank(nchome)) {
+                nchome = dlg.getComponent(JTextField.class, "homeText").getText();
+            }
+            if (StringUtils.isBlank(nchome)) {
+                throw new BusinessException("请先设置 NC Home");
+            }
             String filename = nchome + "/ierp/bin/prop.xml";
             File file = new File(filename);
-            if (file.exists()) {
-                int count = dlg.getDataSourceMetaMap().size();
-                DataSourceMeta[] metas = new DataSourceMeta[count];
-                for (int i = 0; i < metas.length; i++) {
-                    metas[i] = dlg.getDataSourceMetaMap()
-                            .get(dlg.getComponent(JComboBox.class, "dbBox").getItemAt(i));
-                    metas[i].setMaxCon(50);
-                    metas[i].setMinCon(1);
-                }
-                new PropXml().saveMeta(filename, metas, nchome);
+            if (!file.exists()) {
+                throw new BusinessException("找不到数据源配置: " + filename);
             }
+            JComboBox dbBox = dlg.getComponent(JComboBox.class, "dbBox");
+            DataSourceMeta[] metas = new DataSourceMeta[dbBox.getItemCount()];
+            for (int i = 0; i < metas.length; i++) {
+                Object item = dbBox.getItemAt(i);
+                metas[i] = dlg.getDataSourceMetaMap().get(String.valueOf(item));
+                if (metas[i] == null) {
+                    throw new BusinessException("数据源列表与配置不一致: " + item);
+                }
+                metas[i].setMaxCon(50);
+                metas[i].setMinCon(1);
+            }
+            new PropXml().saveMeta(filename, metas, nchome);
         } catch (Exception e) {
-            Messages.showErrorDialog("保存数据源配置失败:\n" + e.getMessage(), "错误");
+            if (e instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException("保存数据源配置失败:\n" + e.getMessage());
         }
     }
 

@@ -1,17 +1,16 @@
 package com.tanner.upm.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.module.Module;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.base.BaseUtil;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.base.XmlUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -53,42 +52,41 @@ public class EjbConfCopyUtil {
      *
      * @param event event
      */
-    public void copy(AnActionEvent event) {
+    public int copy(AnActionEvent event) throws Exception {
         String homePath = UapProjectEnvironment.getInstance(event.getProject()).getUapHomePath();
         if (homePath.isBlank()) {
-            Messages.showMessageDialog("Not set NC Home", "Error", Messages.getErrorIcon());
-            return;
+            throw new IllegalArgumentException("Not set NC Home");
         }
         Module module = BaseUtil.getModule(event);
         String ncModuleName = getNCModuleName(module);
         if (ncModuleName == null || ncModuleName.isBlank()) {
-            Messages.showMessageDialog("Can't determine NC module name", "Error",
-                    Messages.getErrorIcon());
-            return;
+            throw new IllegalArgumentException("Can't determine NC module name");
         }
-        Set<String> fileUrls;
-        if (module.getModuleFile() == null) {
-            return;
+        VirtualFile selected = event.getData(CommonDataKeys.VIRTUAL_FILE);
+        if (selected == null) {
+            throw new IllegalArgumentException("请选择 UPM/REST 文件或目录");
         }
         // 目标路径，但是缺少文件名字
         String toPath =
                 homePath + File.separator + "modules" + File.separator + ncModuleName + File.separator
                         + "META-INF" + File.separator;
-        // 获取某个模块下所有的upm文件
-        fileUrls = getFileUrl(module.getModuleFile().getParent().getPath());
+        Set<String> fileUrls = getFileUrl(selected.getPath());
         List<String> errorList = new ArrayList<>();
+        int copied = 0;
         for (String fileUrl : fileUrls) {
             File file = new File(fileUrl);
             try {
                 // 逐个拷贝到home
                 FileUtil.copy(file, new File(toPath + file.getName()));
+                copied++;
             } catch (IOException ignored) {
                 errorList.add(file.getName());
             }
         }
         if (!errorList.isEmpty()) {
-            Messages.showMessageDialog("文件" + errorList + "拷贝出错", "Error", Messages.getErrorIcon());
+            throw new IOException("文件" + errorList + "拷贝出错");
         }
+        return copied;
     }
 
     /**
@@ -108,10 +106,10 @@ public class EjbConfCopyUtil {
             File file = new File(
                     modulePath + File.separator + "META-INF" + File.separator + "module.xml");
             if (file.exists()) {
-                InputStream in = new FileInputStream(file);
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document doc = builder.parse(in);
+                Document doc;
+                try (InputStream in = new FileInputStream(file)) {
+                    doc = XmlUtil.parse(in);
+                }
                 Element root = doc.getDocumentElement();
                 ncModuleName = root.getAttribute("name");
             }

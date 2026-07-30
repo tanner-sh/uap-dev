@@ -5,6 +5,7 @@ import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
+import com.tanner.base.BusinessException;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -19,9 +20,16 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
     }
 
     @Override
-    public void doAction(ActionEvent event) {
+    public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
+        if (dialog.getCurrMeta() == null) {
+            throw new BusinessException("请选择数据源");
+        }
         String dsName = dialog.getCurrMeta().getDataSourceName();
+        if ("design".equals(dsName)) {
+            Messages.showWarningDialog("design 数据源不能删除", "提示");
+            return;
+        }
         JComboBox box = dialog.getComponent(JComboBox.class, "dbBox");
         int index = box.getSelectedIndex();
         int count = box.getItemCount();
@@ -36,10 +44,10 @@ public class DeleteDataSourceAction extends AbstractButtonAction {
         box.removeItem(dsName);
         box.setSelectedIndex(index);
         dialog.getDataSourceMetaMap().remove(dsName);
+        DataSourceUtil.saveDesignDataSourceMeta(dialog);
         int opt = Messages.showYesNoDialog("Delete success , do you want to exit ？", "提示",
                 Messages.getQuestionIcon());
         if (opt == Messages.OK) {
-            DataSourceUtil.saveDesignDataSourceMeta(dialog);
             dialog.close(0);
         }
     }

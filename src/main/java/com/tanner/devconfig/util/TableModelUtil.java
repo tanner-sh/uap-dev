@@ -4,6 +4,7 @@ import com.tanner.abs.AbstractDialog;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ModuleFileUtil;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.base.XmlUtil;
 import com.tanner.debug.util.CreatApplicationConfigurationUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
@@ -11,8 +12,6 @@ import org.w3c.dom.Element;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -160,10 +159,10 @@ public class TableModelUtil {
         try {
             File file = new File(moduleFilePath);
             if (file.exists()) {
-                InputStream in = new FileInputStream(file);
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document doc = builder.parse(in);
+                Document doc;
+                try (InputStream in = new FileInputStream(file)) {
+                    doc = XmlUtil.parse(in);
+                }
                 Element root = doc.getDocumentElement();
                 ncModuleName = root.getAttribute("name");
             }

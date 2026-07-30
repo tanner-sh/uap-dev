@@ -4,14 +4,17 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.PrintWriter;
+import javax.xml.XMLConstants;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.StringTokenizer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class ObjectToXML {
 
@@ -26,27 +29,22 @@ public class ObjectToXML {
 
     private static void saveAsXmlFile(String fileName, Object o, Class defaultClass)
             throws Exception {
-        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Document doc = com.tanner.base.XmlUtil.newDocumentBuilder().newDocument();
         Element nod = doc.createElement("root");
         Node root = (new ObjectToXML()).getDocument(doc, nod, o, 0, defaultClass, null);
         doc.appendChild(root);
-        String pathName = fileName;
-        String tmpDirectory = "";
-        pathName = pathName.replace('\\', '/');
-        pathName = pathName.substring(0, pathName.lastIndexOf("/"));
-        StringTokenizer st = new StringTokenizer(pathName, "/");
-        while (st.hasMoreTokens()) {
-            tmpDirectory = tmpDirectory + st.nextToken() + "/";
-            File f = new File(tmpDirectory);
-            if (!f.canRead()) {
-                f.mkdir();
-            }
+        Path output = Path.of(fileName).toAbsolutePath().normalize();
+        if (output.getParent() != null) {
+            Files.createDirectories(output.getParent());
         }
-        FileWriter fileOutStream = new FileWriter(fileName);
-        PrintWriter dataOutStream = new PrintWriter(fileOutStream);
-        XMLPrinter.printDOMTree(dataOutStream, doc, 0);
-        dataOutStream.close();
-        fileOutStream.close();
+        TransformerFactory factory = TransformerFactory.newInstance();
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        Transformer transformer = factory.newTransformer();
+        transformer.setOutputProperty(OutputKeys.ENCODING, "GB2312");
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        try (var outputStream = Files.newOutputStream(output)) {
+            transformer.transform(new DOMSource(doc), new StreamResult(outputStream));
+        }
     }
 
     private void appendChild(Document doc, Node parent, Node child) {
@@ -76,8 +74,9 @@ public class ObjectToXML {
             }
             return Array.newInstance(pureClass, arrayList).getClass();
         }
-        String[] id = {"[B", "[C", "[I", "[J"};
-        Class[] type = {byte.class, char.class, int.class, long.class};
+        String[] id = {"[B", "[C", "[S", "[I", "[J", "[F", "[D", "[Z"};
+        Class[] type = {byte.class, char.class, short.class, int.class, long.class,
+                float.class, double.class, boolean.class};
         for (int i = 0; i < id.length; i++) {
             key = className.indexOf(id[i]);
             if (key >= 0) {

@@ -53,13 +53,13 @@ public class DataSourceCopyDlg extends AbstractDialog {
             box.setSelectedItem(newName);
             parentDlg.getDataSourceMetaMap().put(newName, newMeta);
             parentDlg.setCurrMeta(newMeta);
+            DataSourceUtil.saveDesignDataSourceMeta(parentDlg);
         } catch (Exception e) {
             Messages.showErrorDialog(e.getMessage(), "出错了");
             return;
         }
         int opt = Messages.showYesNoDialog("Copy success, do you want to exit?", "提示", Messages.getQuestionIcon());
         if (opt == Messages.OK) {
-            DataSourceUtil.saveDesignDataSourceMeta(parentDlg);
             parentDlg.close(0);
         }
     }

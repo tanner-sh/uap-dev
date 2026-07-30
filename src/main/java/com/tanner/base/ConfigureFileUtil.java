@@ -41,16 +41,18 @@ public class ConfigureFileUtil {
     }
 
     private String readTemplate(InputStream in) throws BusinessException {
+        if (in == null) {
+            throw new BusinessException("找不到模板文件");
+        }
         StringBuilder tempBuilder = new StringBuilder();
-        try {
-            InputStreamReader isr = new InputStreamReader(in, StandardCharsets.UTF_8);
-            BufferedReader br = new BufferedReader(isr);
+        try (InputStream input = in;
+             InputStreamReader isr = new InputStreamReader(input, StandardCharsets.UTF_8);
+             BufferedReader br = new BufferedReader(isr)) {
             String lineTxt;
             while ((lineTxt = br.readLine()) != null) {
                 tempBuilder.append(lineTxt);
                 tempBuilder.append("\r\n");
             }
-            br.close();
         } catch (IOException e) {
             throw new BusinessException(e.getMessage());
         }

@@ -2,6 +2,7 @@ package com.tanner.devconfig.action.button.datasource;
 
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
+import com.tanner.base.BusinessException;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
@@ -21,13 +22,11 @@ public class SetDevDataSourceAction extends AbstractButtonAction {
     }
 
     @Override
-    public void doAction(ActionEvent event) {
+    public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
         String dsname = (String) dialog.getComponent(JComboBox.class, "dbBox").getSelectedItem();
         int index = dialog.getComponent(JComboBox.class, "dbBox").getSelectedIndex();
-        int count = dialog.getComponent(JComboBox.class, "dbBox").getItemCount();
-
-        if ("design".equals(dialog.getComponent(JComboBox.class, "dbBox").getItemAt(index))) {
+        if (index < 0 || "design".equals(dsname)) {
             return;
         }
         if (StringUtils.isNotBlank(dsname)) {
@@ -36,12 +35,16 @@ public class SetDevDataSourceAction extends AbstractButtonAction {
                 DataSourceMeta meta = (DataSourceMeta) dataSourceMetaMap.get(dsname).clone();
                 meta.setDataSourceName("design");
                 meta.setBase(false);
-                dataSourceMetaMap.put(meta.getDataSourceName(), meta);
-                dialog.getComponent(JComboBox.class, "dbBox").insertItemAt("design", index + 1);
-                dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(index + 1);
+                JComboBox dbBox = dialog.getComponent(JComboBox.class, "dbBox");
+                boolean hasDesign = dataSourceMetaMap.containsKey("design");
+                dataSourceMetaMap.put("design", meta);
+                if (!hasDesign) {
+                    dbBox.insertItemAt("design", 0);
+                }
+                dbBox.setSelectedItem("design");
                 DataSourceUtil.saveDesignDataSourceMeta(dialog);
-            } catch (Exception ignored) {
-
+            } catch (CloneNotSupportedException e) {
+                throw new BusinessException("复制 design 数据源失败: " + e.getMessage());
             }
         }
     }

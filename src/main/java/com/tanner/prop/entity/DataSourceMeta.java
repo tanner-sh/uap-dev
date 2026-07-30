@@ -157,7 +157,7 @@ public class DataSourceMeta implements Serializable, Cloneable {
     }
 
     public boolean isDesign() {
-        return this.dataSourceName.equals("design");
+        return "design".equals(this.dataSourceName);
     }
 
     public boolean isBase() {

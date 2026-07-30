@@ -7,11 +7,11 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtil;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Objects;
 
 /**
  * idea按钮抽象类
@@ -60,8 +60,11 @@ public abstract class AbstractAnAction extends AnAction {
         if (selectFile == null) {
             return false;
         }
-        Module module = ModuleUtil.findModuleForFile(selectFile,
-                Objects.requireNonNull(event.getProject()));
+        Project project = event.getProject();
+        if (project == null) {
+            return false;
+        }
+        Module module = ModuleUtil.findModuleForFile(selectFile, project);
         if (module == null) {
             return false;
         }
@@ -75,7 +78,11 @@ public abstract class AbstractAnAction extends AnAction {
         if (file == null) {
             return false;
         }
-        Module module = ModuleUtil.findModuleForFile(file, Objects.requireNonNull(event.getProject()));
+        Project project = event.getProject();
+        if (project == null) {
+            return false;
+        }
+        Module module = ModuleUtil.findModuleForFile(file, project);
         if (module == null) {
             return false;
         }
@@ -93,7 +100,11 @@ public abstract class AbstractAnAction extends AnAction {
         if (file == null) {
             return false;
         }
-        Module module = ModuleUtil.findModuleForFile(file, Objects.requireNonNull(event.getProject()));
+        Project project = event.getProject();
+        if (project == null) {
+            return false;
+        }
+        Module module = ModuleUtil.findModuleForFile(file, project);
         if (module == null) {
             return false;
         }

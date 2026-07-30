@@ -5,6 +5,10 @@ import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.PropInfo;
 
 import java.io.File;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class PropXml {
 
@@ -22,6 +26,9 @@ public class PropXml {
 
     public DataSourceMeta[] getDSMetaWithDesign(String propfile, String uapHomePath) throws Exception {
         DataSourceMeta[] metas = loadPropInfo(propfile).getDataSource(uapHomePath);
+        if (metas == null || metas.length == 0) {
+            return new DataSourceMeta[]{new DataSourceMeta()};
+        }
         for (int i = 0; i < metas.length; i++) {
             DataSourceMeta meta = metas[i];
             if ("design".equals(meta.getDataSourceName())) {
@@ -35,19 +42,33 @@ public class PropXml {
         }
         DataSourceMeta[] metaswithdesign = new DataSourceMeta[metas.length + 1];
         System.arraycopy(metas, 0, metaswithdesign, 1, metas.length);
-        if (metas == null || metas.length == 0) {
-            metaswithdesign[0] = new DataSourceMeta();
-        } else {
-            metaswithdesign[0] = metas[0];
-            metaswithdesign[0].setDataSourceName("design");
-        }
+        metaswithdesign[0] = (DataSourceMeta) metas[0].clone();
+        metaswithdesign[0].setDataSourceName("design");
+        metaswithdesign[0].setBase(false);
         return metaswithdesign;
     }
 
     public void saveMeta(String nchome, DataSourceMeta[] metas, String uapHomePath) throws Exception {
         PropInfo propinfo = loadPropInfo(nchome);
         propinfo.setDataSource(metas, uapHomePath);
-        storePorpInfo(nchome, propinfo);
+        Path target = Path.of(nchome).toAbsolutePath().normalize();
+        Path parent = target.getParent();
+        if (parent == null) {
+            throw new IllegalArgumentException("Invalid prop.xml path: " + nchome);
+        }
+        Files.createDirectories(parent);
+        Path temporary = Files.createTempFile(parent, target.getFileName().toString(), ".tmp");
+        try {
+            storePorpInfo(temporary.toString(), propinfo);
+            try {
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     private void storePorpInfo(String propfile, PropInfo propInfo) throws Exception {

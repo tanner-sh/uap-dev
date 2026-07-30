@@ -30,6 +30,7 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.sql.Connection;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,6 +67,9 @@ public class ExportAction extends AbstractButtonAction {
         }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
+        if (info == null) {
+            throw new BusinessException("请选择数据库驱动");
+        }
         String exampleUrl = info.getDriverUrl();
         String host = dlg.getComponent(JTextField.class, "hostText").getText();
         String port = dlg.getComponent(JTextField.class, "portText").getText();
@@ -97,21 +101,17 @@ public class ExportAction extends AbstractButtonAction {
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                Connection connection = null;
-                try {
-                    ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
-                    connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
-                            finalJdbcUrl, userName, pwd);
+                try (URLClassLoader classLoader =
+                             ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+                     Connection connection = DbUtil.getConnection(classLoader,
+                             info.getDriverClass(), finalJdbcUrl, userName, pwd)) {
                     new DataDictionaryExportTool(connection, indicator)
                             .export(virtualFile.getPath(), selectedTables, exportAs,
                                     needFilterDefField);
-                    connection = null;
                 } catch (ProcessCanceledException exception) {
                     throw exception;
                 } catch (Exception exception) {
                     failure = exception;
-                } finally {
-                    DbUtil.closeResource(connection, null, null);
                 }
             }
 

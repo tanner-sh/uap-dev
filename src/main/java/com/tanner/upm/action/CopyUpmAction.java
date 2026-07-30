@@ -16,10 +16,17 @@ public class CopyUpmAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        String message = "success";
         EjbConfCopyUtil util = new EjbConfCopyUtil();
-        util.copy(event);
-        Messages.showInfoMessage(message, "Tips");
+        try {
+            int copied = util.copy(event);
+            if (copied == 0) {
+                Messages.showWarningDialog("未找到可复制的 UPM/REST 文件", "Tips");
+            } else {
+                Messages.showInfoMessage("Copied " + copied + " file(s)", "Tips");
+            }
+        } catch (Exception exception) {
+            Messages.showErrorDialog(exception.getMessage(), "Error");
+        }
     }
 
     @Override

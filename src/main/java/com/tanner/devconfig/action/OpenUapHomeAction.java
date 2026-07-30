@@ -29,7 +29,7 @@ public class OpenUapHomeAction extends AbstractAnAction {
         }
         try {
             Desktop.getDesktop().open(new File(ncHomePath));
-        } catch (IOException e) {
+        } catch (IOException | UnsupportedOperationException e) {
             Messages.showErrorDialog("打开文件夹发生错误!\n" + e.getMessage(), "错误");
         }
     }

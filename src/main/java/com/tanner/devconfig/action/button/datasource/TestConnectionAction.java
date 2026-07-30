@@ -23,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.sql.Connection;
+import java.net.URLClassLoader;
 
 /**
  * 测试数据源连接
@@ -85,20 +86,12 @@ public class TestConnectionAction extends AbstractButtonAction {
 
     private boolean testConnection(String homePath, DriverInfo info, String jdbcUrl,
                                    String userName, String pwd) {
-        ClassLoader classLoader;
-        try {
-            classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
-        } catch (Exception e) {
-            return false;
-        }
-        Connection connection = null;
-        try {
-            connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
+        try (URLClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+             Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
+                     jdbcUrl, userName, pwd)) {
             return true;
         } catch (Exception e) {
             return false;
-        } finally {
-            DbUtil.closeResource(connection, null, null);
         }
     }
 

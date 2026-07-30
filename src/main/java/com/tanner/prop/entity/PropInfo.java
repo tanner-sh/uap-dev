@@ -55,6 +55,9 @@ public class PropInfo {
     }
 
     public DataSourceMeta[] getDataSource(String uapHomePath) {
+        if (this.dataSource == null) {
+            return new DataSourceMeta[0];
+        }
         DataSourceMeta[] metas = new DataSourceMeta[this.dataSource.length];
         for (int i = 0; i < metas.length; i++) {
             try {
@@ -63,12 +66,17 @@ public class PropInfo {
                     metas[i].setPassword(UapUtil.decodeDbPwd(metas[i].getPassword(), uapHomePath));
                 }
             } catch (CloneNotSupportedException e) {
+                throw new IllegalStateException("无法复制数据源配置", e);
             }
         }
         return metas;
     }
 
     public void setDataSource(DataSourceMeta[] dataSource, String uapHomePath) {
+        if (dataSource == null) {
+            this.dataSource = new DataSourceMeta[0];
+            return;
+        }
         DataSourceMeta[] metas = new DataSourceMeta[dataSource.length];
         for (int i = 0; i < metas.length; i++) {
             try {
@@ -77,6 +85,7 @@ public class PropInfo {
                     metas[i].setPassword(UapUtil.encodeDbPwd(metas[i].getPassword(), uapHomePath));
                 }
             } catch (CloneNotSupportedException e) {
+                throw new IllegalStateException("无法复制数据源配置", e);
             }
         }
         this.dataSource = metas;

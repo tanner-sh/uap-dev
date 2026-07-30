@@ -30,7 +30,7 @@ public class MyFilteringGotoByModel extends FilteringGotoByModel<NccActionItem> 
 
     @Override
     protected @Nullable NccActionItem filterValueFor(NavigationItem item) {
-        return null;
+        return item instanceof NccActionItem nccActionItem ? nccActionItem : null;
     }
 
     @Override
@@ -70,7 +70,10 @@ public class MyFilteringGotoByModel extends FilteringGotoByModel<NccActionItem> 
 
     @Override
     public @Nullable String getFullName(@NotNull Object element) {
-        return null;
+        if (element instanceof NccActionItem item) {
+            return item.getName() + " " + item.getLabel() + " " + item.getClazz();
+        }
+        return element.toString();
     }
 
     @Override

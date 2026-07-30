@@ -24,7 +24,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,11 +90,11 @@ public class PdfBuilder implements IExportBuilder {
         doc.close();
         //存目录监听 结束
         Document document = new Document(rect);
-        PdfWriter writer = PdfWriter.getInstance(document, new ByteArrayOutputStream());
         IndexEvent indexEvent = new IndexEvent();
-        writer.setPageEvent(indexEvent);
-        PdfWriter.getInstance(document, new FileOutputStream(filePath));
-        document.open();
+        try (FileOutputStream output = new FileOutputStream(filePath)) {
+            PdfWriter writer = PdfWriter.getInstance(document, output);
+            writer.setPageEvent(indexEvent);
+            document.open();
         //添加章节目录
         Chapter indexChapter = new Chapter(new Paragraph("", getFontAsStyle()), 0);
         indexChapter.setNumberDepth(-1);
@@ -130,7 +129,12 @@ public class PdfBuilder implements IExportBuilder {
             indexEvent.setBody(true);
             document.add(c);
         }
-        document.close();
+            document.close();
+        } finally {
+            if (document.isOpen()) {
+                document.close();
+            }
+        }
     }
 
     private Font getChineseFontAsStyle(float size) {
@@ -166,27 +170,24 @@ public class PdfBuilder implements IExportBuilder {
         return table;
     }
 
-    private void setTableColumn(PdfPTable table, AggTable aggTable, Font font) throws IllegalAccessException {
+    private void setTableColumn(PdfPTable table, AggTable aggTable, Font font) {
         List<ColumnInfo> Columns = aggTable.getColumnInfoList();
         for (ColumnInfo column : Columns) {
-            table = buildCell(column, table, font);
+            addCell(table, String.valueOf(column.getColumnId()), font);
+            addCell(table, column.getColumnName(), font);
+            addCell(table, column.getType(), font);
+            addCell(table, column.getNullAble(), font);
+            addCell(table, column.getDefaultValue(), font);
+            addCell(table, column.getComment(), font);
+            addCell(table, column.getEnumValue(), font);
         }
     }
 
-    private PdfPTable buildCell(ColumnInfo columnInfo, PdfPTable pdfPTable, Font font) throws IllegalAccessException {
-        Field[] fields = columnInfo.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            PdfPCell cell = new PdfPCell();
-            cell.setVerticalAlignment(Element.ALIGN_CENTER);
-            //将设置私有构造器设为可取值
-            field.setAccessible(true);
-            // 得到类型和名字取值
-            Paragraph paragraph = new Paragraph(ObjectUtils.toString(field.get(columnInfo), ""), font);
-            //添加到表格
-            cell.addElement(paragraph);
-            pdfPTable.addCell(cell);
-        }
-        return pdfPTable;
+    private void addCell(PdfPTable table, String value, Font font) {
+        PdfPCell cell = new PdfPCell();
+        cell.setVerticalAlignment(Element.ALIGN_CENTER);
+        cell.addElement(new Paragraph(ObjectUtils.toString(value, ""), font));
+        table.addCell(cell);
     }
 
 }

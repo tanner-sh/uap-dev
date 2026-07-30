@@ -27,15 +27,23 @@ public class RunSysConfigAction extends AbstractAnAction {
         }
         String osName = System.getProperty("os.name");
         try {
+            File script;
+            ProcessBuilder processBuilder;
             if (osName.startsWith("Windows")) {
-                String commandWindows = ncHomePath + File.separator + "bin" + File.separator + "sysConfig.bat";
-                Runtime.getRuntime().exec(commandWindows);
-            } else if (osName.startsWith("Mac")) {
-                String commandMac = ncHomePath + File.separator + "bin" + File.separator + "sysConfig.sh";
-                Runtime.getRuntime().exec(commandMac);
+                script = new File(ncHomePath, "bin" + File.separator + "sysConfig.bat");
+                processBuilder = new ProcessBuilder("cmd.exe", "/c", script.getAbsolutePath());
+            } else if (osName.startsWith("Mac") || osName.startsWith("Linux")) {
+                script = new File(ncHomePath, "bin" + File.separator + "sysConfig.sh");
+                processBuilder = new ProcessBuilder("sh", script.getAbsolutePath());
             } else {
                 Messages.showInfoMessage("不支持的操作系统：" + osName, "提示");
+                return;
             }
+            if (!script.isFile()) {
+                Messages.showErrorDialog("找不到 sysConfig 脚本:\n" + script, "错误");
+                return;
+            }
+            processBuilder.directory(new File(ncHomePath)).start();
         } catch (Exception e) {
             Messages.showErrorDialog("运行异常：" + e.getMessage(), "错误");
         }

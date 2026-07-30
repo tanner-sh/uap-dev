@@ -3,6 +3,10 @@ package com.tanner.module;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleManager;
+import com.intellij.openapi.module.ModifiableModuleModel;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
@@ -72,20 +76,32 @@ public class NewModuleDialog extends DialogWrapper {
             Messages.showErrorDialog("Please set NC Module name!", "Error");
             return;
         }
+        if (!ncModuleNameText.matches("[\\p{L}\\p{N}._-]+")
+                || ".".equals(ncModuleNameText) || "..".equals(ncModuleNameText)) {
+            Messages.showErrorDialog("Invalid NC Module name!", "Error");
+            return;
+        }
         String locationText = location.getText();
         if (StringUtils.isBlank(locationText)) {
             Messages.showErrorDialog("Please set Module file location !", "Error");
             return;
         }
         Project project = event.getProject();
+        File createdDirectory = new File(locationText, moduleNameText);
+        if (createdDirectory.exists()) {
+            Messages.showErrorDialog("Module directory already exists: " + createdDirectory,
+                    "Error");
+            return;
+        }
+        Module module = null;
         try {
             //创建module
             UapModuleBuilder builder = new UapModuleType().createModuleBuilder();
-            String modulePath = locationText + File.separator + moduleNameText;
+            String modulePath = createdDirectory.getPath();
             builder.setModuleFilePath(modulePath + File.separator + moduleNameText + ".iml");
             builder.setContentEntryPath(modulePath);
             builder.setName(moduleNameText);
-            Module module = builder.commitModule(project, null);
+            module = builder.commitModule(project, null);
             //输出配置文件
             ConfigureFileUtil util = new ConfigureFileUtil();
             String meatPath = modulePath + File.separator + "META-INF";
@@ -97,7 +113,21 @@ public class NewModuleDialog extends DialogWrapper {
             //设置类路径
             ProjectManager.getInstance().setModuleLibrary(project, module);
             close(0);
-        } catch (BusinessException e) {
+        } catch (Exception e) {
+            if (module != null && !module.isDisposed()) {
+                Module failedModule = module;
+                try {
+                    ApplicationManager.getApplication().runWriteAction(() -> {
+                        ModifiableModuleModel model =
+                                ModuleManager.getInstance(project).getModifiableModel();
+                        model.disposeModule(failedModule);
+                        model.commit();
+                    });
+                } catch (Exception ignored) {
+                    // 保留原始创建失败原因。
+                }
+            }
+            FileUtil.delete(createdDirectory);
             Messages.showErrorDialog(e.getMessage(), "Error");
         }
     }

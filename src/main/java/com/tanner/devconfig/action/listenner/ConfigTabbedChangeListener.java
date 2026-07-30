@@ -2,8 +2,6 @@ package com.tanner.devconfig.action.listenner;
 
 import com.tanner.abs.AbstractDialog;
 import com.tanner.abs.AbstractTabListener;
-import com.tanner.devconfig.DevConfigDialog;
-import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.devconfig.util.TableModelUtil;
 
 import javax.swing.*;
@@ -24,9 +22,6 @@ public class ConfigTabbedChangeListener extends AbstractTabListener {
     protected void afterChange(ChangeEvent event, AbstractDialog dlg) {
         JTabbedPane tabbedPane = dlg.getComponent(JTabbedPane.class, "tabbedPane");
         int index = tabbedPane.getSelectedIndex();
-        if (index == 0) {
-            initDataSource();
-        }
         if (index == 1) {
             initModule();
         }
@@ -44,10 +39,4 @@ public class ConfigTabbedChangeListener extends AbstractTabListener {
     protected void click(MouseEvent event, AbstractDialog dlg) {
     }
 
-    /**
-     * 加载数据源
-     */
-    private void initDataSource() {
-        DataSourceUtil.initDataSource((DevConfigDialog) getDlg());
-    }
 }

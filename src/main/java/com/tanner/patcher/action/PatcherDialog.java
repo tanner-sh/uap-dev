@@ -23,6 +23,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class PatcherDialog extends AbstractDialog {
@@ -137,7 +139,14 @@ public class PatcherDialog extends AbstractDialog {
             return;
         }
         final Project project = event.getProject();
-        final VirtualFile[] selectedFiles = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
+        List<VirtualFile> currentSelection = new ArrayList<>();
+        for (int i = 0; i < model.getSize(); i++) {
+            VirtualFile file = model.getElementAt(i);
+            if (file != null && file.isValid()) {
+                currentSelection.add(file);
+            }
+        }
+        final VirtualFile[] selectedFiles = currentSelection.toArray(new VirtualFile[0]);
         final String serverNameText = serverName.getText();
         final String projectNameText = projectName.getText();
         final String functionText = functionDescription.getText();
@@ -163,7 +172,7 @@ public class PatcherDialog extends AbstractDialog {
                     failure = exception;
                 } finally {
                     if (util != null) {
-                        util.delete(new File(util.getExportPath()));
+                        util.cleanupStaging();
                     }
                 }
             }

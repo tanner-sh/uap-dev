@@ -10,7 +10,9 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,15 +53,15 @@ public class ScriptExportTool {
 
     public void export(String exportPath, String heavyNodeCode, String lightNodeCode, String mdName,
                        String mdModule) throws Exception {
-        ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
-        this.connection = DbUtil.getConnection(classLoader, driverClass, jdbcUrl, userName, pwd);
-        try {
+        try (URLClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+             Connection openedConnection = DbUtil.getConnection(classLoader, driverClass, jdbcUrl,
+                     userName, pwd)) {
+            this.connection = openedConnection;
             exportHeavyNodeCode(exportPath, heavyNodeCode);
             exportLightNodeCode(exportPath, lightNodeCode);
             exportMdName(exportPath, mdName);
             exportMdModule(exportPath, mdModule);
         } finally {
-            DbUtil.closeResource(connection, null, null);
             connection = null;
         }
     }
@@ -154,7 +156,7 @@ public class ScriptExportTool {
         for (Object nodeCode : allHeavyNodeCodeByParent) {
             File scriptFile = resolveSqlFile(scriptDirectory, Objects.toString(nodeCode, ""));
             scriptFile.createNewFile();
-            FileUtils.writeLines(scriptFile, getExportSqls(configList, (String) nodeCode));
+            writeSqlLines(scriptFile, getExportSqls(configList, (String) nodeCode));
         }
     }
 
@@ -196,7 +198,7 @@ public class ScriptExportTool {
         for (Object nodeCode : allLightNodeCodeByParent) {
             File scriptFile = resolveSqlFile(scriptDirectory, Objects.toString(nodeCode, ""));
             scriptFile.createNewFile();
-            FileUtils.writeLines(scriptFile, getExportSqls(configList, (String) nodeCode));
+            writeSqlLines(scriptFile, getExportSqls(configList, (String) nodeCode));
         }
     }
 
@@ -211,7 +213,7 @@ public class ScriptExportTool {
         List<Map<String, String>> configList = readExportConfig("mdName.yaml");
         File scriptFile = resolveSqlFile(scriptDirectory, mdName);
         scriptFile.createNewFile();
-        FileUtils.writeLines(scriptFile, getExportSqls(configList, mdName));
+        writeSqlLines(scriptFile, getExportSqls(configList, mdName));
     }
 
     private void exportMdModule(String exportPath, String mdModule) throws Exception {
@@ -225,7 +227,7 @@ public class ScriptExportTool {
         List<Map<String, String>> configList = readExportConfig("mdModule.yaml");
         File scriptFile = resolveSqlFile(scriptDirectory, mdModule);
         scriptFile.createNewFile();
-        FileUtils.writeLines(scriptFile, getExportSqls(configList, mdModule));
+        writeSqlLines(scriptFile, getExportSqls(configList, mdModule));
     }
 
     private File resolveSqlFile(File directory, String name) throws Exception {
@@ -239,6 +241,11 @@ public class ScriptExportTool {
             throw new IllegalArgumentException("非法导出文件名: " + name);
         }
         return filePath.toFile();
+    }
+
+    private void writeSqlLines(File file, List<String> lines) throws Exception {
+        FileUtils.writeLines(file, StandardCharsets.UTF_8.name(), lines,
+                System.lineSeparator());
     }
 
 }

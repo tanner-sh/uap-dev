@@ -16,17 +16,21 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.pom.java.LanguageLevel;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ConfigureFileUtil;
+import com.tanner.base.XmlUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.FileAlreadyExistsException;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -98,6 +102,7 @@ public class ExportPatcherUtil {
     private String functionDescription;
     private String configDescription;
     private String zipName = "";
+    private boolean stagingOwned;
 
     public ExportPatcherUtil(Project project, VirtualFile[] selectedFiles, String exportPath,
                              String patchName,
@@ -122,10 +127,10 @@ public class ExportPatcherUtil {
         this.patchName = patchName;
         this.srcFlag = srcFlag;
         if (StringUtils.isNotBlank(webServerName)) {
-            if (!webServerName.startsWith(File.separator)) {
-                webServerName = File.separator + webServerName;
-            }
-            this.webServerName = webServerName;
+            String normalizedServerName = webServerName.startsWith(File.separator)
+                    ? webServerName.substring(1) : webServerName;
+            validateFileNamePart(normalizedServerName, "server name");
+            this.webServerName = File.separator + normalizedServerName;
         }
         this.cloudFlag = cloudFlag;
         this.projectName = projectName;
@@ -159,6 +164,7 @@ public class ExportPatcherUtil {
      * @throws IOException IOException
      */
     public void exportPatcher(ProgressIndicator progressIndicator) throws Exception {
+        prepareStaging();
         //所有module
         Map<String, Module> moduleMap = new HashMap<>();
         Module[] modules = ModuleManager.getInstance(project).getModules();
@@ -285,28 +291,49 @@ public class ExportPatcherUtil {
         //创建zip压缩包
         zipName = ZipUtil.toZip(exportPath, patchName);
         //删除导出的目录
-        delete(new File(exportPath));
+        cleanupStaging();
     }
 
-    /**
-     * 压缩后删除原目录
-     *
-     * @param file file
-     */
-    public void delete(File file) {
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-            if (children != null) {
-                for (File child : children) {
-                    delete(child);
-                }
-            }
-            file.delete();
-        } else {
-            file.delete();
+    private void prepareStaging() throws Exception {
+        Path staging = Path.of(exportPath).toAbsolutePath().normalize();
+        Files.createDirectories(staging.getParent());
+        try {
+            Files.createDirectory(staging);
+            stagingOwned = true;
+        } catch (FileAlreadyExistsException e) {
+            throw new BusinessException("暂存目录已存在，请移走后重试: " + staging);
         }
     }
 
+    public void cleanupStaging() {
+        if (!stagingOwned) {
+            return;
+        }
+        Path staging = Path.of(exportPath).toAbsolutePath().normalize();
+        try {
+            Files.walkFileTree(staging, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                        throws IOException {
+                    Files.deleteIfExists(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                        throws IOException {
+                    if (exc != null) {
+                        throw exc;
+                    }
+                    Files.deleteIfExists(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            stagingOwned = false;
+        } catch (IOException ignored) {
+            // 下一次导出会报告残留的暂存目录，避免误删非本次任务创建的内容。
+        }
+    }
     private void createReadMe(Set<String> moduleSet, String javaVersion) throws BusinessException {
         //输出readme
         ConfigureFileUtil configureFileUtil = new ConfigureFileUtil();
@@ -392,9 +419,7 @@ public class ExportPatcherUtil {
             File file = new File(modulePath + PATH_META_INF + File.separator + FILE_MODULE);
             if (file.exists()) {
             try (InputStream in = new FileInputStream(file)) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                Document doc = builder.parse(in);
+                Document doc = XmlUtil.parse(in);
                 Element root = doc.getDocumentElement();
                 ncModuleName = root.getAttribute(NAME_MODULE);
             }
@@ -417,9 +442,7 @@ public class ExportPatcherUtil {
         if (fromFile.exists()) {
             Document doc;
             try (InputStream in = new FileInputStream(fromFile)) {
-                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder builder = factory.newDocumentBuilder();
-                doc = builder.parse(in);
+                doc = XmlUtil.parse(in);
             }
             Element root = doc.getDocumentElement();
 
@@ -458,8 +481,13 @@ public class ExportPatcherUtil {
      */
     private void exportOpenApiMD(String moduleName, File fromFile) throws Exception {
         String fromParentPath = fromFile.getParent();
-        String toPath = exportPath + PATH_REPLACEMENT + fromParentPath.split(
-                Matcher.quoteReplacement(PATH_OPENAPI))[1] + File.separator + fromFile.getName();
+        int openApiIndex = fromParentPath.indexOf(PATH_OPENAPI);
+        if (openApiIndex < 0) {
+            throw new BusinessException("OpenAPI 文件不在 openapi 目录中: " + fromFile);
+        }
+        String relativeParent = fromParentPath.substring(openApiIndex + PATH_OPENAPI.length());
+        String toPath = exportPath + PATH_REPLACEMENT + relativeParent
+                + File.separator + fromFile.getName();
         outPatcher(moduleName, fromFile.getPath(), toPath);
     }
 
@@ -472,6 +500,7 @@ public class ExportPatcherUtil {
      */
     private void exportMetaFile(String moduleName, String ncModuleName, File fromFile)
             throws Exception {
+        requireNcModuleName(ncModuleName, fromFile);
         String fileName = fromFile.getName();
         String fromParentPath = fromFile.getParent();
         String toPath = exportPath + PATH_REPLACEMENT + PATH_MODULES + File.separator + ncModuleName
@@ -511,6 +540,7 @@ public class ExportPatcherUtil {
      * @param fromFile     fromFile
      */
     private void exportUpm(String moduleName, String ncModuleName, File fromFile) throws Exception {
+        requireNcModuleName(ncModuleName, fromFile);
         String fileName = fromFile.getName();
         String toPath = exportPath + PATH_REPLACEMENT + PATH_MODULES + File.separator + ncModuleName
                 + PATH_META_INF;
@@ -617,7 +647,7 @@ public class ExportPatcherUtil {
                         || elementPath.endsWith(TYPE_XML) || elementPath.endsWith(TYPE_UPM)
                         || elementPath.endsWith(TYPE_BMF) || elementPath.endsWith(TYPE_BPF)
                         || elementPath.endsWith(TYPE_PROPERTIES) || elementPath.endsWith(TYPE_REST)
-                        || elementPath.endsWith(TYPE_OPENAPI_MD)) {
+                        || isOpenApiMarkdown(elementPath)) {
                     fileUrlSet.add(elementPath);
                 }
             }
@@ -636,7 +666,12 @@ public class ExportPatcherUtil {
         if (!from.exists()) {
             throw new BusinessException("please build : " + moduleName);
         }
-        File to = new File(toPath);
+        Path exportRoot = Path.of(exportPath).toAbsolutePath().normalize();
+        Path normalizedTarget = Path.of(toPath).toAbsolutePath().normalize();
+        if (!normalizedTarget.startsWith(exportRoot)) {
+            throw new BusinessException("导出目标超出暂存目录: " + normalizedTarget);
+        }
+        File to = normalizedTarget.toFile();
         FileUtil.copy(from, to);
         if (from.getName().endsWith(TYPE_CLASS)) {
             // 内部类编译后会成为“类名$*.class”。
@@ -730,6 +765,20 @@ public class ExportPatcherUtil {
 
     public String getZipName() {
         return zipName;
+    }
+
+    static boolean isOpenApiMarkdown(String path) {
+        if (path == null || !path.endsWith(".md")) {
+            return false;
+        }
+        String normalized = path.replace('\\', '/');
+        return normalized.contains("/openapi/");
+    }
+
+    private void requireNcModuleName(String ncModuleName, File file) throws BusinessException {
+        if (StringUtils.isBlank(ncModuleName)) {
+            throw new BusinessException("无法确定文件所属 NC 模块: " + file);
+        }
     }
 
 }

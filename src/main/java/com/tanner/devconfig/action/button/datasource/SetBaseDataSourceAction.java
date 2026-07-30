@@ -5,6 +5,8 @@ import com.tanner.abs.AbstractDialog;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
+import com.tanner.base.BusinessException;
+import com.intellij.openapi.ui.Messages;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -21,21 +23,22 @@ public class SetBaseDataSourceAction extends AbstractButtonAction {
     }
 
     @Override
-    public void doAction(ActionEvent event) {
+    public void doAction(ActionEvent event) throws BusinessException {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
         Map<String, DataSourceMeta> map = dialog.getDataSourceMetaMap();
         DataSourceMeta currMeta = dialog.getCurrMeta();
-        for (String key : map.keySet()) {
-            DataSourceMeta meta = map.get(key);
-            if (key.equals(currMeta.getDataSourceName())) {
-                meta.setBase(true);
-                dialog.getComponent(JCheckBox.class, "baseChx").setSelected(true);
-                dialog.getComponent(JCheckBox.class, "devChx").setSelected(false);
-            } else {
-                meta.setBase(false);
-                dialog.getComponent(JCheckBox.class, "baseChx").setSelected(false);
-            }
+        if (currMeta == null) {
+            throw new BusinessException("请选择数据源");
         }
+        if (currMeta.isDesign()) {
+            Messages.showWarningDialog("design 数据源不能设为基准库", "提示");
+            return;
+        }
+        for (DataSourceMeta meta : map.values()) {
+            meta.setBase(meta == currMeta);
+        }
+        dialog.getComponent(JCheckBox.class, "baseChx").setSelected(true);
+        dialog.getComponent(JCheckBox.class, "devChx").setSelected(false);
         DataSourceUtil.saveDesignDataSourceMeta(dialog);
     }
 }

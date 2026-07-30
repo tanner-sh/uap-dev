@@ -12,7 +12,6 @@ import com.tanner.module.UapModuleType;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 public class ModuleUtil {
 
@@ -80,7 +79,11 @@ public class ModuleUtil {
     private List<Pair<String, String>> scanNCSourcePath(String modulePath) {
         List<Pair<String, String>> list = new ArrayList<>();
         File moduleFile = new File(modulePath);
-        for (File componentFile : Objects.requireNonNull(moduleFile.listFiles())) {
+        File[] componentFiles = moduleFile.listFiles();
+        if (componentFiles == null) {
+            return list;
+        }
+        for (File componentFile : componentFiles) {
             if (componentFile.isFile()) {
                 continue;
             }
@@ -89,7 +92,11 @@ public class ModuleUtil {
             if (file.exists()) {
                 File srcFile = new File(file.getParent() + File.separator + "src");
                 if (srcFile.exists()) {
-                    for (File f : Objects.requireNonNull(srcFile.listFiles())) {
+                    File[] sourceDirectories = srcFile.listFiles();
+                    if (sourceDirectories == null) {
+                        continue;
+                    }
+                    for (File f : sourceDirectories) {
                         if (f.getName().equals("client") || f.getName().equals("public") || f.getName()
                                 .equals("private")) {
                             list.add(new Pair<>(f.getPath(), ""));

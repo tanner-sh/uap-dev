@@ -3,10 +3,8 @@ package com.tanner.datadictionary.tool;
 import com.tanner.datadictionary.entity.AggTable;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
-import org.apache.commons.io.FileUtils;
-
-import java.io.File;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -16,9 +14,7 @@ public class MarkdownBuilder implements IExportBuilder {
     public void build(List<AggTable> aggTableList, String exportDirPath) throws Exception {
         String filePath = Path.of(exportDirPath, "datadictionary.md").toString();
         String markdownContent = getMarkdownContent(aggTableList);
-        File scriptFile = new File(filePath);
-        scriptFile.createNewFile();
-        FileUtils.writeStringToFile(scriptFile, markdownContent, Charset.defaultCharset());
+        Files.writeString(Path.of(filePath), markdownContent, StandardCharsets.UTF_8);
     }
 
     private String getMarkdownContent(List<AggTable> aggTableList) {
@@ -34,17 +30,28 @@ public class MarkdownBuilder implements IExportBuilder {
             //拼接列
             for (ColumnInfo columnInfo : columnInfoList) {
                 oneTableContent.append("|").append(columnInfo.getColumnId()).append("|").
-                        append(columnInfo.getColumnName()).append("|").
-                        append(columnInfo.getType()).append("|").
-                        append(columnInfo.getNullAble()).append("|").
-                        append(columnInfo.getDefaultValue()).append("|").
-                        append(columnInfo.getComment()).append("|").
-                        append(columnInfo.getEnumValue()).append("|").append("\n");
+                        append(escapeCell(columnInfo.getColumnName())).append("|").
+                        append(escapeCell(columnInfo.getType())).append("|").
+                        append(escapeCell(columnInfo.getNullAble())).append("|").
+                        append(escapeCell(columnInfo.getDefaultValue())).append("|").
+                        append(escapeCell(columnInfo.getComment())).append("|").
+                        append(escapeCell(columnInfo.getEnumValue())).append("|").append("\n");
             }
             markdownContent.append(oneTableContent);
         }
         markdownContent.insert(0, "[TOC]\n");
         return markdownContent.toString();
+    }
+
+    static String escapeCell(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("\\", "\\\\")
+                .replace("|", "\\|")
+                .replace("\r\n", "<br>")
+                .replace("\n", "<br>")
+                .replace("\r", "<br>");
     }
 
 }

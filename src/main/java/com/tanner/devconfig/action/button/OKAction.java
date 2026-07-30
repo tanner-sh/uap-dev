@@ -79,7 +79,7 @@ public class OKAction extends AbstractButtonAction {
     /**
      * 保存数据源
      */
-    private void saveDataSource() {
+    private void saveDataSource() throws BusinessException {
         DataSourceUtil.saveDesignDataSourceMeta((DevConfigDialog) getDialog());
     }
 

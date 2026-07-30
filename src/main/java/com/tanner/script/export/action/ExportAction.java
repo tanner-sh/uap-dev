@@ -10,6 +10,7 @@ import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.base.BusinessException;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.script.export.util.ScriptExportTool;
@@ -27,7 +28,7 @@ public class ExportAction extends AbstractButtonAction {
     }
 
     @Override
-    public void doAction(ActionEvent event) {
+    public void doAction(ActionEvent event) throws BusinessException {
         AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
         String exportPath = dlg.getComponent(JTextField.class, "exportPathText").getText();
         if (StringUtils.isEmpty(exportPath)) {
@@ -36,6 +37,9 @@ public class ExportAction extends AbstractButtonAction {
         }
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
+        if (info == null) {
+            throw new BusinessException("请选择数据库驱动");
+        }
         String exampleUrl = info.getDriverUrl();
         String host = dlg.getComponent(JTextField.class, "hostText").getText();
         String port = dlg.getComponent(JTextField.class, "portText").getText();

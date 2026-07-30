@@ -24,7 +24,7 @@ public class ApplyAction extends AbstractButtonAction {
 
         //数据源保存
         if (dialog.getTabIndex() == 0) {
-            DataSourceUtil.syncCurrDataSourceValue(dialog);
+            DataSourceUtil.saveDesignDataSourceMeta(dialog);
         }
 
         //模块选择保存

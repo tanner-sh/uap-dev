@@ -6,6 +6,8 @@ import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ModuleRootManager;
 import com.intellij.openapi.roots.ModuleRootModificationUtil;
+import com.intellij.openapi.roots.OrderEntry;
+import com.intellij.openapi.roots.LibraryOrderEntry;
 import com.intellij.openapi.roots.libraries.Library;
 import com.intellij.openapi.roots.libraries.LibraryTable;
 import com.intellij.openapi.roots.libraries.LibraryTablesRegistrar;
@@ -87,8 +89,7 @@ public class ProjectManager {
             throw new BusinessException("this project is not set uap libraries!");
         }
         for (Library library : libraries) {
-            if (ModuleRootManager.getInstance(module).getModifiableModel().findLibraryOrderEntry(library)
-                    == null) {
+            if (!hasLibrary(module, library)) {
                 ModuleRootModificationUtil.addDependency(module, library);
             }
         }
@@ -102,12 +103,21 @@ public class ProjectManager {
                 continue;
             }
             for (Library library : libraries) {
-                if (ModuleRootManager.getInstance(module).getModifiableModel()
-                        .findLibraryOrderEntry(library) == null) {
+                if (!hasLibrary(module, library)) {
                     ModuleRootModificationUtil.addDependency(module, library);
                 }
             }
         }
+    }
+
+    private boolean hasLibrary(Module module, Library library) {
+        for (OrderEntry entry : ModuleRootManager.getInstance(module).getOrderEntries()) {
+            if (entry instanceof LibraryOrderEntry libraryEntry
+                    && library.equals(libraryEntry.getLibrary())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public <T> T getService(Project project, Class<T> clazz) {

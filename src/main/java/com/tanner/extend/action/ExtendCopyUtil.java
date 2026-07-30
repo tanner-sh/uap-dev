@@ -1,102 +1,76 @@
 package com.tanner.extend.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.module.Module;
-import com.intellij.openapi.ui.Messages;
-import com.intellij.openapi.util.io.FileUtil;
-import com.tanner.base.BaseUtil;
+import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.tanner.base.BusinessException;
 import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.stream.Stream;
 
-public class ExtendCopyUtil {
+public final class ExtendCopyUtil {
 
-    public static final int BUFFER_SIZE = 8192;
-    /**
-     * 项目的鉴权文件路径
-     */
-    public static final String PROJECT_CONFIG_FILE_PATH =
-            File.separator + "nccloud" + File.separator + "src" + File.separator + "client"
-                    + File.separator + "yyconfig";
-    /**
-     * 模块的鉴权文件路径
-     */
     public static final String HOME_CONFIG_FILE_PATH =
             File.separator + "hotwebs" + File.separator + "nccloud" + File.separator + "WEB-INF"
                     + File.separator + "extend" + File.separator + "yyconfig";
 
+    private ExtendCopyUtil() {
+    }
 
-    /**
-     * 拷贝一个模块的鉴权文件到home中，拷贝方法就是将该模块鉴权文件目录下的所有xml文件拷贝到home中的鉴权文件目录下
-     *
-     * @param event event
-     * @throws Exception Exception
-     */
-    public static void copyToNCHome(AnActionEvent event) throws Exception {
-        Module module = BaseUtil.getModule(event);
+    public static int copyToNCHome(AnActionEvent event) throws Exception {
         String homePath = UapProjectEnvironment.getInstance(event.getProject()).getUapHomePath();
         if (StringUtils.isBlank(homePath)) {
-            Messages.showMessageDialog("Not set NC Home", "Error", Messages.getErrorIcon());
-            return;
+            throw new BusinessException("Not set NC Home");
         }
-        copyDir(module.getModuleNioFile().getParent().toString() + PROJECT_CONFIG_FILE_PATH,
-                homePath + HOME_CONFIG_FILE_PATH);
+        VirtualFile selected = event.getData(CommonDataKeys.VIRTUAL_FILE);
+        if (selected == null) {
+            throw new BusinessException("请选择鉴权文件或目录");
+        }
+        Path source = Path.of(selected.getPath()).toAbsolutePath().normalize();
+        Path targetRoot = Path.of(homePath + HOME_CONFIG_FILE_PATH)
+                .toAbsolutePath().normalize();
+        List<Path> files;
+        if (Files.isDirectory(source)) {
+            try (Stream<Path> stream = Files.walk(source)) {
+                files = stream.filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().endsWith(".xml"))
+                        .toList();
+            }
+        } else {
+            files = List.of(source);
+        }
+        int copied = 0;
+        for (Path file : files) {
+            if (!file.getFileName().toString().endsWith(".xml")) {
+                continue;
+            }
+            Path relative = relativeAfterSegment(file, "yyconfig");
+            if (relative == null) {
+                continue;
+            }
+            Path target = targetRoot.resolve(relative).normalize();
+            if (!target.startsWith(targetRoot)) {
+                throw new BusinessException("非法鉴权文件路径: " + file);
+            }
+            Files.createDirectories(target.getParent());
+            Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+            copied++;
+        }
+        return copied;
     }
 
-    /**
-     * 将某个文件下下的所有xml文件拷贝到另一个文件夹
-     *
-     * @param fromDirPath fromDirPath
-     * @param toDirPath   toDirPath
-     * @throws IOException IOException
-     */
-    private static void copyDir(String fromDirPath, String toDirPath) throws IOException {
-        File file = new File(fromDirPath);
-        String[] subFilePaths = file.list();
-        if (subFilePaths == null) {
-            return;
-        }
-        if (!(new File(toDirPath)).exists()) {
-            if (!(new File(toDirPath)).mkdir()) {
-                Messages.showMessageDialog("Home所在的目录不存在或者，你没有操作home所在目录的权限", "Error",
-                        Messages.getErrorIcon());
-                return;
+    private static Path relativeAfterSegment(Path path, String segment) {
+        for (int i = path.getNameCount() - 2; i >= 0; i--) {
+            if (segment.equals(path.getName(i).toString()) && i + 1 < path.getNameCount()) {
+                return path.subpath(i + 1, path.getNameCount());
             }
         }
-        // 递归拷贝
-        for (String subFilePath : subFilePaths) {
-            File file0 = new File(fromDirPath + File.separator + subFilePath);
-            if (file0.isDirectory()) {
-                copyDir(fromDirPath + File.separator + subFilePath,
-                        toDirPath + File.separator + subFilePath);
-            } else if (file0.isFile()) {
-                copyXmlFile(fromDirPath + File.separator + subFilePath,
-                        toDirPath + File.separator + subFilePath);
-            }
-        }
-    }
-
-    /**
-     * 复制xml文件
-     *
-     * @param fromFilePath fromFilePath
-     * @param newFilePath  newFilePath
-     * @throws IOException IOException
-     */
-    private static void copyXmlFile(@NotNull String fromFilePath, @NotNull String newFilePath)
-            throws IOException {
-        if (!fromFilePath.endsWith(".xml")) {
-            return;
-        }
-        File fromFile = new File(fromFilePath);
-        File toFile = new File(newFilePath);
-        FileUtil.copy(fromFile, toFile);
-    }
-
-    public static void main(String[] args) throws IOException {
-        copyDir("D://111", "D://222");
+        return null;
     }
 }

@@ -8,6 +8,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
@@ -34,12 +37,29 @@ public class ZipUtil {
             throw new BusinessException("zip failed: invalid patch name");
         }
         File file = sourcePath.toFile();
-        try (FileOutputStream fileOutputStream = new FileOutputStream(zipPath.toFile());
+        Path temporary = null;
+        try {
+            temporary = Files.createTempFile(parent, fileName + "_" + patchName, ".zip.tmp");
+            try (FileOutputStream fileOutputStream = new FileOutputStream(temporary.toFile());
              CheckedOutputStream cos = new CheckedOutputStream(fileOutputStream, new CRC32());
              ZipOutputStream out = new ZipOutputStream(cos)) {
-            compress(file, out, sourcePath);
+                compress(file, out, sourcePath);
+            }
+            try {
+                Files.move(temporary, zipPath, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(temporary, zipPath, StandardCopyOption.REPLACE_EXISTING);
+            }
         } catch (Exception e) {
             throw new BusinessException("zip failed : " + e.getMessage());
+        } finally {
+            if (temporary != null) {
+                try {
+                    Files.deleteIfExists(temporary);
+                } catch (IOException ignored) {
+                }
+            }
         }
         return zipPath.toString();
     }

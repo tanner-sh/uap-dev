@@ -55,9 +55,11 @@ public class LangSearchDlg extends AbstractDataSourceDialog {
                         String osName = System.getProperty("os.name");
                         try {
                             if (osName.startsWith("Windows")) {
-                                Runtime.getRuntime().exec("explorer /select, " + filePath);
+                                new ProcessBuilder("explorer.exe", "/select,", filePath).start();
                             } else if (osName.startsWith("Mac")) {
-                                Runtime.getRuntime().exec("open -R " + filePath);
+                                new ProcessBuilder("open", "-R", filePath).start();
+                            } else if (osName.startsWith("Linux")) {
+                                new ProcessBuilder("xdg-open", file.getParent()).start();
                             }
                         } catch (IOException ex) {
                             Messages.showInfoMessage("打开文件出错!: " + filePath, "提示");

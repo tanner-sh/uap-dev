@@ -24,6 +24,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.event.ActionEvent;
 import java.sql.Connection;
+import java.net.URLClassLoader;
 import java.util.List;
 import java.util.Vector;
 
@@ -38,6 +39,9 @@ public class LoadAction extends AbstractButtonAction {
         AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
         String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
         DriverInfo info = dlg.getDriverInfoMap().get(driverName);
+        if (info == null) {
+            throw new BusinessException("请选择数据库驱动");
+        }
         String exampleUrl = info.getDriverUrl();
         String host = dlg.getComponent(JTextField.class, "hostText").getText();
         String port = dlg.getComponent(JTextField.class, "portText").getText();
@@ -73,18 +77,15 @@ public class LoadAction extends AbstractButtonAction {
 
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
-                Connection connection = null;
-                try {
+                try (URLClassLoader classLoader =
+                             ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+                     Connection connection = DbUtil.getConnection(classLoader,
+                             info.getDriverClass(), finalJdbcUrl, userName, pwd)) {
                     indicator.setIndeterminate(true);
-                    ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
-                    connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
-                            finalJdbcUrl, userName, pwd);
                     IEngine engine = DbUtil.getEngine(connection);
                     result = engine.getAllTableInfo(connection, userName, tableNamePattern);
                 } catch (Exception exception) {
                     failure = exception;
-                } finally {
-                    DbUtil.closeResource(connection, null, null);
                 }
             }
 

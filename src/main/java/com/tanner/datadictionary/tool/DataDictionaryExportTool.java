@@ -25,21 +25,16 @@ public class DataDictionaryExportTool {
     }
 
     public void export(String exportDirPath, List<TableInfo> selectedTables, String exportAs, boolean needFilterDefField) throws Exception {
-        try {
-            progressIndicator.setText("正在查询数据字典");
-            progressIndicator.setIndeterminate(selectedTables.isEmpty());
-            List<AggTable> aggTableList = buildAggTables(selectedTables, needFilterDefField);
-            progressIndicator.setText("正在组装导出数据");
-            IExportBuilder exportBuilder = getExportBuilder(exportAs);
-            if (exportBuilder == null) {
-                throw new IllegalArgumentException("不支持的导出格式: " + exportAs);
-            }
-            exportBuilder.build(aggTableList, exportDirPath);
-            progressIndicator.setFraction(1);
-        } finally {
-            DbUtil.closeResource(connection, null, null);
-            connection = null;
+        progressIndicator.setText("正在查询数据字典");
+        progressIndicator.setIndeterminate(selectedTables.isEmpty());
+        List<AggTable> aggTableList = buildAggTables(selectedTables, needFilterDefField);
+        progressIndicator.setText("正在组装导出数据");
+        IExportBuilder exportBuilder = getExportBuilder(exportAs);
+        if (exportBuilder == null) {
+            throw new IllegalArgumentException("不支持的导出格式: " + exportAs);
         }
+        exportBuilder.build(aggTableList, exportDirPath);
+        progressIndicator.setFraction(1);
     }
 
     private List<AggTable> buildAggTables(List<TableInfo> selectedTables, boolean needFilterDefField) throws Exception {

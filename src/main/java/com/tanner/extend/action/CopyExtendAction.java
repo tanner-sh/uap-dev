@@ -14,10 +14,14 @@ public class CopyExtendAction extends AbstractAnAction {
     @Override
     public void doAction(AnActionEvent event) {
         try {
-            ExtendCopyUtil.copyToNCHome(event);
-            Messages.showInfoMessage("Success", "Tips");
-        } catch (Exception e) {
-            Messages.showInfoMessage(e.getMessage(), "Error");
+            int copied = ExtendCopyUtil.copyToNCHome(event);
+            if (copied == 0) {
+                Messages.showWarningDialog("未找到可复制的鉴权 XML 文件", "Tips");
+            } else {
+                Messages.showInfoMessage("Copied " + copied + " file(s)", "Tips");
+            }
+        } catch (Exception exception) {
+            Messages.showErrorDialog(exception.getMessage(), "Error");
         }
     }
 

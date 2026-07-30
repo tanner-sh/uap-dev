@@ -4,8 +4,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -25,8 +23,7 @@ public class XMLToObject {
 
     public static Object getJavaObjectFromFile(File file, Class rootClass, boolean allowNoField)
             throws Exception {
-        DocumentBuilder parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        Document doc = parser.parse(file);
+        Document doc = com.tanner.base.XmlUtil.parse(file);
         return getJavaObjectFromDocument(doc, rootClass, allowNoField);
     }
 
@@ -90,7 +87,7 @@ public class XMLToObject {
         } else if (itemClass == double.class) {
             f.setDouble(o, Double.valueOf(value).doubleValue());
         } else if (itemClass == float.class) {
-            f.setDouble(o, Float.valueOf(value).floatValue());
+            f.setFloat(o, Float.parseFloat(value));
         }
     }
 
@@ -114,8 +111,9 @@ public class XMLToObject {
             }
             return Array.newInstance(pureClass, arrayList).getClass();
         }
-        String[] id = {"[B", "[C", "[I", "[J"};
-        Class[] type = {byte.class, char.class, int.class, long.class};
+        String[] id = {"[B", "[C", "[S", "[I", "[J", "[F", "[D", "[Z"};
+        Class[] type = {byte.class, char.class, short.class, int.class, long.class,
+                float.class, double.class, boolean.class};
         for (int i = 0; i < id.length; i++) {
             key = className.indexOf(id[i]);
             if (key >= 0) {
@@ -318,7 +316,7 @@ public class XMLToObject {
         } else if (itemClass == double.class) {
             Array.setDouble(arrayObject, location, Double.valueOf(value).doubleValue());
         } else if (itemClass == float.class) {
-            Array.setDouble(arrayObject, location, Float.valueOf(value).floatValue());
+            Array.setFloat(arrayObject, location, Float.parseFloat(value));
         }
     }
 }

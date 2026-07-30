@@ -31,7 +31,7 @@ public class ExportFileTest {
     public void exportedDictionaryFilesRemainOnDiskAndEscapeHtml() throws Exception {
         File output = temporaryFolder.newFolder("dictionary");
         ColumnInfo column = new ColumnInfo(1, "name", "varchar", "YES", null,
-                "<script>", "");
+                "<script>|下一行\n内容", "");
         AggTable table = new AggTable();
         table.setTableInfo(new TableInfo("demo", "A&B"));
         table.setColumnInfoList(List.of(column));
@@ -45,10 +45,16 @@ public class ExportFileTest {
         assertTrue(html.isFile());
         assertTrue(Files.readString(markdown.toPath()).contains(
                 "|:------:|:------:|:------:|:------:|:------:|:------:|:------:|"));
+        assertTrue(Files.readString(markdown.toPath(), StandardCharsets.UTF_8)
+                .contains("&lt;script&gt;\\|下一行<br>内容")
+                || Files.readString(markdown.toPath(), StandardCharsets.UTF_8)
+                .contains("<script>\\|下一行<br>内容"));
         String htmlText = Files.readString(html.toPath());
         assertTrue(htmlText.contains("A&amp;B"));
         assertTrue(htmlText.contains("&lt;script&gt;"));
         assertTrue(htmlText.contains("</h2>"));
+        assertTrue(htmlText.contains("<meta charset=\"UTF-8\">"));
+        assertTrue(htmlText.contains("<td>"));
     }
 
     @Test

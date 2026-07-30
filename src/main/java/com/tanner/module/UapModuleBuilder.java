@@ -130,6 +130,9 @@ public class UapModuleBuilder extends ModuleBuilder {
     }
 
     public void addSourcePath(Pair<String, String> sourcePathInfo) {
+        if (this.mySourcePaths == null) {
+            this.mySourcePaths = new ArrayList<>();
+        }
         this.mySourcePaths.add(sourcePathInfo);
     }
 

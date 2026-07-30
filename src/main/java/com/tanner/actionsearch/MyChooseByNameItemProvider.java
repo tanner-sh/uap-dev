@@ -9,6 +9,7 @@ import com.intellij.util.Processor;
 import com.tanner.actionsearch.entity.Action;
 import com.tanner.actionsearch.entity.Actions;
 import com.tanner.base.UapProjectEnvironment;
+import com.tanner.base.XmlUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AndFileFilter;
@@ -28,6 +29,8 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
+    private List<NccActionItem> cachedItems;
+
     @Override
     public @NotNull List<String> filterNames(
             @NotNull ChooseByNameViewModel base,
@@ -44,7 +47,10 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
             @NotNull ProgressIndicator cancelled,
             @NotNull Processor<Object> consumer) {
         String normalizedPattern = pattern.toLowerCase(Locale.ROOT);
-        List<NccActionItem> nccActionItems = getAllNccActionItems(base.getProject()).stream()
+        if (cachedItems == null) {
+            cachedItems = getAllNccActionItems(base.getProject());
+        }
+        List<NccActionItem> nccActionItems = cachedItems.stream()
                 .filter(nccActionItem -> matches(nccActionItem, normalizedPattern))
                 .collect(Collectors.toList());
         cancelled.checkCanceled();
@@ -63,12 +69,18 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
 
     private List<NccActionItem> getAllNccActionItems(Project project) {
         List<NccActionItem> returnList = new ArrayList<>();
+        if (project == null) {
+            return returnList;
+        }
         UapProjectEnvironment instance = UapProjectEnvironment.getInstance(project);
         if (instance == null) {
             Messages.showMessageDialog("Please open a project", "Error", Messages.getErrorIcon());
             return returnList;
         }
         String uapHomePath = instance.getUapHomePath();
+        if (uapHomePath == null || uapHomePath.isBlank()) {
+            return returnList;
+        }
         Path yyconfigPath = Paths.get(uapHomePath).resolve(Paths.get("hotwebs", "nccloud", "WEB-INF", "extend", "yyconfig", "modules"));
         if (!yyconfigPath.toFile().exists()) {
             return returnList;
@@ -94,7 +106,7 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
             try {
                 JAXBContext jaxbContext = JAXBContext.newInstance(Actions.class);
                 Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
-                Actions actions = (Actions) unmarshaller.unmarshal(actionFile);
+                Actions actions = (Actions) unmarshaller.unmarshal(XmlUtil.parse(actionFile));
                 if (actions != null && CollectionUtils.isNotEmpty(actions.getActions())) {
                     actionList.addAll(actions.getActions());
                 }
