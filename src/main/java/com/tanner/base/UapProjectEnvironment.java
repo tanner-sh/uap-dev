@@ -2,7 +2,6 @@ package com.tanner.base;
 
 
 import com.intellij.openapi.components.PersistentStateComponent;
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -39,17 +38,12 @@ public class UapProjectEnvironment implements PersistentStateComponent<Element> 
     public UapProjectEnvironment() {
     }
 
-    public static UapProjectEnvironment getInstance() {
-        Project pro = ProjectManager.getInstance().getProject();
-        return getInstance(pro);
-    }
-
     public static UapProjectEnvironment getInstance(Project project) {
         if (project == null) {
             Messages.showMessageDialog("Please open a project", "Error", Messages.getErrorIcon());
             return null;
         } else {
-            return ServiceManager.getService(project, UapProjectEnvironment.class);
+            return project.getService(UapProjectEnvironment.class);
         }
     }
 

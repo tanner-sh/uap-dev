@@ -17,7 +17,7 @@ public class OpenUapHomeAction extends AbstractAnAction {
 
     @Override
     public void doAction(AnActionEvent event) {
-        String ncHomePath = UapProjectEnvironment.getInstance().getUapHomePath();
+        String ncHomePath = UapProjectEnvironment.getInstance(event.getProject()).getUapHomePath();
         if (StringUtils.isBlank(ncHomePath)) {
             Messages.showErrorDialog("Not set uap home , please check!", "错误");
             return;

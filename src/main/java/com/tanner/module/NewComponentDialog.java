@@ -64,54 +64,80 @@ public class NewComponentDialog extends DialogWrapper {
         File file = new File(modulePath + File.separator + name);
         if (file.exists()) {
             Messages.showErrorDialog("Componet is exists! please replace name !", "Error");
+            return;
         }
-        //创建目录
         String[] dirs = new String[]{"META-INF", "METADATA", "resources", "src/public", "src/private",
                 "src/client", "script/conf", "config"};
-        for (String dir : dirs) {
-            String path = file.getPath() + File.separator + dir;
-            new File(path).mkdirs();
-        }
-        //创建配置文件
         ConfigureFileUtil util = new ConfigureFileUtil();
+        File manifest = new File(modulePath + File.separator + "manifest.xml");
+        String oldManifest = null;
         try {
-            //创建compinent文件
-            String template = util.readTemplate("component.xml");
-            String content = MessageFormat.format(template, name, display);
-            util.outFile(new File(file.getPath() + File.separator + "component.xml"), content, "utf-8",
-                    false);
-            //创建manifset文件
-            File manifest = new File(modulePath + File.separator + "manifest.xml");
-            String newManifest = null;
             if (manifest.exists()) {
-                String oldManifest = util.readTemplate(manifest);
+                oldManifest = util.readTemplate(manifest);
+            }
+            String template = util.readTemplate("component.xml");
+            String componentContent = MessageFormat.format(template, name, display);
+            String newManifest;
+            if (oldManifest != null) {
                 template = util.readTemplate("BusinessComponet.xml");
-                content = MessageFormat.format(template, name, display).replace("<Manifest>", "");
+                String content = MessageFormat.format(template, name, display)
+                        .replace("<Manifest>", "");
                 newManifest = oldManifest.replace("</Manifest>", content);
             } else {
                 template = util.readTemplate("manifest.xml");
-                content = MessageFormat.format(template, name, display);
-                newManifest = content;
+                newManifest = MessageFormat.format(template, name, display);
             }
+            for (String dir : dirs) {
+                String path = file.getPath() + File.separator + dir;
+                if (!new File(path).mkdirs() && !new File(path).isDirectory()) {
+                    throw new BusinessException("无法创建组件目录: " + path);
+                }
+            }
+            util.outFile(new File(file.getPath() + File.separator + "component.xml"),
+                    componentContent, "utf-8", false);
             util.outFile(manifest, newManifest, "utf-8", false);
             //添加source目录
-            Module module = ProjectManager.getInstance().getModule(file.getParentFile().getName());
+            Module module = ProjectManager.getInstance().getModule(event.getProject(),
+                    file.getParentFile().getName());
+            if (module == null) {
+                throw new BusinessException("Can't find module: "
+                        + file.getParentFile().getName());
+            }
             ModifiableRootModel modifiableModel = ModuleRootManager.getInstance(module)
                     .getModifiableModel();
-            ContentEntry contentEntry = modifiableModel.getContentEntries()[0];
+            ContentEntry[] contentEntries = modifiableModel.getContentEntries();
+            if (contentEntries.length == 0) {
+                modifiableModel.dispose();
+                throw new BusinessException("Module has no content root: " + module.getName());
+            }
+            ContentEntry contentEntry = contentEntries[0];
             for (String str : dirs) {
                 if (str.contains("src")) {
                     VirtualFile sourceRoot = LocalFileSystem.getInstance().refreshAndFindFileByPath(
                             FileUtil.toSystemIndependentName(file.getPath() + File.separator + str));
+                    if (sourceRoot == null) {
+                        modifiableModel.dispose();
+                        throw new BusinessException("Can't create source root: " + str);
+                    }
                     contentEntry.addSourceFolder(sourceRoot, false);
                 }
             }
             Application applicationManager = ApplicationManager.getApplication();
             applicationManager.runWriteAction(modifiableModel::commit);
-        } catch (BusinessException e) {
+            close(0);
+        } catch (Exception e) {
+            FileUtil.delete(file);
+            try {
+                if (oldManifest == null) {
+                    FileUtil.delete(manifest);
+                } else {
+                    util.outFile(manifest, oldManifest, "utf-8", false);
+                }
+            } catch (Exception ignored) {
+                // 原始异常更能说明创建失败原因。
+            }
             Messages.showErrorDialog(e.getMessage(), "Error");
         }
-        close(0);
     }
 
     @Override

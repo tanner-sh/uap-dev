@@ -46,7 +46,7 @@ public class ModuleUtil {
             moduleType = MODULE_TYPE_MAVEN;
         }
         Library[] libraries = ProjectManager.getInstance().getProjectLibraries(project);
-        Module module = ProjectManager.getInstance().getModule(file.getName());
+        Module module = ProjectManager.getInstance().getModule(project, file.getName());
         if (module == null) {
             //创建module
             UapModuleBuilder builder = new UapModuleType().createModuleBuilder();
@@ -110,9 +110,10 @@ public class ModuleUtil {
         try {
             File mavenModuleFile = new File(mavenModulePath);
             File ncModuleFile = new File(ncModulePath);
-            moduleName = "maven_" + file.getName();
             if (ncModuleFile.exists()) {
                 moduleName = "nc_" + file.getName();
+            } else if (mavenModuleFile.exists()) {
+                moduleName = "maven_" + file.getName();
             }
         } catch (Exception ignored) {
         }

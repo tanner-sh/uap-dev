@@ -12,7 +12,6 @@ import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
-import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.devconfig.DevConfigDialog;
@@ -36,12 +35,42 @@ public class TestConnectionAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) {
-        Project project = ProjectManager.getInstance().getProject();
+        Project project = getDialog().getProjectContext();
+        AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
+        String homePath;
+        if (dlg instanceof DevConfigDialog) {
+            homePath = dlg.getComponent(JTextField.class, "homeText").getText();
+        } else {
+            homePath = UapProjectEnvironment.getInstance(project).getUapHomePath();
+        }
+        String dsname = (String) dlg.getComponent(JComboBox.class, "dbBox").getSelectedItem();
+        DataSourceMeta dataSourceMeta = StringUtils.isBlank(dsname) ? null
+                : dlg.getDataSourceMetaMap().get(dsname);
+        String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox")
+                .getSelectedItem();
+        DriverInfo info = dlg.getDriverInfoMap().get(driverName);
+        if (info == null) {
+            Notifications.Bus.notify(new Notification("Task Notification Group", "Error",
+                    "Please select a database driver", NotificationType.ERROR), project);
+            return;
+        }
+        String exampleUrl = info.getDriverUrl();
+        String host = dlg.getComponent(JTextField.class, "hostText").getText();
+        String port = dlg.getComponent(JTextField.class, "portText").getText();
+        String userName = dlg.getComponent(JTextField.class, "userText").getText();
+        String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
+        String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
+        String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
+        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase")
+                && dataSourceMeta != null) {
+            jdbcUrl = dataSourceMeta.getDatabaseUrl();
+        }
+        String finalJdbcUrl = jdbcUrl;
         // 创建一个后台任务
         Task.Backgroundable task = new Task.Backgroundable(project, "Testing datasource ...", true) {
             public void run(@NotNull ProgressIndicator indicator) {
                 // 设置初始进度
-                if (testConnection()) {
+                if (testConnection(homePath, info, finalJdbcUrl, userName, pwd)) {
                     Notification notification = new Notification("Task Notification Group", "Done", "Test passed !", NotificationType.INFORMATION);
                     Notifications.Bus.notify(notification, project);
                 } else {
@@ -54,36 +83,13 @@ public class TestConnectionAction extends AbstractButtonAction {
         ProgressManager.getInstance().run(task);
     }
 
-    private boolean testConnection() {
-        AbstractDataSourceDialog dlg = (AbstractDataSourceDialog) getDialog();
-        String homePath;
-        if (dlg instanceof DevConfigDialog) {
-            homePath = dlg.getComponent(JTextField.class, "homeText").getText();
-        } else {
-            homePath = UapProjectEnvironment.getInstance().getUapHomePath();
-        }
+    private boolean testConnection(String homePath, DriverInfo info, String jdbcUrl,
+                                   String userName, String pwd) {
         ClassLoader classLoader;
         try {
             classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
         } catch (Exception e) {
             return false;
-        }
-        String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
-        DataSourceMeta dataSourceMeta = null;
-        if (StringUtils.isNotBlank(dsname)) {
-            dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
-        }
-        String driverName = (String) dlg.getComponent(JComboBox.class, "driverBox").getSelectedItem();
-        DriverInfo info = dlg.getDriverInfoMap().get(driverName);
-        String exampleUrl = info.getDriverUrl();
-        String host = dlg.getComponent(JTextField.class, "hostText").getText();
-        String port = dlg.getComponent(JTextField.class, "portText").getText();
-        String userName = dlg.getComponent(JTextField.class, "userText").getText();
-        String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
-        String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
-        String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
-        if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
-            jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
         Connection connection = null;
         try {

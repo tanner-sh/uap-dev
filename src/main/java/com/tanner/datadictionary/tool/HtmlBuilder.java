@@ -17,7 +17,6 @@ public class HtmlBuilder implements IExportBuilder {
         String filePath = Path.of(exportDirPath, "datadictionary.html").toString();
         String markdownContent = getMarkdownContent(aggTableList);
         File scriptFile = new File(filePath);
-        scriptFile.deleteOnExit();
         scriptFile.createNewFile();
         FileUtils.writeStringToFile(scriptFile, markdownContent, Charset.defaultCharset());
     }
@@ -35,8 +34,8 @@ public class HtmlBuilder implements IExportBuilder {
             StringBuilder oneTableContent = new StringBuilder();
             //拼接二级标题
             oneTableContent.append("<h2>");
-            oneTableContent.append(index).append(".").append(tableInfo.getTableName()).append(" ");
-            oneTableContent.append(tableInfo.getComment());
+            oneTableContent.append(index).append(".").append(escapeHtml(tableInfo.getTableName())).append(" ");
+            oneTableContent.append(escapeHtml(tableInfo.getComment())).append("</h2>");
             //拼接表格
             //表格头
             oneTableContent.append("<table border=\"1\" cellspacing=\"0\">");
@@ -44,24 +43,35 @@ public class HtmlBuilder implements IExportBuilder {
             oneTableContent.append("<tr><th>序列</th><th>列名</th><th>类型</th><th>可空</th><th>默认值</th><th>注释</th><th>枚举</th></tr>");
             oneTableContent.append("</thead>");
             //表格体
-            oneTableContent.append("<thead>");
+            oneTableContent.append("<tbody>");
             for (ColumnInfo columnInfo : columnInfoList) {
                 oneTableContent.append("<tr>");
                 oneTableContent.append("<th>").append(columnInfo.getColumnId()).append("</th>");
-                oneTableContent.append("<th>").append(columnInfo.getColumnName()).append("</th>");
-                oneTableContent.append("<th>").append(columnInfo.getType()).append("</th>");
-                oneTableContent.append("<th>").append(columnInfo.getNullAble()).append("</th>");
-                oneTableContent.append("<th>").append(columnInfo.getDefaultValue()).append("</th>");
-                oneTableContent.append("<th>").append(columnInfo.getComment()).append("</th>");
-                oneTableContent.append("<th>").append(columnInfo.getEnumValue()).append("</th>");
+                oneTableContent.append("<th>").append(escapeHtml(columnInfo.getColumnName())).append("</th>");
+                oneTableContent.append("<th>").append(escapeHtml(columnInfo.getType())).append("</th>");
+                oneTableContent.append("<th>").append(escapeHtml(columnInfo.getNullAble())).append("</th>");
+                oneTableContent.append("<th>").append(escapeHtml(columnInfo.getDefaultValue())).append("</th>");
+                oneTableContent.append("<th>").append(escapeHtml(columnInfo.getComment())).append("</th>");
+                oneTableContent.append("<th>").append(escapeHtml(columnInfo.getEnumValue())).append("</th>");
                 oneTableContent.append("</tr>");
             }
-            oneTableContent.append("</thead>");
+            oneTableContent.append("</tbody>");
             oneTableContent.append("</table>");
             htmlBuilder.append(oneTableContent);
         }
         htmlBuilder.append("</body></html>");
         return htmlBuilder.toString();
+    }
+
+    private String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
 }

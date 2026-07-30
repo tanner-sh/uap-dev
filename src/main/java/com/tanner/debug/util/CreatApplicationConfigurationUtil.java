@@ -5,8 +5,6 @@ import com.intellij.execution.RunnerAndConfigurationSettings;
 import com.intellij.execution.application.ApplicationConfiguration;
 import com.intellij.execution.application.ApplicationConfigurationType;
 import com.intellij.execution.configurations.RunConfiguration;
-import com.intellij.execution.impl.RunManagerImpl;
-import com.intellij.execution.impl.RunnerAndConfigurationSettingsImpl;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.module.LanguageLevelUtil;
 import com.intellij.openapi.module.Module;
@@ -14,19 +12,16 @@ import com.intellij.openapi.project.Project;
 import com.intellij.pom.java.LanguageLevel;
 import com.tanner.base.BaseUtil;
 import com.tanner.base.BusinessException;
-import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.prop.entity.ClusterInfo;
 import com.tanner.prop.entity.DomainInfo;
 import com.tanner.prop.entity.IpAndPort;
 import com.tanner.prop.entity.SingleServerInfo;
 import com.tanner.prop.xml.PropXml;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
-import java.util.List;
 
 import static com.intellij.execution.ShortenCommandLine.CLASSPATH_FILE;
 
@@ -47,34 +42,39 @@ public class CreatApplicationConfigurationUtil {
             throws BusinessException {
         String configName = serverFlag ? " - server" : " - client";
         Project project = BaseUtil.getProject(event);
-        RunManagerImpl runManager = (RunManagerImpl) RunManager.getInstance(project);
-        List<RunConfiguration> configurationsList = runManager.getAllConfigurationsList();
+        RunManager runManager = RunManager.getInstance(project);
         //当前选择module
         Module selectModule = BaseUtil.getModule(event);
-        configName = selectModule.getName() + configName;
-        //先删除已经存在的配置
-        if (CollectionUtils.isNotEmpty(configurationsList)) {
-            for (RunConfiguration configuration : configurationsList) {
-                if (configuration.getName().equals(configName)) {
-                    runManager.removeConfiguration(
-                            new RunnerAndConfigurationSettingsImpl(runManager, configuration));
-                }
-            }
+        if (selectModule == null) {
+            throw new BusinessException("请选择模块");
         }
-        //新增config
-        ApplicationConfiguration conf = new ApplicationConfiguration(configName, project,
-                ApplicationConfigurationType.getInstance());
-        setConfiguration(selectModule, conf, serverFlag);
-        RunnerAndConfigurationSettings runnerAndConfigurationSettings = new RunnerAndConfigurationSettingsImpl(
-                runManager, conf);
-        runManager.addConfiguration(runnerAndConfigurationSettings);
-        runManager.setSelectedConfiguration(runnerAndConfigurationSettings);
+        configName = selectModule.getName() + configName;
+        RunnerAndConfigurationSettings existing = runManager.findConfigurationByName(configName);
+        String expectedMainClass = serverFlag ? serverClass : clientClass;
+        if (existing != null && (!(existing.getConfiguration()
+                instanceof ApplicationConfiguration existingApplication)
+                || !expectedMainClass.equals(existingApplication.getMainClassName()))) {
+            throw new BusinessException("已存在同名的非 UAP 运行配置: " + configName);
+        }
+        // 先完整创建新配置，验证成功后才替换旧配置。
+        RunnerAndConfigurationSettings newSettings = runManager.createConfiguration(configName,
+                ApplicationConfigurationType.class);
+        ApplicationConfiguration conf =
+                (ApplicationConfiguration) newSettings.getConfiguration();
+        setConfiguration(project, selectModule, conf, serverFlag);
+        if (existing != null) {
+            runManager.removeConfiguration(existing);
+        }
+        runManager.addConfiguration(newSettings);
+        runManager.setSelectedConfiguration(newSettings);
     }
 
-    private static void setConfiguration(Module selectModule, ApplicationConfiguration conf,
+    private static void setConfiguration(Project project, Module selectModule,
+                                         ApplicationConfiguration conf,
                                          boolean serverFlag) throws BusinessException {
         //检查并设置nc home
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+        UapProjectEnvironment environment = UapProjectEnvironment.getInstance(project);
+        String homePath = environment.getUapHomePath();
         if (StringUtils.isBlank(homePath)) {
             throw new BusinessException("请先设置NC Home");
         }
@@ -88,7 +88,7 @@ public class CreatApplicationConfigurationUtil {
         int feature = languageLevel.toJavaVersion().feature;
         if (serverFlag) {
             conf.setMainClassName(serverClass);
-            String exModules = UapProjectEnvironment.getInstance().getEx_modules();
+            String exModules = environment.getEx_modules();
             conf.setVMParameters(getDefalutsServerVMParameters(feature, exModules, homePath));
         } else {
             // ip和端口号读取home中的，没有就取默认值127.0.0.1:80
@@ -123,7 +123,7 @@ public class CreatApplicationConfigurationUtil {
             String clientIp = StringUtils.isBlank(ipAndPort.getAddress()) ? DEFALUT_IP : ipAndPort.getAddress();
             String clientPort = String.valueOf(ipAndPort.getPort() == null ? DEFALUT_PORT : ipAndPort.getPort());
             conf.setMainClassName(clientClass);
-            conf.setVMParameters(getDefalutsClientVMParameters(clientIp, clientPort));
+            conf.setVMParameters(getDefalutsClientVMParameters(feature, clientIp, clientPort));
         }
         conf.setModule(selectModule);
         conf.setWorkingDirectory(homePath);
@@ -135,22 +135,17 @@ public class CreatApplicationConfigurationUtil {
      *
      * @throws BusinessException BusinessException
      */
-    public static void update() throws BusinessException {
-        Project project = ProjectManager.getInstance().getProject();
-        RunManagerImpl runManager = (RunManagerImpl) RunManager.getInstance(project);
-        List<RunConfiguration> configurationsList = runManager.getAllConfigurationsList();
-        if (!configurationsList.isEmpty()) {
-            for (RunConfiguration configuration : configurationsList) {
-                if (configuration instanceof ApplicationConfiguration conf) {
-                    RunnerAndConfigurationSettings runnerAndConfigurationSettings = new RunnerAndConfigurationSettingsImpl(
-                            runManager, conf);
-                    runManager.removeConfiguration(runnerAndConfigurationSettings);
-                    ApplicationConfiguration newConf = (ApplicationConfiguration) conf.clone();
-                    setConfiguration(newConf.getConfigurationModule().getModule(), newConf,
-                            serverClass.equals(newConf.getMainClassName()));
-                    runnerAndConfigurationSettings = new RunnerAndConfigurationSettingsImpl(runManager,
-                            newConf);
-                    runManager.addConfiguration(runnerAndConfigurationSettings);
+    public static void update(Project project) throws BusinessException {
+        RunManager runManager = RunManager.getInstance(project);
+        for (RunnerAndConfigurationSettings settings : runManager.getAllSettings()) {
+            RunConfiguration configuration = settings.getConfiguration();
+            if (configuration instanceof ApplicationConfiguration conf
+                    && (serverClass.equals(conf.getMainClassName())
+                    || clientClass.equals(conf.getMainClassName()))) {
+                Module module = conf.getConfigurationModule().getModule();
+                if (module != null) {
+                    setConfiguration(project, module, conf,
+                            serverClass.equals(conf.getMainClassName()));
                 }
             }
         }
@@ -180,12 +175,16 @@ public class CreatApplicationConfigurationUtil {
         return parameters.toString();
     }
 
-    private static String getDefalutsClientVMParameters(String clientIp, String clientPort) {
+    private static String getDefalutsClientVMParameters(int feature, String clientIp,
+                                                        String clientPort) {
         StringBuilder parameters = new StringBuilder();
         parameters.append("-Dnc.runMode=develop\n");
         parameters.append("-Dnc.jstart.server=").append(clientIp).append("\n");
         parameters.append("-Dnc.jstart.port=").append(clientPort).append("\n");
-        parameters.append("-Xmx768m -XX:MaxPermSize=256m\n");
+        parameters.append("-Xmx768m\n");
+        if (feature < 8) {
+            parameters.append("-XX:MaxPermSize=256m\n");
+        }
         parameters.append("-Dnc.fi.autogenfile=N\n");
         return parameters.toString();
     }

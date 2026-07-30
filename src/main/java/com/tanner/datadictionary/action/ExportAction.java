@@ -6,13 +6,17 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.base.BusinessException;
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
-import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.datadictionary.entity.TableInfo;
 import com.tanner.datadictionary.tool.DataDictionaryExportTool;
@@ -20,9 +24,9 @@ import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.sql.Connection;
@@ -54,7 +58,8 @@ public class ExportAction extends AbstractButtonAction {
         }
         File desktopPath = new File(System.getProperty("user.home") + File.separator + "Desktop");
         FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
-        VirtualFile virtualFile = FileChooser.chooseFile(descriptor, ProjectManager.getInstance().getProject(),
+        VirtualFile virtualFile = FileChooser.chooseFile(descriptor,
+                getDialog().getProjectContext(),
                 LocalFileSystem.getInstance().findFileByIoFile(desktopPath));
         if (virtualFile == null) {
             return;
@@ -68,8 +73,8 @@ public class ExportAction extends AbstractButtonAction {
         String pwd = dlg.getComponent(JTextField.class, "pwdText").getText();
         String dbName = dlg.getComponent(JTextField.class, "dbNameText").getText();
         String jdbcUrl = ToolUtils.getJDBCUrl(exampleUrl, dbName, host, port);
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
-        ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+        String homePath = UapProjectEnvironment.getInstance(
+                getDialog().getProjectContext()).getUapHomePath();
         String dsname = (String) getDialog().getComponent(JComboBox.class, "dbBox").getSelectedItem();
         DataSourceMeta dataSourceMeta = null;
         if (StringUtils.isNotBlank(dsname)) {
@@ -78,27 +83,57 @@ public class ExportAction extends AbstractButtonAction {
         if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
-        Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
         String exportAs = (String) dlg.getComponent(JComboBox.class, "exportAsBox").getSelectedItem();
         boolean needFilterDefField = dlg.getComponent(JCheckBox.class, "needFilterDefField").isSelected();
         JProgressBar progressBar = dlg.getComponent(JProgressBar.class, "progressBar");
-        progressBar.setValue(0);
-        // 绘制百分比文本（进度条中间显示的百分数）
-        progressBar.setStringPainted(true);
-        progressBar.addChangeListener(e -> {
-            Dimension dimension = progressBar.getSize();
-            Rectangle rect = new Rectangle(0, 0, dimension.width, dimension.height);
-            progressBar.paintImmediately(rect);
-        });
-        try {
-            new DataDictionaryExportTool(connection, progressBar)
-                    .export(virtualFile.getPath(), selectedTables, exportAs, needFilterDefField);
-        } catch (Exception e) {
-            String msg = "导出过程异常\n" + e.getMessage();
-            Messages.showWarningDialog(msg, "错误");
-            return;
-        }
-        Messages.showInfoMessage("Success", "提示");
+        progressBar.setIndeterminate(true);
+        JButton exportButton = getDialog().getComponent(JButton.class, "exportBtn");
+        exportButton.setEnabled(false);
+        Project project = getDialog().getProjectContext();
+        String finalJdbcUrl = jdbcUrl;
+        Task.Backgroundable task = new Task.Backgroundable(project, "Exporting data dictionary...",
+                true) {
+            private Exception failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                Connection connection = null;
+                try {
+                    ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+                    connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
+                            finalJdbcUrl, userName, pwd);
+                    new DataDictionaryExportTool(connection, indicator)
+                            .export(virtualFile.getPath(), selectedTables, exportAs,
+                                    needFilterDefField);
+                    connection = null;
+                } catch (ProcessCanceledException exception) {
+                    throw exception;
+                } catch (Exception exception) {
+                    failure = exception;
+                } finally {
+                    DbUtil.closeResource(connection, null, null);
+                }
+            }
+
+            @Override
+            public void onSuccess() {
+                progressBar.setIndeterminate(false);
+                exportButton.setEnabled(true);
+                if (failure != null) {
+                    Messages.showWarningDialog("导出过程异常\n" + failure.getMessage(), "错误");
+                } else {
+                    progressBar.setValue(100);
+                    Messages.showInfoMessage("Success", "提示");
+                }
+            }
+
+            @Override
+            public void onCancel() {
+                progressBar.setIndeterminate(false);
+                exportButton.setEnabled(true);
+            }
+        };
+        ProgressManager.getInstance().run(task);
     }
 
 }

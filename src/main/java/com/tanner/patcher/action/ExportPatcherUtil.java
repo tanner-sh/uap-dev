@@ -3,12 +3,11 @@ package com.tanner.patcher.action;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.module.LanguageLevelUtil;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.module.ModuleUtil;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.CompilerModuleExtension;
 import com.intellij.openapi.util.io.FileUtil;
@@ -21,13 +20,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.swing.*;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -85,7 +84,8 @@ public class ExportPatcherUtil {
     /**
      * 导出变量
      **/
-    private final AnActionEvent event;
+    private final Project project;
+    private final VirtualFile[] selectedFiles;
     private final String exportPath;
     private final String patchName;
     private final boolean srcFlag;
@@ -99,15 +99,26 @@ public class ExportPatcherUtil {
     private String configDescription;
     private String zipName = "";
 
-    public ExportPatcherUtil(AnActionEvent event, String exportPath, String patchName,
+    public ExportPatcherUtil(Project project, VirtualFile[] selectedFiles, String exportPath,
+                             String patchName,
                              boolean srcFlag, String webServerName, boolean cloudFlag, String projectName,
                              boolean needDeploy, boolean needClearSwingCache, boolean needClearBrowserCache,
-                             String functionDescription, String configDescription, String developer, String uapVersion) {
-        this.event = event;
+                             String functionDescription, String configDescription, String developer,
+                             String uapVersion) throws BusinessException {
+        this.project = Objects.requireNonNull(project);
+        this.selectedFiles = selectedFiles == null ? new VirtualFile[0] : selectedFiles.clone();
+        validateFileNamePart(patchName, "patcher name");
+        validateFileNamePart(developer, "developer");
+        validateFileNamePart(uapVersion, "uapVersion");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String dateStr = simpleDateFormat.format(new Date());
-        this.exportPath =
-                exportPath + File.separator + "patch_" + uapVersion + "_" + dateStr + "_" + developer;
+        Path basePath = Path.of(exportPath).toAbsolutePath().normalize();
+        Path stagingPath = basePath.resolve(
+                "patch_" + uapVersion + "_" + dateStr + "_" + developer).normalize();
+        if (!stagingPath.startsWith(basePath)) {
+            throw new BusinessException("invalid export path");
+        }
+        this.exportPath = stagingPath.toString();
         this.patchName = patchName;
         this.srcFlag = srcFlag;
         if (StringUtils.isNotBlank(webServerName)) {
@@ -133,19 +144,27 @@ public class ExportPatcherUtil {
         }
     }
 
+    public static void validateFileNamePart(String value, String fieldName)
+            throws BusinessException {
+        if (StringUtils.isBlank(value) || !value.matches("[\\p{L}\\p{N}._-]+")
+                || ".".equals(value) || "..".equals(value)) {
+            throw new BusinessException(
+                    fieldName + " can only contain letters, numbers, '.', '_' and '-'");
+        }
+    }
+
     /**
      * 导出补丁
      *
      * @throws IOException IOException
      */
-    public void exportPatcher(JProgressBar progressBar) throws Exception {
-        //当前工程
-        Project project = event.getProject();
-        //选中的文件
-        VirtualFile[] selectFile = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
+    public void exportPatcher(ProgressIndicator progressIndicator) throws Exception {
         //所有module
         Map<String, Module> moduleMap = new HashMap<>();
-        Module[] modules = ModuleManager.getInstance(Objects.requireNonNull(project)).getModules();
+        Module[] modules = ModuleManager.getInstance(project).getModules();
+        if (modules.length == 0) {
+            throw new BusinessException("No module found in current project");
+        }
         for (Module module : modules) {
             moduleMap.put(module.getName(), module);
         }
@@ -155,26 +174,28 @@ public class ExportPatcherUtil {
         //选取文件路径和模块之间的关系
         Map<String, Set<String>> modulePathMap = new HashMap<>();
         //处理所有选中文件路径
-        if (selectFile != null) {
-            for (VirtualFile file : selectFile) {
+        for (VirtualFile file : selectedFiles) {
+                progressIndicator.checkCanceled();
                 String path = new File(file.getPath()).getPath();
                 //从文件路径中截取module名
-                String moduleName = Objects.requireNonNull(ModuleUtil.findModuleForFile(file, project)).getName();
+                Module selectedModule = ModuleUtil.findModuleForFile(file, project);
+                if (selectedModule == null) {
+                    throw new BusinessException("File is not in a module: " + file.getPath());
+                }
+                String moduleName = selectedModule.getName();
                 //判断如是选择了模块或者组件，则获取所有可导出的目录
                 List<String> fileList = getAllFileList(path, moduleMap.get(moduleName));
                 Set<String> fileUrlSet = modulePathMap.computeIfAbsent(moduleName, k -> new HashSet<>());
                 for (String str : fileList) {
                     getFileUrl(str, fileUrlSet);
                 }
-            }
         }
         //进度条设定
         int allCount = 0;
         for (String key : modulePathMap.keySet()) {
             allCount += modulePathMap.get(key).size();
         }
-        progressBar.setMinimum(0);
-        progressBar.setMaximum(allCount);
+        progressIndicator.setIndeterminate(allCount == 0);
         //收集导出的文件
         Set<String> classNameSet = new HashSet<>();
         Set<String> moduleSet = new HashSet<>();
@@ -200,6 +221,7 @@ public class ExportPatcherUtil {
             String compilerOutputUrl = outPath.getPath();
             String ncModuleName = getNCModuleName(module);
             for (String fileUrl : fileUrlSet) {
+                progressIndicator.checkCanceled();
                 File fromFile = new File(fileUrl);
                 String fileName = fromFile.getName();
                 if (fileName.endsWith(TYPE_JAVA)) {//导出java文件
@@ -234,7 +256,9 @@ public class ExportPatcherUtil {
                 } else if (fileName.endsWith(TYPE_OPENAPI_MD)) {
                     exportOpenApiMD(moduleName, fromFile);
                 }
-                progressBar.setValue(count);
+                if (allCount > 0) {
+                    progressIndicator.setFraction((double) count / allCount);
+                }
                 System.out.println("count : " + fileUrlSet.size() + ",output :" + count + " " + fileUrl);
                 count++;
             }
@@ -367,12 +391,13 @@ public class ExportPatcherUtil {
                             : moduleFile.getParent().getPath();
             File file = new File(modulePath + PATH_META_INF + File.separator + FILE_MODULE);
             if (file.exists()) {
-                InputStream in = new FileInputStream(file);
+            try (InputStream in = new FileInputStream(file)) {
                 DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
                 DocumentBuilder builder = factory.newDocumentBuilder();
                 Document doc = builder.parse(in);
                 Element root = doc.getDocumentElement();
                 ncModuleName = root.getAttribute(NAME_MODULE);
+            }
             }
         } catch (Exception e) {
             //抛错就认为不是nc项目
@@ -390,10 +415,12 @@ public class ExportPatcherUtil {
     private void exportXml(String moduleName, String ncModuleName, File fromFile) throws Exception {
         //判断文件类型
         if (fromFile.exists()) {
-            InputStream in = new FileInputStream(fromFile);
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            Document doc = builder.parse(in);
+            Document doc;
+            try (InputStream in = new FileInputStream(fromFile)) {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                doc = builder.parse(in);
+            }
             Element root = doc.getDocumentElement();
 
             String patchPath = fromFile.getPath();
@@ -420,7 +447,6 @@ public class ExportPatcherUtil {
             if (StringUtil.isNotEmpty(toPath)) {
                 outPatcher(moduleName, fromFile.getPath(), toPath + className);
             }
-            in.close();
         }
     }
 
@@ -433,7 +459,7 @@ public class ExportPatcherUtil {
     private void exportOpenApiMD(String moduleName, File fromFile) throws Exception {
         String fromParentPath = fromFile.getParent();
         String toPath = exportPath + PATH_REPLACEMENT + fromParentPath.split(
-                Matcher.quoteReplacement(PATH_OPENAPI))[1];
+                Matcher.quoteReplacement(PATH_OPENAPI))[1] + File.separator + fromFile.getName();
         outPatcher(moduleName, fromFile.getPath(), toPath);
     }
 
@@ -550,6 +576,9 @@ public class ExportPatcherUtil {
             javaName = javaName.replace(basePath, "");
             toPath = exportPath + webServerName + PATH_WEB_INF + PATH_CLASSES;
         }
+        if (toPath == null) {
+            throw new BusinessException("Unsupported source path: " + patchPath);
+        }
         if (fromFile.lastModified() > new File(compilerOutputUrl + className).lastModified()) {
             throw new BusinessException(
                     className.substring(1).replace(File.separator, ".") + " is old, please rebuild : "
@@ -609,11 +638,19 @@ public class ExportPatcherUtil {
         }
         File to = new File(toPath);
         FileUtil.copy(from, to);
-        //静态类处理,静态工具了编译后会成为 类名+%1.class的样子
-        String fileName = from.getName().substring(0, from.getName().length() - 6);//去掉.class
-        for (File f : Objects.requireNonNull(from.getParentFile().listFiles())) {
-            if (f.getName().startsWith(fileName + "$")) {
-                FileUtil.copy(f, new File(to.getParent() + File.separator + f.getName()));
+        if (from.getName().endsWith(TYPE_CLASS)) {
+            // 内部类编译后会成为“类名$*.class”。
+            String fileName = from.getName().substring(0,
+                    from.getName().length() - TYPE_CLASS.length());
+            File[] siblings = from.getParentFile().listFiles();
+            if (siblings != null) {
+                for (File sibling : siblings) {
+                    if (sibling.getName().startsWith(fileName + "$")
+                            && sibling.getName().endsWith(TYPE_CLASS)) {
+                        FileUtil.copy(sibling,
+                                new File(to.getParent() + File.separator + sibling.getName()));
+                    }
+                }
             }
         }
     }

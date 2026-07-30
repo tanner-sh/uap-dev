@@ -63,17 +63,22 @@ public class ConfigureFileUtil {
      * @param file    file
      * @param content content
      */
-    public void outFile(File file, String content, String charset, boolean bomFlag) {
+    public void outFile(File file, String content, String charset, boolean bomFlag)
+            throws BusinessException {
         try {
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                throw new IOException("无法创建目录: " + parent.getPath());
+            }
             FileOutputStream fos = new FileOutputStream(file);
-            OutputStreamWriter dos = null;
             if (bomFlag) {
                 fos.write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
             }
-            dos = new OutputStreamWriter(fos, charset);
-            dos.write(content);
-            dos.close();
-        } catch (IOException ignored) {
+            try (OutputStreamWriter writer = new OutputStreamWriter(fos, charset)) {
+                writer.write(content);
+            }
+        } catch (IOException e) {
+            throw new BusinessException("写入文件失败: " + file.getPath() + "\n" + e.getMessage());
         }
     }
 }

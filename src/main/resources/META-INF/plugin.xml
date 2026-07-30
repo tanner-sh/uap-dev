@@ -125,10 +125,11 @@
     ]]>
     </change-notes>
     <description><![CDATA[
-      一款uap开发插件.<br>
-      帮助开发者快速构建uap项目<br>
+      一款面向 UAP、NC6x 和 NCC 开发场景的 IntelliJ IDEA 插件。<br>
+      提供模块与组件创建、开发环境配置、补丁与脚本导出、数据字典生成、
+      多语检索、运行配置和日志查看等常用开发能力。<br>
       <p>
-        支持nc6x,ncc的开发
+        支持在项目级别保存 NC Home 与数据源设置，帮助开发者减少重复配置和手工文件操作。
       </p>
     ]]></description>
     <extensions defaultExtensionNs="com.intellij">
@@ -145,7 +146,9 @@
         <notificationGroup id="Task Notification Group" displayType="BALLOON"/>
     </extensions>
     <id>uap-dev-2022</id>
-    <idea-version since-build="223.0"/>
+    <idea-version since-build="222.0"/>
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.java</depends>
     <name>uap-dev</name>
     <vendor email="bianhuakai1994@gmail.com" url="https://tanner-sh.github.io/home/">tanner</vendor>
     <version>1.0.0</version>

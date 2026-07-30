@@ -1,6 +1,6 @@
 package com.tanner.logwatcher;
 
-import com.intellij.execution.impl.ConsoleViewImpl;
+import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.ui.ConsoleView;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.DumbAware;
@@ -22,7 +22,8 @@ public class LogWatcherToolWindowFactory implements ToolWindowFactory, DumbAware
     @Override
     public void createToolWindowContent(@NotNull Project project, ToolWindow toolWindow) {
         // 创建 ConsoleView
-        ConsoleView consoleView = new ConsoleViewImpl(project, true);
+        ConsoleView consoleView = TextConsoleBuilderFactory.getInstance()
+                .createBuilder(project).getConsole();
         // 将 ConsoleView 添加到工具窗口
         ContentFactory contentFactory = ContentFactory.getInstance();
         Content content = contentFactory.createContent(consoleView.getComponent(), "Logs", false);
@@ -30,6 +31,7 @@ public class LogWatcherToolWindowFactory implements ToolWindowFactory, DumbAware
         // 启动日志监控服务
         LogWatcherService logWatcherService = new LogWatcherService();
         logWatcherService.setConsoleView(consoleView);
+        Disposer.register(content, consoleView);
         Disposer.register(content, logWatcherService);
         // 获取日志文件夹位置
         UapProjectEnvironment uapProjectEnvironment = UapProjectEnvironment.getInstance(project);

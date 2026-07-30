@@ -5,6 +5,11 @@ import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.ProcessCanceledException;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -14,9 +19,9 @@ import com.tanner.abs.AbstractDialog;
 import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
-import java.awt.*;
 import java.io.File;
 import java.util.Objects;
 
@@ -120,24 +125,58 @@ public class PatcherDialog extends AbstractDialog {
         boolean needDeployFlag = needDeploy.isSelected();
         boolean needClearSwingCacheFlag = needClearSwingCache.isSelected();
         boolean needClearBrowserCacheFlag = needClearBrowserCache.isSelected();
-        // 设置当前进度值
+        final String patchName = patcherName.getText().trim();
+        final String developerName = developer.getText().trim();
+        final String versionText = uapVersion.getText().trim();
+        try {
+            ExportPatcherUtil.validateFileNamePart(patchName, "patcher name");
+            ExportPatcherUtil.validateFileNamePart(developerName, "developer");
+            ExportPatcherUtil.validateFileNamePart(versionText, "uapVersion");
+        } catch (Exception exception) {
+            Messages.showErrorDialog(exception.getMessage(), "Error");
+            return;
+        }
+        final Project project = event.getProject();
+        final VirtualFile[] selectedFiles = event.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
+        final String serverNameText = serverName.getText();
+        final String projectNameText = projectName.getText();
+        final String functionText = functionDescription.getText();
+        final String configText = configDescription.getText();
         logPanel.setVisible(true);
-        progressBar.setValue(0);
-        // 绘制百分比文本（进度条中间显示的百分数）
-        progressBar.setStringPainted(true);
-        progressBar.addChangeListener(e -> {
-            Dimension dimension = progressBar.getSize();
-            Rectangle rect = new Rectangle(0, 0, dimension.width, dimension.height);
-            progressBar.paintImmediately(rect);
-        });
-        SwingUtilities.invokeLater(() -> {
-            ExportPatcherUtil util = new ExportPatcherUtil(event, exportPath, patcherName.getText(),
-                    srcFlag, serverName.getText(), cloudFlag, projectName.getText(), needDeployFlag,
-                    needClearSwingCacheFlag, needClearBrowserCacheFlag, functionDescription.getText(),
-                    configDescription.getText(), developer.getText(), uapVersion.getText());
-            try {
-                util.exportPatcher(progressBar);
-                String zipName = util.getZipName();
+        progressBar.setIndeterminate(true);
+        setOKActionEnabled(false);
+        Task.Backgroundable task = new Task.Backgroundable(project, "Exporting UAP patch...", true) {
+            private ExportPatcherUtil util;
+            private Exception failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    util = new ExportPatcherUtil(project, selectedFiles, exportPath, patchName,
+                            srcFlag, serverNameText, cloudFlag, projectNameText, needDeployFlag,
+                            needClearSwingCacheFlag, needClearBrowserCacheFlag, functionText,
+                            configText, developerName, versionText);
+                    util.exportPatcher(indicator);
+                } catch (ProcessCanceledException exception) {
+                    throw exception;
+                } catch (Exception exception) {
+                    failure = exception;
+                } finally {
+                    if (util != null) {
+                        util.delete(new File(util.getExportPath()));
+                    }
+                }
+            }
+
+            @Override
+            public void onSuccess() {
+                progressBar.setIndeterminate(false);
+                setOKActionEnabled(true);
+                if (failure != null) {
+                    Messages.showErrorDialog(failure.getMessage(), "Error");
+                    return;
+                }
+                String zipName = util == null ? "" : util.getZipName();
                 if (StringUtils.isBlank(zipName)) {
                     zipName = "no files export , please build project , or select src retry !";
                 } else {
@@ -145,13 +184,15 @@ public class PatcherDialog extends AbstractDialog {
                 }
                 Messages.showInfoMessage("Success!\n" + zipName, "Tips");
                 dispose();
-            } catch (Exception e) {
-                Messages.showErrorDialog(e.getMessage(), "Error");
-            } finally {
-                util.delete(new File(util.getExportPath()));
-                dispose();
             }
-        });
+
+            @Override
+            public void onCancel() {
+                progressBar.setIndeterminate(false);
+                setOKActionEnabled(true);
+            }
+        };
+        ProgressManager.getInstance().run(task);
     }
 
     private void createUIComponents() {

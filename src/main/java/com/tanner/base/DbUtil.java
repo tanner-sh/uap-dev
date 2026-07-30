@@ -13,11 +13,12 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.TreeMap;
 
 public class DbUtil {
 
@@ -36,10 +37,10 @@ public class DbUtil {
             List<Map<String, Object>> resultList = new ArrayList<>();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             while (resultSet.next()) {
-                Map<String, Object> map = new HashMap<>();
+                Map<String, Object> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                    String columnName = resultSetMetaData.getColumnName(i);
-                    Object columnValue = resultSet.getObject(columnName);
+                    String columnName = resultSetMetaData.getColumnLabel(i);
+                    Object columnValue = resultSet.getObject(i);
                     map.put(columnName, columnValue);
                 }
                 resultList.add(map);
@@ -71,9 +72,9 @@ public class DbUtil {
                 StringBuilder columnNames = new StringBuilder("(");
                 StringBuilder columnValues = new StringBuilder("(");
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                    String columnName = resultSetMetaData.getColumnName(i);
+                    String columnName = resultSetMetaData.getColumnLabel(i);
                     int columnType = resultSetMetaData.getColumnType(i);
-                    Object columnValue = resultSet.getObject(columnName);
+                    Object columnValue = resultSet.getObject(i);
                     columnNames.append(columnName).append(",");
                     columnValues.append(getColumnValue(columnType, columnValue)).append(",");
                 }
@@ -95,12 +96,28 @@ public class DbUtil {
 
     public static String getColumnValue(int columnType, Object columnValue) {
         if (Objects.isNull(columnValue)) {
-            return null;
+            return "NULL";
         }
         return switch (columnType) {
-            case Types.VARCHAR, Types.CHAR, Types.LONGVARCHAR -> "'" + columnValue + "'";
+            case Types.VARCHAR, Types.CHAR, Types.LONGVARCHAR,
+                    Types.NVARCHAR, Types.NCHAR, Types.LONGNVARCHAR,
+                    Types.CLOB, Types.NCLOB,
+                    Types.DATE, Types.TIME, Types.TIMESTAMP,
+                    Types.TIME_WITH_TIMEZONE, Types.TIMESTAMP_WITH_TIMEZONE ->
+                    quoteSqlValue(columnValue.toString());
+            case Types.BOOLEAN, Types.BIT ->
+                    columnValue instanceof Boolean value ? (value ? "1" : "0")
+                            : columnValue.toString();
+            case Types.BINARY, Types.VARBINARY, Types.LONGVARBINARY, Types.BLOB ->
+                    columnValue instanceof byte[] bytes
+                            ? "X'" + HexFormat.of().formatHex(bytes) + "'"
+                            : quoteSqlValue(columnValue.toString());
             default -> columnValue.toString();
         };
+    }
+
+    private static String quoteSqlValue(String value) {
+        return "'" + value.replace("'", "''") + "'";
     }
 
     public static IEngine getEngine(Connection connection) throws BusinessException {
@@ -109,13 +126,17 @@ public class DbUtil {
             DatabaseMetaData metaData = connection.getMetaData();
             databaseProductName = metaData.getDatabaseProductName();
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new BusinessException("读取数据库类型失败: " + e.getMessage());
         }
-        return switch (databaseProductName) {
-            case "Oracle" -> new OracleEngine();
-            case "MySql" -> new MySqlEngine();
-            default -> throw new BusinessException("不支持此数据库类型:" + databaseProductName);
-        };
+        String normalizedName = databaseProductName == null ? ""
+                : databaseProductName.toLowerCase();
+        if (normalizedName.contains("oracle")) {
+            return new OracleEngine();
+        }
+        if (normalizedName.contains("mysql") || normalizedName.contains("oceanbase")) {
+            return new MySqlEngine();
+        }
+        throw new BusinessException("不支持此数据库类型:" + databaseProductName);
     }
 
     public static Connection getConnection(ClassLoader classLoader, String driverClass,

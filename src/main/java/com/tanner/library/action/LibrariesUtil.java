@@ -3,7 +3,6 @@ package com.tanner.library.action;
 import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.OrderRootType;
-import com.intellij.openapi.roots.impl.libraries.LibraryEx;
 import com.intellij.openapi.roots.libraries.Library;
 import com.intellij.openapi.roots.libraries.LibraryTable;
 import com.intellij.openapi.roots.libraries.LibraryTablesRegistrar;
@@ -32,11 +31,10 @@ import java.util.jar.JarFile;
 
 public class LibrariesUtil {
 
-    public static void setLibraries(String homePath) throws BusinessException {
+    public static void setLibraries(Project project, String homePath) throws BusinessException {
         //nc类路径
         List<String> ncLibraries = ClassPathConstantUtil.getNCLibrary();
         //当前工程
-        Project project = ProjectManager.getInstance().getProject();
         //判断nchome是否存在
         if (StringUtils.isBlank(homePath)) {
             throw new BusinessException("请先设置home路径");
@@ -51,10 +49,10 @@ public class LibrariesUtil {
         Map<String, Library> libraryMap = new HashMap<>();
         for (String libraryName : ncLibraries) {
             //根据库名获取库
-            LibraryEx library = (LibraryEx) model.getLibraryByName(libraryName);
+            Library library = model.getLibraryByName(libraryName);
             // 库不存在创建新的
             if (library == null) {
-                library = (LibraryEx) model.createLibrary(libraryName);
+                library = model.createLibrary(libraryName);
             }
             libraryMap.put(libraryName, library);
         }
@@ -73,7 +71,7 @@ public class LibrariesUtil {
         List<String> langList = scanJarAndClasses(langPath, false, false);
         //扫描hotwebs
         String externalPath = homePath + File.separator + "external";
-        hotwebEspecial(homePath, externalPath, "nccloud", "ncchr", "fbip");//移动pub_platform到external
+        hotwebEspecial(project, homePath, externalPath, "nccloud", "ncchr", "fbip");//移动pub_platform到external
         //扫描lib 和 external
         String libPath = homePath + File.separator + "lib";
         List<String> libList = scanJarAndClasses(libPath, false, false);
@@ -82,7 +80,7 @@ public class LibrariesUtil {
         productList.addAll(libList);
         productList.addAll(externalList);
         //扫描ejb目录
-        String ejbPath = homePath + "ejb";
+        String ejbPath = homePath + File.separator + "ejb";
         List<String> ejbList = scanJarAndClasses(ejbPath, false, false);
         //扫描resource
         String resourcePath = homePath + File.separator + "resources";
@@ -113,7 +111,7 @@ public class LibrariesUtil {
         setLibrary(resourcesList, project,
                 libraryMap.get(ClassPathConstantUtil.PATH_NAME_RESOURCES).getModifiableModel());
         WriteCommandAction.runWriteCommandAction(project, model::commit);
-        ProjectManager.getInstance().setAllModuleLibrary();
+        ProjectManager.getInstance().setAllModuleLibrary(project);
     }
 
     /**
@@ -201,7 +199,8 @@ public class LibrariesUtil {
      * @param externalPath externalPath
      * @param webServers   webServers
      */
-    private static void hotwebEspecial(String homePath, String externalPath, String... webServers) {
+    private static void hotwebEspecial(Project project, String homePath, String externalPath,
+                                       String... webServers) {
         String hotwebsPath = homePath + File.separator + "hotwebs";
         for (String server : webServers) {
             File hotwebFile = new File(
@@ -256,10 +255,10 @@ public class LibrariesUtil {
                 str = str.substring(1);
                 switch (server) {
                     case "nccloud":
-                        UapProjectEnvironment.getInstance().setNccloudJar(str);
+                        UapProjectEnvironment.getInstance(project).setNccloudJar(str);
                         break;
                     case "ncchr":
-                        UapProjectEnvironment.getInstance().setNcchrJAR(str);
+                        UapProjectEnvironment.getInstance(project).setNcchrJAR(str);
                         break;
                 }
             }

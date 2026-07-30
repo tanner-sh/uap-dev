@@ -89,7 +89,7 @@ public class DevConfigDialog extends AbstractDataSourceDialog {
      * 加载home
      */
     private void initPath() {
-        homeText.setText(UapProjectEnvironment.getInstance().getUapHomePath());
+        homeText.setText(UapProjectEnvironment.getInstance(getProjectContext()).getUapHomePath());
         DataSourceUtil.initDataSource(this);
     }
 

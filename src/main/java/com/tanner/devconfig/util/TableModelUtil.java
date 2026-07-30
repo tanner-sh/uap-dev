@@ -87,7 +87,9 @@ public class TableModelUtil {
 
     public static void modelHandle(AbstractDialog dialog, DefaultTableModel mustModel,
                                    DefaultTableModel selModel) {
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+        UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
+                dialog.getProjectContext());
+        String homePath = environment.getUapHomePath();
         if (StringUtils.isBlank(homePath)) {
             homePath = dialog.getComponent(JTextField.class, "homeText").getText();
         }
@@ -111,8 +113,8 @@ public class TableModelUtil {
         //排序
         Collections.sort(moduleList);
         //获取模块配置
-        String mustModuleStr = UapProjectEnvironment.getInstance().getMust_modules();
-        String selModuleStr = UapProjectEnvironment.getInstance().getEx_modules();
+        String mustModuleStr = environment.getMust_modules();
+        String selModuleStr = environment.getEx_modules();
         Set<String> mustModuleSet = new HashSet<>();
         Set<String> exModuleSet = new HashSet<>();
         if (StringUtils.isBlank(mustModuleStr)) {
@@ -185,8 +187,10 @@ public class TableModelUtil {
      * @throws BusinessException BusinessException
      */
     public static void saveModuleConfig(AbstractDialog dialog) throws BusinessException {
-        String oldMust = UapProjectEnvironment.getInstance().getMust_modules();
-        String oldEx = UapProjectEnvironment.getInstance().getEx_modules();
+        UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
+                dialog.getProjectContext());
+        String oldMust = environment.getMust_modules();
+        String oldEx = environment.getEx_modules();
         JTable selTable = dialog.getComponent(JTable.class, "selTable");
         JTable mustTable = dialog.getComponent(JTable.class, "mustTable");
         int rowCount = selTable.getRowCount();
@@ -211,11 +215,11 @@ public class TableModelUtil {
             exModuleStr = new StringBuilder(exModuleStr.substring(1));
         }
         if (!oldMust.contentEquals(mustModuleStr)) {
-            UapProjectEnvironment.getInstance().setMust_modules(mustModuleStr.toString());
+            environment.setMust_modules(mustModuleStr.toString());
         }
         if (!oldEx.contentEquals(exModuleStr)) {
-            UapProjectEnvironment.getInstance().setEx_modules(exModuleStr.toString());
-            CreatApplicationConfigurationUtil.update();
+            environment.setEx_modules(exModuleStr.toString());
+            CreatApplicationConfigurationUtil.update(dialog.getProjectContext());
         }
     }
 }

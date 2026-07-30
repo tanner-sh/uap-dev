@@ -17,14 +17,13 @@ public class MarkdownBuilder implements IExportBuilder {
         String filePath = Path.of(exportDirPath, "datadictionary.md").toString();
         String markdownContent = getMarkdownContent(aggTableList);
         File scriptFile = new File(filePath);
-        scriptFile.deleteOnExit();
         scriptFile.createNewFile();
         FileUtils.writeStringToFile(scriptFile, markdownContent, Charset.defaultCharset());
     }
 
     private String getMarkdownContent(List<AggTable> aggTableList) {
         StringBuilder markdownContent = new StringBuilder();
-        String res1 = "|:------:|:------:|:------:|:------:|:------:|:------:|" + "\n";
+        String res1 = "|:------:|:------:|:------:|:------:|:------:|:------:|:------:|" + "\n";
         for (AggTable aggTable : aggTableList) {
             int index = aggTableList.indexOf(aggTable) + 1;
             TableInfo tableInfo = aggTable.getTableInfo();

@@ -63,6 +63,11 @@ public class NewModuleDialog extends DialogWrapper {
             Messages.showErrorDialog("Please set module name!", "Error");
             return;
         }
+        if (!moduleNameText.matches("[\\p{L}\\p{N}._-]+")
+                || ".".equals(moduleNameText) || "..".equals(moduleNameText)) {
+            Messages.showErrorDialog("Invalid module name!", "Error");
+            return;
+        }
         if (StringUtils.isBlank(ncModuleNameText)) {
             Messages.showErrorDialog("Please set NC Module name!", "Error");
             return;
@@ -91,10 +96,10 @@ public class NewModuleDialog extends DialogWrapper {
             util.outFile(file, content, "gb2312", false);
             //设置类路径
             ProjectManager.getInstance().setModuleLibrary(project, module);
+            close(0);
         } catch (BusinessException e) {
             Messages.showErrorDialog(e.getMessage(), "Error");
         }
-        close(0);
     }
 
     @Override

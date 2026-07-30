@@ -6,7 +6,8 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.util.regex.Matcher;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
@@ -22,26 +23,28 @@ public class ZipUtil {
 
 
     public static String toZip(String exportPath, String patchName) throws BusinessException {
-        String path = new File(exportPath).getPath();
-        String basePath = new File(exportPath).getPath();
-        String[] strings = path.split(Matcher.quoteReplacement(File.separator));
-        String fileName = strings[strings.length - 1];
-        path = path.replace(fileName, "");
-        File file = new File(exportPath);
-        String zipName = path + fileName + "_" + patchName + ".zip";
-        try {
-            FileOutputStream fileOutputStream = new FileOutputStream(zipName);
-            CheckedOutputStream cos = new CheckedOutputStream(fileOutputStream, new CRC32());
-            ZipOutputStream out = new ZipOutputStream(cos);
-            compress(file, out, basePath);
-            out.close();
+        Path sourcePath = Path.of(exportPath).toAbsolutePath().normalize();
+        Path parent = sourcePath.getParent();
+        if (parent == null) {
+            throw new BusinessException("zip failed: invalid export path");
+        }
+        String fileName = sourcePath.getFileName().toString();
+        Path zipPath = parent.resolve(fileName + "_" + patchName + ".zip").normalize();
+        if (!zipPath.getParent().equals(parent)) {
+            throw new BusinessException("zip failed: invalid patch name");
+        }
+        File file = sourcePath.toFile();
+        try (FileOutputStream fileOutputStream = new FileOutputStream(zipPath.toFile());
+             CheckedOutputStream cos = new CheckedOutputStream(fileOutputStream, new CRC32());
+             ZipOutputStream out = new ZipOutputStream(cos)) {
+            compress(file, out, sourcePath);
         } catch (Exception e) {
             throw new BusinessException("zip failed : " + e.getMessage());
         }
-        return zipName;
+        return zipPath.toString();
     }
 
-    private static void compress(File file, ZipOutputStream out, String basePath) {
+    private static void compress(File file, ZipOutputStream out, Path basePath) throws IOException {
         /* 判断是目录还是文件 */
         if (file.isDirectory()) {
             compressDirectory(file, out, basePath);
@@ -57,7 +60,8 @@ public class ZipUtil {
      * @param out      out
      * @param basePath basePath
      */
-    private static void compressDirectory(File dir, ZipOutputStream out, String basePath) {
+    private static void compressDirectory(File dir, ZipOutputStream out, Path basePath)
+            throws IOException {
         if (!dir.exists()) {
             return;
         }
@@ -77,13 +81,14 @@ public class ZipUtil {
      * @param out      out
      * @param basePath basePath
      */
-    private static void compressFile(File file, ZipOutputStream out, String basePath) {
+    private static void compressFile(File file, ZipOutputStream out, Path basePath)
+            throws IOException {
         if (!file.exists()) {
             return;
         }
-        try {
-            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-            String filePath = file.getPath().replace(basePath + File.separator, "");
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+            String filePath = basePath.relativize(file.toPath().toAbsolutePath().normalize())
+                    .toString().replace(File.separatorChar, '/');
             ZipEntry entry = new ZipEntry(filePath);
             out.putNextEntry(entry);
             int count;
@@ -91,9 +96,7 @@ public class ZipUtil {
             while ((count = bis.read(data, 0, BUFFER)) != -1) {
                 out.write(data, 0, count);
             }
-            bis.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            out.closeEntry();
         }
     }
 

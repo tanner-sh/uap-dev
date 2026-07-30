@@ -1,14 +1,20 @@
 package com.tanner.script.export.action;
 
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
 import com.tanner.dbdriver.entity.DriverInfo;
+import com.tanner.base.UapProjectEnvironment;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import com.tanner.script.export.util.ScriptExportTool;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -51,14 +57,44 @@ public class ExportAction extends AbstractButtonAction {
         if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
-        try {
-            new ScriptExportTool(info.getDriverClass(), jdbcUrl, userName, pwd, exportMode, spiltGo).export(exportPath,
-                    heavyNodeCode, lightNodeCode, mdName, mdModule);
-        } catch (Exception e) {
-            Messages.showWarningDialog("导出脚本异常\n" + e.getMessage(), "错误");
-            return;
-        }
-        Messages.showInfoMessage("导出完毕", "提示");
+        String homePath = UapProjectEnvironment.getInstance(
+                getDialog().getProjectContext()).getUapHomePath();
+        String finalJdbcUrl = jdbcUrl;
+        Project project = getDialog().getProjectContext();
+        JButton exportButton = getDialog().getComponent(JButton.class, "exportBtn");
+        exportButton.setEnabled(false);
+        Task.Backgroundable task = new Task.Backgroundable(project, "Exporting SQL scripts...",
+                true) {
+            private Exception failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try {
+                    indicator.setIndeterminate(true);
+                    new ScriptExportTool(homePath, info.getDriverClass(), finalJdbcUrl,
+                            userName, pwd, exportMode, spiltGo).export(exportPath,
+                            heavyNodeCode, lightNodeCode, mdName, mdModule);
+                } catch (Exception exception) {
+                    failure = exception;
+                }
+            }
+
+            @Override
+            public void onSuccess() {
+                exportButton.setEnabled(true);
+                if (failure != null) {
+                    Messages.showWarningDialog("导出脚本异常\n" + failure.getMessage(), "错误");
+                } else {
+                    Messages.showInfoMessage("导出完毕", "提示");
+                }
+            }
+
+            @Override
+            public void onCancel() {
+                exportButton.setEnabled(true);
+            }
+        };
+        ProgressManager.getInstance().run(task);
     }
 
 }

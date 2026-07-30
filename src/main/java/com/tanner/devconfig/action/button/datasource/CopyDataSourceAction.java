@@ -19,8 +19,7 @@ public class CopyDataSourceAction extends AbstractButtonAction {
     @Override
     public void doAction(ActionEvent event) {
         DevConfigDialog dialog = (DevConfigDialog) getDialog();
-        DataSourceCopyDlg dlg = new DataSourceCopyDlg();
-        dlg.setParentDlg(dialog);
+        DataSourceCopyDlg dlg = new DataSourceCopyDlg(dialog);
         dlg.show();
     }
 

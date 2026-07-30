@@ -2,7 +2,6 @@ package com.tanner.patcher.action;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.newvfs.impl.FsRoot;
 import com.tanner.abs.AbstractAnAction;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,11 +23,12 @@ public class ExportPatcherAction extends AbstractAnAction {
             flag = false;
         } else {
             for (VirtualFile virtualFile : selectFileArr) {
-                if (virtualFile instanceof FsRoot) {
+                if (virtualFile.getParent() == null
+                        || !(isModuleChild(virtualFile, e)
+                        || isMavenModuleChild(virtualFile, e))) {
                     flag = false;
                     break;
                 }
-                flag = isModuleChild(virtualFile, e) || isMavenModuleChild(virtualFile, e);
             }
         }
         e.getPresentation().setEnabledAndVisible(flag);

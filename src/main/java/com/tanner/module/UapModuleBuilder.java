@@ -134,13 +134,6 @@ public class UapModuleBuilder extends ModuleBuilder {
     }
 
     public void setLibraries(Library[] libraries) {
-        if (libraries == null) {
-            try {
-                libraries = com.tanner.base.ProjectManager.getInstance()
-                        .getProjectLibraries(com.tanner.base.ProjectManager.getInstance().getProject());
-            } catch (BusinessException ignored) {
-            }
-        }
         this.libraries = libraries;
     }
 

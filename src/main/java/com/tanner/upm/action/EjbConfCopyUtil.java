@@ -54,9 +54,18 @@ public class EjbConfCopyUtil {
      * @param event event
      */
     public void copy(AnActionEvent event) {
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+        String homePath = UapProjectEnvironment.getInstance(event.getProject()).getUapHomePath();
+        if (homePath.isBlank()) {
+            Messages.showMessageDialog("Not set NC Home", "Error", Messages.getErrorIcon());
+            return;
+        }
         Module module = BaseUtil.getModule(event);
         String ncModuleName = getNCModuleName(module);
+        if (ncModuleName == null || ncModuleName.isBlank()) {
+            Messages.showMessageDialog("Can't determine NC module name", "Error",
+                    Messages.getErrorIcon());
+            return;
+        }
         Set<String> fileUrls;
         if (module.getModuleFile() == null) {
             return;

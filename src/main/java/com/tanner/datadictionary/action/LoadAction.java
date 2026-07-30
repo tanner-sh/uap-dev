@@ -1,6 +1,10 @@
 package com.tanner.datadictionary.action;
 
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.project.Project;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDataSourceDialog;
 import com.tanner.abs.AbstractDialog;
@@ -14,6 +18,7 @@ import com.tanner.dbdriver.entity.DriverInfo;
 import com.tanner.prop.entity.DataSourceMeta;
 import com.tanner.prop.entity.ToolUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -52,24 +57,61 @@ public class LoadAction extends AbstractButtonAction {
         if (StringUtils.isNotBlank(dsname)) {
             dataSourceMeta = ((AbstractDataSourceDialog) getDialog()).getDataSourceMetaMap().get(dsname);
         }
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
-        ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+        String homePath = UapProjectEnvironment.getInstance(
+                getDialog().getProjectContext()).getUapHomePath();
         if (StringUtils.containsIgnoreCase(exampleUrl, "oceanbase") && dataSourceMeta != null) {
             jdbcUrl = dataSourceMeta.getDatabaseUrl();
         }
-        Connection connection = DbUtil.getConnection(classLoader, info.getDriverClass(), jdbcUrl, userName, pwd);
-        IEngine engine = DbUtil.getEngine(connection);
-        List<TableInfo> tableInfoList = engine.getAllTableInfo(connection, userName, tableNamePattern);
-        DbUtil.closeResource(connection, null, null);
-        for (int i = 0; i < tableInfoList.size(); i++) {
-            Vector<Object> rowData = new Vector<>();
-            rowData.add(i + 1);
-            rowData.add(true);
-            rowData.add(tableInfoList.get(i).getTableName());
-            rowData.add(tableInfoList.get(i).getComment());
-            ((DefaultTableModel) dbTable.getModel()).addRow(rowData);
-        }
-        Messages.showInfoMessage("Load success!", "提示");
+        String finalJdbcUrl = jdbcUrl;
+        Project project = getDialog().getProjectContext();
+        JButton loadButton = getDialog().getComponent(JButton.class, "loadBtn");
+        loadButton.setEnabled(false);
+        Task.Backgroundable task = new Task.Backgroundable(project, "Loading database tables...",
+                true) {
+            private List<TableInfo> result;
+            private Exception failure;
+
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                Connection connection = null;
+                try {
+                    indicator.setIndeterminate(true);
+                    ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
+                    connection = DbUtil.getConnection(classLoader, info.getDriverClass(),
+                            finalJdbcUrl, userName, pwd);
+                    IEngine engine = DbUtil.getEngine(connection);
+                    result = engine.getAllTableInfo(connection, userName, tableNamePattern);
+                } catch (Exception exception) {
+                    failure = exception;
+                } finally {
+                    DbUtil.closeResource(connection, null, null);
+                }
+            }
+
+            @Override
+            public void onSuccess() {
+                loadButton.setEnabled(true);
+                if (failure != null) {
+                    Messages.showErrorDialog(failure.getMessage(), "错误");
+                    return;
+                }
+                for (int i = 0; i < result.size(); i++) {
+                    Vector<Object> rowData = new Vector<>();
+                    rowData.add(i + 1);
+                    rowData.add(true);
+                    rowData.add(result.get(i).getTableName());
+                    rowData.add(result.get(i).getComment());
+                    ((DefaultTableModel) dbTable.getModel()).addRow(rowData);
+                }
+                Messages.showInfoMessage("Load success!", "提示");
+            }
+
+            @Override
+            public void onCancel() {
+                loadButton.setEnabled(true);
+            }
+        };
+        ProgressManager.getInstance().run(task);
     }
 
 }

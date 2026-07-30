@@ -4,7 +4,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.newvfs.impl.FsRoot;
 import com.tanner.abs.AbstractAnAction;
 import com.tanner.base.BusinessException;
 import com.tanner.module.util.ModuleUtil;
@@ -46,16 +45,20 @@ public class ConvertToUapModuleAction extends AbstractAnAction {
             flag = false;
         } else {
             for (VirtualFile virtualFile : selectFileArr) {
-                if (virtualFile instanceof FsRoot) {
+                if (virtualFile.getParent() == null) {
                     flag = false;
                     break;
                 }
                 Module module = com.intellij.openapi.module.ModuleUtil.findModuleForFile(virtualFile,
                         e.getProject());
                 //这里当前目录如果没有转module，会找到上曾module，所以永远不是空
-                flag = module != null && !module.getName().equals(virtualFile.getName()) && new File(
+                boolean valid = module != null && !module.getName().equals(virtualFile.getName()) && new File(
                         virtualFile.getPath() + File.separator + "META-INF" + File.separator
                                 + "module.xml").exists();
+                if (!valid) {
+                    flag = false;
+                    break;
+                }
             }
         }
         e.getPresentation().setEnabledAndVisible(flag);

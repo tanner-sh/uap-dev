@@ -37,7 +37,7 @@ public class ExtendCopyUtil {
      */
     public static void copyToNCHome(AnActionEvent event) throws Exception {
         Module module = BaseUtil.getModule(event);
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+        String homePath = UapProjectEnvironment.getInstance(event.getProject()).getUapHomePath();
         if (StringUtils.isBlank(homePath)) {
             Messages.showMessageDialog("Not set NC Home", "Error", Messages.getErrorIcon());
             return;

@@ -11,9 +11,11 @@ import java.util.Map;
 public abstract class AbstractDialog extends DialogWrapper {
 
     private final Map<String, JComponent> componentMap = new HashMap<>();
+    private final Project project;
 
     protected AbstractDialog(@Nullable Project project) {
         super(project);
+        this.project = project;
     }
 
     public <T> T getComponent(Class<T> clazz, String key) {
@@ -22,5 +24,9 @@ public abstract class AbstractDialog extends DialogWrapper {
 
     public void addComponent(String key, JComponent component) {
         componentMap.put(key, component);
+    }
+
+    public @Nullable Project getProjectContext() {
+        return project;
     }
 }

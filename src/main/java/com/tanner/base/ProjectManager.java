@@ -1,6 +1,5 @@
 package com.tanner.base;
 
-import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
@@ -18,40 +17,14 @@ import java.util.List;
 public class ProjectManager {
 
     private static final Logger LOG = Logger.getInstance(ProjectManager.class);
-    private static ProjectManager instance;
-    private static Project project;
+    private static final ProjectManager INSTANCE = new ProjectManager();
 
     public static ProjectManager getInstance() {
-        if (instance == null) {
-            instance = new ProjectManager();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     public static ProjectManager getInstance(Project project) {
-        if (instance == null) {
-            instance = new ProjectManager();
-        }
-        if (instance.getProject() == null) {
-            instance.setProject(project);
-        }
-        return instance;
-    }
-
-    /**
-     * 获取当前project
-     *
-     * @return Project
-     */
-    public Project getProject() {
-        if (project == null) {
-
-        }
-        return project;
-    }
-
-    public void setProject(Project project) {
-        ProjectManager.project = project;
+        return INSTANCE;
     }
 
     /**
@@ -60,9 +33,6 @@ public class ProjectManager {
      * @return Module[]
      */
     public Module[] getAllModule(Project project) {
-        if (project == null) {
-            project = getProject();
-        }
         return ModuleManager.getInstance(project).getModules();
     }
 
@@ -72,8 +42,7 @@ public class ProjectManager {
      * @param moduleName moduleName
      * @return Module
      */
-    public Module getModule(String moduleName) {
-        Project project = getProject();
+    public Module getModule(Project project, String moduleName) {
         return ModuleManager.getInstance(project).findModuleByName(moduleName);
     }
 
@@ -104,11 +73,7 @@ public class ProjectManager {
      * @return LibraryTable
      */
     private LibraryTable getLibraryTable(Project project) {
-        if (project == null) {
-            project = getProject();
-        }
-        LibraryTable libraryTable = LibraryTablesRegistrar.getInstance().getLibraryTable(project);
-        return libraryTable;
+        return LibraryTablesRegistrar.getInstance().getLibraryTable(project);
     }
 
     /**
@@ -129,8 +94,7 @@ public class ProjectManager {
         }
     }
 
-    public void setAllModuleLibrary() throws BusinessException {
-        Project project = getProject();
+    public void setAllModuleLibrary(Project project) throws BusinessException {
         Module[] modules = getAllModule(project);
         Library[] libraries = getProjectLibraries(project);
         for (Module module : modules) {
@@ -149,7 +113,7 @@ public class ProjectManager {
     public <T> T getService(Project project, Class<T> clazz) {
         T t = null;
         try {
-            t = ServiceManager.getService(project, clazz);
+            t = project.getService(clazz);
         } catch (Throwable e) {
             return null;
         }
@@ -160,7 +124,4 @@ public class ProjectManager {
         return t;
     }
 
-    public <T> T getService(Class<T> clazz) {
-        return getService(getProject(), clazz);
-    }
 }

@@ -4,7 +4,6 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.newvfs.impl.FsRoot;
 import com.tanner.abs.AbstractAnAction;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,7 +25,7 @@ public class CopyExtendAction extends AbstractAnAction {
     public void update(@NotNull AnActionEvent e) {
         VirtualFile selectFile = getSelectFile(e);
         boolean flag;
-        if (selectFile == null || selectFile instanceof FsRoot) {
+        if (selectFile == null || selectFile.getParent() == null) {
             flag = false;
         } else {
             File file = new File(selectFile.getPath());

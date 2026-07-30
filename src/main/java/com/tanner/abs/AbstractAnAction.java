@@ -8,7 +8,6 @@ import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.tanner.base.ProjectManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -26,7 +25,6 @@ public abstract class AbstractAnAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
-        ProjectManager.getInstance().setProject(anActionEvent.getProject());
         doAction(anActionEvent);
     }
 

@@ -7,7 +7,6 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.abs.AbstractButtonAction;
 import com.tanner.abs.AbstractDialog;
-import com.tanner.base.ProjectManager;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -26,7 +25,7 @@ public class PathSelAction extends AbstractButtonAction {
         String exportPath = exportPathText.getText();
         FileChooserDescriptor descriptor = FileChooserDescriptorFactory.createSingleFolderDescriptor();
         VirtualFile virtualFile = FileChooser.chooseFile(descriptor,
-                ProjectManager.getInstance().getProject(),
+                getDialog().getProjectContext(),
                 LocalFileSystem.getInstance().findFileByIoFile(new File(exportPath)));
         if (virtualFile == null) {
             return;

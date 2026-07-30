@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
@@ -43,15 +43,22 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
             boolean everywhere,
             @NotNull ProgressIndicator cancelled,
             @NotNull Processor<Object> consumer) {
-        List<NccActionItem> nccActionItems = Objects.requireNonNull(getAllNccActionItems(base.getProject()))
-                .stream()
-                .filter(nccActionItem -> nccActionItem.toString().contains(pattern))
+        String normalizedPattern = pattern.toLowerCase(Locale.ROOT);
+        List<NccActionItem> nccActionItems = getAllNccActionItems(base.getProject()).stream()
+                .filter(nccActionItem -> matches(nccActionItem, normalizedPattern))
                 .collect(Collectors.toList());
         cancelled.checkCanceled();
-        if (!com.intellij.util.containers.ContainerUtil.process(nccActionItems, consumer)) {
-            return false;
-        }
-        return nccActionItems.isEmpty();
+        return com.intellij.util.containers.ContainerUtil.process(nccActionItems, consumer);
+    }
+
+    private boolean matches(NccActionItem item, String pattern) {
+        return containsIgnoreCase(item.getName(), pattern)
+                || containsIgnoreCase(item.getLabel(), pattern)
+                || containsIgnoreCase(item.getClazz(), pattern);
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedPattern) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(normalizedPattern);
     }
 
     private List<NccActionItem> getAllNccActionItems(Project project) {
@@ -59,7 +66,7 @@ public class MyChooseByNameItemProvider implements ChooseByNameItemProvider {
         UapProjectEnvironment instance = UapProjectEnvironment.getInstance(project);
         if (instance == null) {
             Messages.showMessageDialog("Please open a project", "Error", Messages.getErrorIcon());
-            return null;
+            return returnList;
         }
         String uapHomePath = instance.getUapHomePath();
         Path yyconfigPath = Paths.get(uapHomePath).resolve(Paths.get("hotwebs", "nccloud", "WEB-INF", "extend", "yyconfig", "modules"));

@@ -25,7 +25,7 @@ public class DataSourceUtil {
         if (dialog instanceof DevConfigDialog) {
             homePath = dialog.getComponent(JTextField.class, "homeText").getText();
         } else {
-            homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+            homePath = UapProjectEnvironment.getInstance(dialog.getProjectContext()).getUapHomePath();
         }
         if (StringUtils.isBlank(homePath)) {
             return;
@@ -47,11 +47,16 @@ public class DataSourceUtil {
             //做一次值切换，触发监听显示数据源详情
             dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(-1);
             dialog.getComponent(JComboBox.class, "dbBox").setSelectedIndex(0);
-        } catch (Exception ignored) {
+        } catch (Exception exception) {
+            Messages.showErrorDialog("加载数据源配置失败:\n" + exception.getMessage(), "错误");
         }
     }
 
     public static void fillCombo(JComboBox combo, Object[] objects, AbstractDataSourceDialog dlg) {
+        if (objects == null) {
+            combo.setModel(new DefaultComboBoxModel());
+            return;
+        }
         String[] items = new String[objects.length];
         for (int i = 0; i < objects.length; i++) {
             Object obj = objects[i];
@@ -178,7 +183,8 @@ public class DataSourceUtil {
      */
     public static void saveDesignDataSourceMeta(DevConfigDialog dlg) {
         try {
-            UapProjectEnvironment service = UapProjectEnvironment.getInstance();
+            UapProjectEnvironment service = UapProjectEnvironment.getInstance(
+                    dlg.getProjectContext());
             syncCurrDataSourceValue(dlg);
             String nchome = service.getUapHomePath();
             String filename = nchome + "/ierp/bin/prop.xml";
@@ -195,7 +201,7 @@ public class DataSourceUtil {
                 new PropXml().saveMeta(filename, metas, nchome);
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            Messages.showErrorDialog("保存数据源配置失败:\n" + e.getMessage(), "错误");
         }
     }
 

@@ -34,7 +34,7 @@ public class OKAction extends AbstractButtonAction {
         }
         //如果homePath未发生变化，则不提示是否更新类路径
         if (StringUtils.isNotBlank(homePath) && !homePath.equals(
-                UapProjectEnvironment.getInstance().getUapHomePath())) {
+                UapProjectEnvironment.getInstance(getDialog().getProjectContext()).getUapHomePath())) {
             homeChanged = true;
         }
         setServiceConfig();
@@ -61,17 +61,18 @@ public class OKAction extends AbstractButtonAction {
         if (!homeChanged || setLibFlag) {
             return;
         }
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
+        String homePath = UapProjectEnvironment.getInstance(
+                getDialog().getProjectContext()).getUapHomePath();
         int opt = Messages.showYesNoDialog("Update library ？", "询问", Messages.getQuestionIcon());
         if (opt == Messages.OK) {
             try {
-                LibrariesUtil.setLibraries(homePath);
+                LibrariesUtil.setLibraries(getDialog().getProjectContext(), homePath);
             } catch (BusinessException e) {
                 Messages.showErrorDialog(e.getMessage(), "出错了");
             }
         }
         //更新application上的home路径
-        CreatApplicationConfigurationUtil.update();
+        CreatApplicationConfigurationUtil.update(getDialog().getProjectContext());
     }
 
 
@@ -88,7 +89,9 @@ public class OKAction extends AbstractButtonAction {
      */
     private void setServiceConfig() {
         String homePath = getDialog().getComponent(JTextField.class, "homeText").getText();
-        UapProjectEnvironment.getInstance().setUapHomePath(homePath);
-        UapProjectEnvironment.getInstance().setUapVersion(UapUtil.getUapVersion(homePath));
+        UapProjectEnvironment environment = UapProjectEnvironment.getInstance(
+                getDialog().getProjectContext());
+        environment.setUapHomePath(homePath);
+        environment.setUapVersion(UapUtil.getUapVersion(homePath));
     }
 }

@@ -7,7 +7,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.tanner.abs.AbstractButtonAction;
-import com.tanner.base.ProjectManager;
 import com.tanner.base.UapProjectEnvironment;
 import com.tanner.devconfig.DevConfigDialog;
 import com.tanner.devconfig.util.DataSourceUtil;
@@ -28,8 +27,8 @@ public class SelHomePathAction extends AbstractButtonAction {
 
     @Override
     public void doAction(ActionEvent event) {
-        String ncHome = UapProjectEnvironment.getInstance().getUapHomePath();
-        Project project = ProjectManager.getInstance().getProject();
+        Project project = getDialog().getProjectContext();
+        String ncHome = UapProjectEnvironment.getInstance(project).getUapHomePath();
         if (StringUtils.isBlank(ncHome)) {
             ncHome = project.getBasePath();
         }

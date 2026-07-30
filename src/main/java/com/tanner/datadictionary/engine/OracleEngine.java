@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -24,15 +25,18 @@ public class OracleEngine implements IEngine {
     public List<TableInfo> getAllTableInfo(Connection connection, String userName, String[] tableNamePattern) throws BusinessException {
         List<TableInfo> tableInfoList = new ArrayList<>();
         StringBuilder querySql = new StringBuilder("select TABLE_NAME,COMMENTS from USER_TAB_COMMENTS WHERE 1=1");
+        List<Object> parameters = new ArrayList<>();
         if (!ArrayUtils.isEmpty(tableNamePattern)) {
             querySql.append(" AND ( 1 = 2 ");
             for (String key : tableNamePattern) {
-                querySql.append(" or upper(TABLE_NAME) LIKE '").append(key.toUpperCase()).append("'");
+                querySql.append(" or upper(TABLE_NAME) LIKE ?");
+                parameters.add(key.toUpperCase());
             }
             querySql.append(" ) ");
         }
         querySql.append(" ORDER BY TABLE_NAME");
-        List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql.toString(), null);
+        List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection,
+                querySql.toString(), parameters);
         for (Map<String, Object> stringObjectMap : queryResult) {
             String tableName = (String) stringObjectMap.get("TABLE_NAME");
             // 优先从元数据信息中获取
@@ -48,7 +52,8 @@ public class OracleEngine implements IEngine {
     private String getTableCommentsFromMD(Connection connection, String tableName) throws BusinessException {
         String querySql = "select DISPLAYNAME from MD_CLASS where UPPER(DEFAULTTABLENAME) = ? ";
         List<Map<String, Object>> queryResult = DbUtil.executeQuery(connection, querySql, Collections.singletonList(tableName));
-        return CollectionUtils.isEmpty(queryResult) ? "" : queryResult.get(0).get("DISPLAYNAME").toString();
+        return CollectionUtils.isEmpty(queryResult) ? ""
+                : Objects.toString(queryResult.get(0).get("DISPLAYNAME"), "");
     }
 
     @Override
@@ -118,10 +123,10 @@ public class OracleEngine implements IEngine {
                 querySql.toString(),
                 Stream.of(columnName.toUpperCase(), tableName.toUpperCase()).collect(Collectors.toList()));
         for (Map<String, Object> rowMap : queryResult) {
-            String value = (String) rowMap.get("VALUE");
-            String name = (String) rowMap.get("NAME");
+            String value = Objects.toString(rowMap.get("VALUE"), "");
+            String name = Objects.toString(rowMap.get("NAME"), "");
             enumValue.append(value).append("=").append(name).append(";");
-            if (queryResult.indexOf(rowMap) != queryResult.size()) {
+            if (queryResult.indexOf(rowMap) != queryResult.size() - 1) {
                 enumValue.append("\n");
             }
         }

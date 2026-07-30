@@ -2,7 +2,6 @@ package com.tanner.devconfig;
 
 import com.intellij.openapi.ui.Messages;
 import com.tanner.abs.AbstractDialog;
-import com.tanner.base.ProjectManager;
 import com.tanner.devconfig.util.DataSourceUtil;
 import com.tanner.prop.entity.DataSourceMeta;
 import org.apache.commons.lang3.StringUtils;
@@ -21,8 +20,9 @@ public class DataSourceCopyDlg extends AbstractDialog {
 
     private DevConfigDialog parentDlg;
 
-    public DataSourceCopyDlg() {
-        super(ProjectManager.getInstance().getProject());
+    public DataSourceCopyDlg(DevConfigDialog parentDlg) {
+        super(parentDlg.getProjectContext());
+        this.parentDlg = parentDlg;
         init();
         //获取显示屏尺寸，使界面居中
         int width = Toolkit.getDefaultToolkit().getScreenSize().width;
@@ -66,10 +66,6 @@ public class DataSourceCopyDlg extends AbstractDialog {
 
     public DevConfigDialog getParentDlg() {
         return parentDlg;
-    }
-
-    public void setParentDlg(DevConfigDialog parentDlg) {
-        this.parentDlg = parentDlg;
     }
 
     @Override

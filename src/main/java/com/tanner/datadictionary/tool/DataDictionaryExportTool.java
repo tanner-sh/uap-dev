@@ -5,8 +5,8 @@ import com.tanner.datadictionary.engine.IEngine;
 import com.tanner.datadictionary.entity.AggTable;
 import com.tanner.datadictionary.entity.ColumnInfo;
 import com.tanner.datadictionary.entity.TableInfo;
+import com.intellij.openapi.progress.ProgressIndicator;
 
-import javax.swing.*;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,26 +14,32 @@ import java.util.List;
 public class DataDictionaryExportTool {
 
     private Connection connection;
-    private JProgressBar progressBar;
+    private ProgressIndicator progressIndicator;
 
     public DataDictionaryExportTool() {
     }
 
-    public DataDictionaryExportTool(Connection connection, JProgressBar progressBar) {
+    public DataDictionaryExportTool(Connection connection, ProgressIndicator progressIndicator) {
         this.connection = connection;
-        this.progressBar = progressBar;
+        this.progressIndicator = progressIndicator;
     }
 
     public void export(String exportDirPath, List<TableInfo> selectedTables, String exportAs, boolean needFilterDefField) throws Exception {
-        progressBar.setString("正在查询数据字典!");
-        progressBar.setMinimum(0);
-        progressBar.setMaximum(selectedTables.size());
-        List<AggTable> aggTableList = buildAggTables(selectedTables, needFilterDefField);
-        progressBar.setString("正在组装导出数据!");
-        IExportBuilder exportBuilder = getExportBuilder(exportAs);
-        exportBuilder.build(aggTableList, exportDirPath);
-        DbUtil.closeResource(connection, null, null);
-        progressBar.setString("导出完毕!");
+        try {
+            progressIndicator.setText("正在查询数据字典");
+            progressIndicator.setIndeterminate(selectedTables.isEmpty());
+            List<AggTable> aggTableList = buildAggTables(selectedTables, needFilterDefField);
+            progressIndicator.setText("正在组装导出数据");
+            IExportBuilder exportBuilder = getExportBuilder(exportAs);
+            if (exportBuilder == null) {
+                throw new IllegalArgumentException("不支持的导出格式: " + exportAs);
+            }
+            exportBuilder.build(aggTableList, exportDirPath);
+            progressIndicator.setFraction(1);
+        } finally {
+            DbUtil.closeResource(connection, null, null);
+            connection = null;
+        }
     }
 
     private List<AggTable> buildAggTables(List<TableInfo> selectedTables, boolean needFilterDefField) throws Exception {
@@ -41,13 +47,15 @@ public class DataDictionaryExportTool {
         IEngine engine = DbUtil.getEngine(connection);
         for (TableInfo selectedTable : selectedTables) {
             int currentIndex = selectedTables.indexOf(selectedTable) + 1;
-            progressBar.setString("正在查询数据字典(" + currentIndex + "/" + selectedTables.size() + ")");
+            progressIndicator.checkCanceled();
+            progressIndicator.setText(
+                    "正在查询数据字典(" + currentIndex + "/" + selectedTables.size() + ")");
             AggTable aggTable = new AggTable();
             aggTable.setTableInfo(selectedTable);
             List<ColumnInfo> columnInfoList = engine.getAllColumnInfo(connection, selectedTable.getTableName(), needFilterDefField);
             aggTable.setColumnInfoList(columnInfoList);
             aggTableList.add(aggTable);
-            progressBar.setValue(currentIndex);
+            progressIndicator.setFraction((double) currentIndex / selectedTables.size());
         }
         return aggTableList;
     }

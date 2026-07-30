@@ -2,7 +2,6 @@ package com.tanner.script.export.util;
 
 import com.tanner.base.ClassLoaderUtil;
 import com.tanner.base.DbUtil;
-import com.tanner.base.UapProjectEnvironment;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -10,12 +9,14 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -28,6 +29,7 @@ public class ScriptExportTool {
     private String jdbcUrl;
     private String userName;
     private String pwd;
+    private String homePath;
     private int exportMode;
     private boolean spiltGo;
     private Connection connection;
@@ -36,7 +38,9 @@ public class ScriptExportTool {
 
     }
 
-    public ScriptExportTool(String driverClass, String jdbcUrl, String userName, String pwd, int exportMode, boolean spiltGo) {
+    public ScriptExportTool(String homePath, String driverClass, String jdbcUrl, String userName,
+                            String pwd, int exportMode, boolean spiltGo) {
+        this.homePath = homePath;
         this.driverClass = driverClass;
         this.jdbcUrl = jdbcUrl;
         this.userName = userName;
@@ -47,14 +51,17 @@ public class ScriptExportTool {
 
     public void export(String exportPath, String heavyNodeCode, String lightNodeCode, String mdName,
                        String mdModule) throws Exception {
-        String homePath = UapProjectEnvironment.getInstance().getUapHomePath();
         ClassLoader classLoader = ClassLoaderUtil.getUapJdbcClassLoader(homePath);
         this.connection = DbUtil.getConnection(classLoader, driverClass, jdbcUrl, userName, pwd);
-        exportHeavyNodeCode(exportPath, heavyNodeCode);
-        exportLightNodeCode(exportPath, lightNodeCode);
-        exportMdName(exportPath, mdName);
-        exportMdModule(exportPath, mdModule);
-        DbUtil.closeResource(connection, null, null);
+        try {
+            exportHeavyNodeCode(exportPath, heavyNodeCode);
+            exportLightNodeCode(exportPath, lightNodeCode);
+            exportMdName(exportPath, mdName);
+            exportMdModule(exportPath, mdModule);
+        } finally {
+            DbUtil.closeResource(connection, null, null);
+            connection = null;
+        }
     }
 
     private List<String> getExportSqls(List<Map<String, String>> configList, String parma) throws Exception {
@@ -80,7 +87,7 @@ public class ScriptExportTool {
         List<String> exportSqls = new ArrayList<>();
         for (Map<String, String> stringStringMap : configList) {
             String deleteSql = stringStringMap.get("sql");
-            deleteSql = deleteSql.replaceAll("\\?", "'" + parma + "'");
+            deleteSql = deleteSql.replace("?", "'" + parma.replace("'", "''") + "'");
             deleteSql = "delete " + deleteSql.substring(deleteSql.indexOf("from"));
             deleteSql += ";";
             if (spiltGo) {
@@ -123,12 +130,15 @@ public class ScriptExportTool {
         return heavyCodes;
     }
 
-    private List<Map<String, String>> readExportConfig(String yamlName) {
+    private List<Map<String, String>> readExportConfig(String yamlName) throws Exception {
         Yaml yaml = new Yaml();
         String yamlPath = "../../../../../config/" + yamlName;
-        InputStream resourceAsStream = this.getClass().getResourceAsStream(yamlPath);
-        List<Map<String, String>> list = yaml.load(resourceAsStream);
-        return list;
+        try (InputStream resourceAsStream = this.getClass().getResourceAsStream(yamlPath)) {
+            if (resourceAsStream == null) {
+                throw new IllegalArgumentException("找不到导出配置: " + yamlName);
+            }
+            return yaml.load(resourceAsStream);
+        }
     }
 
     private void exportHeavyNodeCode(String exportPath, String heavyNodeCode) throws Exception {
@@ -142,8 +152,7 @@ public class ScriptExportTool {
         List<Map<String, String>> configList = readExportConfig("heavyNodeCode.yaml");
         List<Object> allHeavyNodeCodeByParent = getAllHeavyNodeCodeByParent(heavyNodeCode);
         for (Object nodeCode : allHeavyNodeCodeByParent) {
-            File scriptFile = new File(scriptDirectory, nodeCode + ".sql");
-            scriptFile.deleteOnExit();
+            File scriptFile = resolveSqlFile(scriptDirectory, Objects.toString(nodeCode, ""));
             scriptFile.createNewFile();
             FileUtils.writeLines(scriptFile, getExportSqls(configList, (String) nodeCode));
         }
@@ -185,8 +194,7 @@ public class ScriptExportTool {
         List<Map<String, String>> configList = readExportConfig("lightNodeCode_ncc2005.yaml");
         List<Object> allLightNodeCodeByParent = getAllLightNodeCodeByParent(lightNodeCode);
         for (Object nodeCode : allLightNodeCodeByParent) {
-            File scriptFile = new File(scriptDirectory, nodeCode + ".sql");
-            scriptFile.deleteOnExit();
+            File scriptFile = resolveSqlFile(scriptDirectory, Objects.toString(nodeCode, ""));
             scriptFile.createNewFile();
             FileUtils.writeLines(scriptFile, getExportSqls(configList, (String) nodeCode));
         }
@@ -201,8 +209,7 @@ public class ScriptExportTool {
             scriptDirectory.mkdirs();
         }
         List<Map<String, String>> configList = readExportConfig("mdName.yaml");
-        File scriptFile = new File(scriptDirectory, mdName + ".sql");
-        scriptFile.deleteOnExit();
+        File scriptFile = resolveSqlFile(scriptDirectory, mdName);
         scriptFile.createNewFile();
         FileUtils.writeLines(scriptFile, getExportSqls(configList, mdName));
     }
@@ -216,10 +223,22 @@ public class ScriptExportTool {
             scriptDirectory.mkdirs();
         }
         List<Map<String, String>> configList = readExportConfig("mdModule.yaml");
-        File scriptFile = new File(scriptDirectory, mdModule + ".sql");
-        scriptFile.deleteOnExit();
+        File scriptFile = resolveSqlFile(scriptDirectory, mdModule);
         scriptFile.createNewFile();
         FileUtils.writeLines(scriptFile, getExportSqls(configList, mdModule));
+    }
+
+    private File resolveSqlFile(File directory, String name) throws Exception {
+        if (StringUtils.isBlank(name) || !name.matches("[\\p{L}\\p{N}._-]+")
+                || ".".equals(name) || "..".equals(name)) {
+            throw new IllegalArgumentException("非法导出文件名: " + name);
+        }
+        Path directoryPath = directory.toPath().toAbsolutePath().normalize();
+        Path filePath = directoryPath.resolve(name + ".sql").normalize();
+        if (!filePath.getParent().equals(directoryPath)) {
+            throw new IllegalArgumentException("非法导出文件名: " + name);
+        }
+        return filePath.toFile();
     }
 
 }

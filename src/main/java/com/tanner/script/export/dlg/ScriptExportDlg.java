@@ -74,6 +74,7 @@ public class ScriptExportDlg extends AbstractDataSourceDialog {
         addComponent("mdModuleText", mdModuleText);
         addComponent("exportModeComboBox", exportModeComboBox);
         addComponent("spiltGoCheckBox", spiltGoCheckBox);
+        addComponent("exportBtn", exportBtn);
     }
 
     private void initListener() {
