@@ -84,3 +84,7 @@ tasks.withType<Test>().configureEach {
         languageVersion = JavaLanguageVersion.of(21)
     }
 }
+
+tasks.named("build") {
+    dependsOn(tasks.named("buildPlugin"))
+}

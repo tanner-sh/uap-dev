@@ -420,11 +420,11 @@ public class ExportPatcherUtil {
             String modulePath = moduleRoot.getPath();
             File file = new File(modulePath + PATH_META_INF + File.separator + FILE_MODULE);
             if (file.exists()) {
-            try (InputStream in = new FileInputStream(file)) {
-                Document doc = XmlUtil.parse(in);
-                Element root = doc.getDocumentElement();
-                ncModuleName = root.getAttribute(NAME_MODULE);
-            }
+                try (InputStream in = new FileInputStream(file)) {
+                    Document doc = XmlUtil.parseWithRestrictedDoctype(in);
+                    Element root = doc.getDocumentElement();
+                    ncModuleName = root.getAttribute(NAME_MODULE);
+                }
             }
         } catch (Exception e) {
             //抛错就认为不是nc项目
@@ -444,7 +444,7 @@ public class ExportPatcherUtil {
         if (fromFile.exists()) {
             Document doc;
             try (InputStream in = new FileInputStream(fromFile)) {
-                doc = XmlUtil.parse(in);
+                doc = XmlUtil.parseWithRestrictedDoctype(in);
             }
             Element root = doc.getDocumentElement();
 
